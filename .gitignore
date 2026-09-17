@@ -1,0 +1,12 @@
+# Generated visual checks and reference renders
+prototype/*.png
+
+# Local tooling and private configuration
+node_modules/
+__pycache__/
+.env
+.env.*
+!.env.example
+.DS_Store
+Thumbs.db
+*.log
