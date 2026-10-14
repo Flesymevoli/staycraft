@@ -1,0 +1,12 @@
+from pathlib import Path
+p=Path('prototype/workspace.js');s=p.read_text(encoding='utf-8-sig')
+s=s.replace("['content','content','Create','创作']","['explore','explore','Explore','探索']")
+s=s.replace("location.hash.startsWith('#analysis')?'analysis':'home'","location.hash.startsWith('#analysis')?'analysis':location.hash.startsWith('#explore')?'explore':'home'")
+s=s.replace("document.documentElement.lang=lang", "document.getElementById('app').classList.toggle('is-explore',page==='explore');document.documentElement.lang=lang")
+s=s.replace("else if(page==='work')renderWork();", "else if(page==='work')renderWork();else if(page==='explore'&&typeof renderExplore==='function')renderExplore();")
+s=s.replace("k==='home'||k==='work'||k==='insight'", "k==='home'||k==='work'||k==='insight'||k==='explore'")
+s=s.replace("page==='analysis'?'Analysis':", "page==='explore'?'Explore':page==='analysis'?'Analysis':")
+s=s.replace('Home, Work and Analysis.', 'Home, Work, Analysis and Explore.').replace('首页、工作区与分析页。','首页、工作区、分析与探索页。')
+p.write_text(s,encoding='utf-8')
+p=Path('prototype/index.html');s=p.read_text(encoding='utf-8-sig').replace('</body>','<link rel="stylesheet" href="explore.css"><script src="explore.js"></script></body>');p.write_text(s,encoding='utf-8')
+p=Path('export-preview.ps1');s=p.read_text(encoding='utf-8-sig').replace("'workspace','analysis'","'workspace','analysis','explore'");p.write_text(s,encoding='utf-8-sig')

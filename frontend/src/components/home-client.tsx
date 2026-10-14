@@ -1,0 +1,189 @@
+"use client";
+
+import { useState } from "react";
+import Image from "next/image";
+import Link from "next/link";
+import { ArrowRight, Check, X } from "lucide-react";
+import { useDemoStorage } from "./demo-storage";
+import "./native-home.css";
+
+type Language = "en" | "zh";
+type Question = "week" | "attention";
+
+const events: Record<number, { time: string; title: [string, string]; room: string }[]> = {
+  16: [{ time: "14:00", title: ["Guest check-in", "客人入住"], room: "102" }],
+  17: [{ time: "11:00", title: ["Guest check-out", "客人退房"], room: "201" }],
+  18: [
+    { time: "11:00", title: ["Guest check-out", "客人退房"], room: "201" },
+    { time: "14:00", title: ["Guest check-in", "客人入住"], room: "102" },
+  ],
+  21: [{ time: "14:00", title: ["Guest check-in", "客人入住"], room: "102" }],
+};
+
+const tabs = [
+  { label: ["Home", "首页"], icon: "home", href: "/native-home" },
+  { label: ["Work", "工作"], icon: "work", href: "/native-work" },
+  { label: ["Analysis", "分析"], icon: "analysis", href: "/native-analysis" },
+  { label: ["Explore", "探索"], icon: "explore", href: "/native-explore" },
+  { label: ["Mine", "我的"], icon: "mine", href: "/native-mine" },
+] as const;
+
+export function HomeClient() {
+  const [language, setLanguage] = useDemoStorage<Language>("language", "en");
+  const [decisions] = useDemoStorage<Record<string, string>>("operationDecisions", {});
+  const pending = ["arrival", "refund"].filter(id => !decisions[id]);
+  const [selectedDay, setSelectedDay] = useState(17);
+  const [scheduleOpen, setScheduleOpen] = useState(false);
+  const [assistantOpen, setAssistantOpen] = useState(false);
+  const [question, setQuestion] = useState<Question | null>(null);
+  const [draft, setDraft] = useState("");
+  const zh = language === "zh";
+  const t = (en: string, cn: string) => (zh ? cn : en);
+
+  const ask = (next: Question) => {
+    setQuestion(next);
+    setDraft("");
+  };
+
+  const submitQuestion = () => {
+    if (!draft.trim()) return;
+    const value = /week|周|occup|入住/i.test(draft) ? "week" : "attention";
+    ask(value);
+  };
+
+  return (
+    <div className="native-shell">
+      <div className="native-page native-home-page">
+        <header className="native-header">
+          <span className="native-kicker">{t("HOME", "首页")}</span>
+          <div className="native-header-actions">
+            <button className="native-language" type="button" onClick={() => setLanguage(zh ? "en" : "zh")} aria-label={t("Switch to Chinese", "切换为英文")}>
+              {zh ? "EN" : "中文"}
+            </button>
+            <Link className="native-avatar" href="/native-mine" aria-label={t("Open Mine", "打开我的")}>A</Link>
+          </div>
+        </header>
+
+        {assistantOpen ? (
+          <section className="native-assistant" aria-label={t("Demo assistant", "演示助手")}>
+            <div className="native-assistant-heading">
+              <h1>{t("✦ What can I help with?", "✦ 我能帮你什么？")}</h1>
+              <button type="button" className="native-close" aria-label={t("Close assistant", "关闭助手")} onClick={() => { setAssistantOpen(false); setQuestion(null); }}><X size={20} /></button>
+            </div>
+            <p className="native-muted">{t("Demo assistant · Uses sample data", "演示助手 · 使用示例数据")}</p>
+            <label className="native-input-label" htmlFor="native-question">{t("Ask about your homestay", "问问你的民宿")}</label>
+            <div className="native-input-row">
+              <input id="native-question" value={draft} onChange={(event) => setDraft(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") submitQuestion(); }} placeholder={t("Ask about your homestay...", "问问你的民宿……")} />
+              <button type="button" onClick={submitQuestion} aria-label={t("Ask question", "提交问题")}><ArrowRight size={20} /></button>
+            </div>
+            {question && (
+              <div className="native-answer" role="status">
+                <small>{question === "week" ? t("How is this week going?", "这周经营怎么样？") : t("What needs my attention?", "哪些事情需要我处理？")}</small>
+                <p>{question === "week"
+                  ? t("This week's sample occupancy is 70%. Weekdays are quieter than weekends, so a midweek stay offer may be worth reviewing.", "本周示例入住率为 70%。工作日比周末安静，可以考虑审核一份工作日住宿推广草稿。")
+                  : t(pending.length + " items need your review. Nothing is sent or published automatically.", "有 " + pending.length + " 项等待你审核。系统不会自动发送或发布。")}</p>
+                <Link href={question === "week" ? "/native-analysis" : "/native-work"}>{question === "week" ? t("Open Analysis", "打开分析") : t("Open Work", "打开工作")} <ArrowRight size={16} /></Link>
+              </div>
+            )}
+            <div className="native-suggestions">
+              <button type="button" onClick={() => ask("week")}>{t("How is this week going?", "这周经营怎么样？")}</button>
+              <button type="button" onClick={() => ask("attention")}>{t("What needs my attention?", "哪些事情需要我处理？")}</button>
+            </div>
+          </section>
+        ) : (
+          <section className="native-greeting">
+            <h1>{t("Hi, Alex.", "你好，Alex。")}</h1>
+            <p>{t("A little clarity for your day.", "让经营的每一天，更清晰。")}</p>
+            <button className="native-primary native-ask" type="button" onClick={() => setAssistantOpen(true)}>✦ {t("Ask AI", "问问 AI")}</button>
+          </section>
+        )}
+
+        <section className="native-calendar-section" aria-label={t("September 2026 schedule", "2026 年 9 月日程")}>
+          <div className="native-section-head">
+            <h2>{t("September 2026", "2026 年 9 月")}</h2>
+            <span>{t("Demo data", "示例数据")}</span>
+          </div>
+          <div className="native-dates">
+            {Array.from({ length: 17 }, (_, index) => index + 14).map((day) => {
+              const selected = day === selectedDay;
+              const weekday = new Date(2026, 8, day).toLocaleDateString(zh ? "zh-CN" : "en-US", { weekday: "short" });
+              return (
+                <div className="native-date" key={day}>
+                  <span>{weekday}</span>
+                  <button type="button" className={selected ? "is-selected" : ""} aria-pressed={selected} aria-expanded={selected && scheduleOpen} aria-controls="native-schedule" aria-label={new Date(2026, 8, day).toLocaleDateString(zh ? "zh-CN" : "en-US")} onClick={() => {
+                    if (selected) setScheduleOpen(!scheduleOpen);
+                    else { setSelectedDay(day); setScheduleOpen(true); }
+                  }}>{day}</button>
+                  <i className={events[day] ? "has-event" : ""} aria-hidden="true" />
+                </div>
+              );
+            })}
+          </div>
+          {scheduleOpen && (
+            <div id="native-schedule" className="native-schedule">
+              <div className="native-schedule-title">
+                <strong>{new Date(2026, 8, selectedDay).toLocaleDateString(zh ? "zh-CN" : "en-US", { month: "short", day: "numeric", weekday: "short" })}</strong>
+                <span>{(events[selectedDay] || []).length} {t("events", "项日程")}</span>
+              </div>
+              {(events[selectedDay] || []).length ? events[selectedDay].map((event, index) => (
+                <div className="native-event" key={event.time + index}>
+                  <time>{event.time}</time>
+                  <div><strong>{event.title[zh ? 1 : 0]}</strong><small>{t("Room", "房间")} {event.room} · {t("Sample reservation", "示例预订")}</small></div>
+                </div>
+              )) : <p className="native-muted">{t("No events for this date.", "这一天没有日程。")}</p>}
+            </div>
+          )}
+        </section>
+
+        <section className="native-overview" aria-label={t("Your stay at a glance", "经营一览")}>
+          <div className="native-section-head native-overview-head"><h2>{t("Your stay at a glance", "经营一览")}</h2><small>{t("This week · Sample", "本周 · 示例")}</small></div>
+          <article className="native-card">
+            <span className="native-card-label">{t("Occupancy", "入住率")}</span>
+            <div className="native-metric">70<span>%</span></div>
+            <h3>{t("Fill your weekdays.", "填满工作日。")}</h3>
+            <p>{t("More weekday availability. Try a midweek stay offer.", "工作日仍有空房，可以考虑工作日住宿优惠。")}</p>
+            <Link className="native-primary" href="/native-analysis">{t("View suggestion", "查看建议")} <ArrowRight size={16} /></Link>
+          </article>
+          <article className="native-card native-pending">
+            <div className="native-pending-head"><span>{t("Needs you", "待你处理")}</span><span>{pending.length}</span></div>
+            {pending.includes("arrival") && <div className="native-task">
+              <div><strong>{t("Early check-in", "提前入住安排")}</strong><small>{t("Room 102 · Decision needed", "102 房 · 等待确认")}</small></div>
+              <Link className="native-primary" href="/native-work#operation-arrival">{t("Review", "查看")}</Link>
+            </div>}
+            {pending.includes("refund") && <div className="native-task">
+              <div><strong>{t("Cancellation & refund", "取消与退款")}</strong><small>{t("GH-204 · Decision needed", "GH-204 · 等待确认")}</small></div>
+              <Link className="native-primary" href="/native-work#operation-refund">{t("Review", "查看")}</Link>
+            </div>}
+            {!pending.length && <p className="native-muted">{t("All caught up for now.", "目前都处理好了。")}</p>}
+            <Link className="native-soft-link" href="/native-work">{t("Open Work", "打开工作")} <ArrowRight size={15} /></Link>
+          </article>
+        </section>
+
+        <section className="native-recent">
+          <h2>{t("Recently completed", "最近完成")}</h2>
+          <Link href="/native-mine">{t("Keep your property information up to date", "及时更新你的民宿资料")} <ArrowRight size={14} /></Link>
+          <div className="native-history"><span><Check size={13} /> {t("Weekly analysis ready", "每周分析已完成")}</span><time>11:46</time></div>
+          <Link className="native-activity" href="/native-work">{t("View all activity", "查看全部动态")} <ArrowRight size={14} /></Link>
+        </section>
+        <p className="native-footer">{t("CONCEPT PREVIEW · SAMPLE DATA · BRAND TBD", "概念预览 · 示例数据 · 品牌待定")}</p>
+      </div>
+
+      <nav className="native-tabbar" aria-label={t("Main navigation", "主导航")}>
+        {tabs.map((tab, index) => (
+          <Link href={tab.href} key={tab.icon} className={index === 0 ? "is-active" : ""} aria-current={index === 0 ? "page" : undefined}>
+            <Image src={"/figma-icons/" + tab.icon + ".svg"} alt="" width={24} height={24} />
+            <span>{tab.label[zh ? 1 : 0]}</span>
+          </Link>
+        ))}
+      </nav>
+    </div>
+  );
+}
+
+
+
+
+
+
+
+

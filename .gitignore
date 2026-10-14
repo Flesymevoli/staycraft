@@ -1,8 +1,14 @@
+# Course hand-in files are kept locally, outside the code history.
+/deliverables/
+
 # Generated visual checks and reference renders
-prototype/*.png
+/frontend/qa-*
+/frontend/.offline-build/
 
 # Local tooling and private configuration
 node_modules/
+.venv/
+.vendor/
 __pycache__/
 .env
 .env.*

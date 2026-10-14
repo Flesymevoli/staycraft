@@ -1,0 +1,26 @@
+const { chromium } = require('C:/Users/86299/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright');
+(async () => {
+ const browser=await chromium.launch({headless:true});
+ const page=await browser.newPage({viewport:{width:430,height:932}});
+ await page.goto('http://127.0.0.1:3000/native-work');
+ await page.getByRole('button',{name:'Open conversation with Jamie',exact:true}).click();
+ await page.getByLabel('Add your reply',{exact:true}).fill('I will be at reception if you need help.');
+ await page.getByRole('button',{name:'Reply in demo',exact:true}).click();
+ await page.reload();
+ await page.getByRole('button',{name:'Open conversation with Jamie',exact:true}).click();
+ await page.getByText('I will be at reception if you need help.',{exact:true}).waitFor();
+ await page.getByRole('button',{name:'Back to messages',exact:true}).click();
+ await page.getByRole('switch').click();
+ await page.getByText('Paused · New enquiries go to you',{exact:true}).waitFor();
+ await page.getByRole('switch').click();
+ await page.screenshot({path:'qa-ai-work.png',fullPage:true});
+ await page.goto('http://127.0.0.1:3000/native-analysis');
+ await page.getByRole('button',{name:/Satisfaction/}).click();
+ await page.getByText('Guest satisfaction',{exact:true}).waitFor();
+ await page.getByRole('button',{name:/Booking pace/}).first().click();
+ await page.getByText('room nights booked',{exact:true}).waitFor();
+ await page.evaluate(()=>window.scrollTo(0,0));
+ await page.screenshot({path:'qa-ai-analysis.png',fullPage:true});
+ console.log('Conversation follow-up, persistence, reply switch and booking navigation passed.');
+ await browser.close();
+})().catch(e=>{console.error(e);process.exit(1)});

@@ -1,0 +1,5 @@
+from pathlib import Path
+p=Path('prototype/workspace.js');s=p.read_text(encoding='utf-8-sig').replace('homePageRender();patchHome()','homePageRender();patchHome();if(typeof mountHomeAssistant===\'function\')mountHomeAssistant()');p.write_text(s,encoding='utf-8')
+p=Path('prototype/home.js');s=p.read_text(encoding='utf-8-sig').replace("tr('Fill your weekdays.','抓住工作日机会。')","tr('Weekdays are quieter than weekends.','工作日比周末更安静。')").replace("tr('More weekday availability. Try a midweek stay offer.','工作日空房较多，可尝试住宿推广。')","tr('64% weekdays · 85% weekends','工作日 64% · 周末 85%')").replace("tr('View suggestion','查看建议')","tr('See analysis','查看分析')");p.write_text(s,encoding='utf-8')
+p=Path('prototype/index.html');s=p.read_text(encoding='utf-8-sig').replace('</body>','<link rel="stylesheet" href="assistant.css"><script src="assistant.js"></script></body>');p.write_text(s,encoding='utf-8')
+p=Path('export-preview.ps1');s=p.read_text(encoding='utf-8-sig').replace("'analysis','explore'","'analysis','explore','assistant'");p.write_text(s,encoding='utf-8-sig')

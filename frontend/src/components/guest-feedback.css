@@ -1,0 +1,22 @@
+.explore-guests { padding-top: 35px; }
+.explore-guests h2 { max-width: 340px; margin: 14px 0 13px; font-size: 29px; line-height: 1.15; font-weight: 400; letter-spacing: -.03em; }
+.explore-topic-orbit { position: relative; height: 285px; margin: 18px 0 16px; }
+.explore-topic { position: absolute; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; border: 1px solid #d5e2d2; border-radius: 50%; background: #edf7ec; color: #2c3f36; font-size: 13px; transition: transform .18s, box-shadow .18s; }
+.explore-topic small { font-size: 11px; }
+.explore-topic[aria-pressed="true"] { outline: 2px solid #8c9ba6; outline-offset: 2px; box-shadow: 0 5px 12px #20212414; }
+.explore-topic:active { transform: scale(.97); }
+.explore-topic.topic-0 { left: 2%; top: 10px; width: 116px; height: 116px; }
+.explore-topic.topic-1 { right: 0; top: 0; width: 109px; height: 109px; background: #fff2d7; border-color: #f7e2b7; }
+.explore-topic.topic-2 { left: 33%; top: 91px; width: 111px; height: 111px; background: #fbe3df; border-color: #f1cbc4; }
+.explore-topic.topic-3 { right: 5%; bottom: 3px; width: 99px; height: 99px; }
+.explore-topic-detail { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 97px; padding-top: 20px; border-top: 1px solid #e0e4e8; }
+.explore-topic-detail small { color: var(--muted); font-size: 10px; }
+.explore-topic-detail h3 { margin: 4px 0; font-size: 17px; font-weight: 400; }
+.explore-topic-detail p { margin: 0; color: var(--muted); font-size: 10px; }
+.explore-topic-detail .native-primary { min-height: 38px; padding: 0 12px; font-size: 11px; }
+
+#guest-feedback { margin-top: 30px; scroll-margin-top: 20px; }
+#guest-feedback .explore-note { color: var(--muted); font-size: 12px; line-height: 1.6; }
+#guest-feedback .explore-guests h2 { font-size: var(--section-title-size); font-weight: 500; }
+.feedback-comments blockquote { margin: 10px 0; padding: 16px; background: #fff; border-radius: 18px; font-size: 14px; line-height: 1.6; }
+.feedback-comments small { color: var(--muted); font-size: 11px; }

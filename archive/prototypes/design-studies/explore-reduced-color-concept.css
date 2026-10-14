@@ -1,0 +1,26 @@
+/* Standalone visual study. Injected only for comparison screenshots; not part of v2. */
+.app.is-explore{background:#f8f9fa!important}
+.explore-page{--ex-line:#e6e8eb;--ex-muted:#62666d}
+.pulse-section{background:#fff!important;border-top:1px solid #e6e8eb;border-bottom:1px solid #e6e8eb}
+#pulse-svg>path:first-of-type{opacity:.06}
+.pulse-controls input{accent-color:#8b779a}
+.heat-day.level-1{background:#fff;border:1px solid #e9ebed;color:#515861}
+.heat-day.level-2{background:#f8f5fc;border:1px solid #f0eafb;color:#4d405b}
+.heat-day.level-3{background:#fff3ec;border:1px solid #f9e4d6;color:#634638}
+.heat-legend i{background:#fff;border:1px solid #e9ebed}
+.heat-legend i:nth-of-type(2){background:#f8f5fc;border-color:#f0eafb}
+.heat-legend i:nth-of-type(3){background:#fff3ec;border-color:#f9e4d6}
+.heat-day[aria-pressed=true]{outline-color:#27292c;box-shadow:inset 0 0 0 2px #fff}
+.topic-orbit{background:transparent}
+.topic-0,.topic-1,.topic-2,.topic-3{background:#fff;color:#33383d}
+.topic-0,.topic-3{border-color:#d5e5ce}
+.topic-1{border-color:#e3d6f1}
+.topic-2{border-color:#eedbcd}
+.topic-0[aria-pressed=true],.topic-3[aria-pressed=true]{background:#edf6e8}
+.topic-1[aria-pressed=true]{background:#f3ecfc}
+.topic-2[aria-pressed=true]{background:#fcefe5}
+.topic[aria-pressed=true]{box-shadow:0 0 0 2px #fff,0 0 0 3px #303238}
+.stay-slide .stay-art{background:#eff3f3}
+.stay-slide:nth-child(2) .stay-art{background:#f6f2ee}
+.stay-slide:nth-child(3) .stay-art{background:#f1f3ed}
+.dock{background:#f8f9fa!important}

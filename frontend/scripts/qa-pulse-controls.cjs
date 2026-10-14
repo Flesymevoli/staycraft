@@ -1,0 +1,22 @@
+const {chromium}=require('C:/Users/86299/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright');
+(async()=>{
+ const b=await chromium.launch({headless:true}); const p=await b.newPage({viewport:{width:390,height:844}});
+ await p.goto('http://localhost:3000/native-explore');
+ const chart=p.getByRole('slider',{name:'Select demand date'});
+ await chart.waitFor();
+ await p.getByRole('button',{name:'Previous date',exact:true}).click();
+ if(await chart.getAttribute('aria-valuenow')!=='25') throw Error('Previous date');
+ await chart.focus(); await p.keyboard.press('Home');
+ if(!await p.getByRole('button',{name:'Previous date',exact:true}).isDisabled()) throw Error('Boundary');
+ const box=await chart.boundingBox();
+ await p.mouse.move(box.x+box.width*.5,box.y+box.height*.5); await p.mouse.down(); await p.mouse.move(box.x+box.width*.75,box.y+box.height*.5,{steps:5}); await p.mouse.up();
+ if(await chart.getAttribute('aria-valuenow')!=='23') throw Error('Drag');
+ await p.locator('.explore-heat-day').filter({hasText:/^26$/}).click();
+ if(await chart.getAttribute('aria-valuenow')!=='26') throw Error('Calendar sync');
+ await p.keyboard.press('Escape');
+ await p.getByRole('button',{name:'中文',exact:true}).click();
+ await p.locator('.explore-pulse').scrollIntoViewIfNeeded();
+ await p.screenshot({path:'qa-pulse-controls.png'});
+ if(await p.evaluate(()=>document.documentElement.scrollWidth>innerWidth)) throw Error('Overflow');
+ await b.close(); console.log('Arrows, keyboard, drag, calendar sync and mobile layout passed');
+})();
