@@ -1,0 +1,40 @@
+@font-face {
+  font-family: "Outfit";
+  src: url("/fonts/Outfit.ttf") format("truetype");
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+}
+
+.auth-shell {
+  min-height: 100dvh;
+  background: #e9eaec;
+  color: #202124;
+  font-family: "Outfit", "PingFang SC", "Microsoft YaHei", Arial, sans-serif;
+}
+.auth-shell * { box-sizing: border-box; }
+.auth-page {
+  width: min(100%, 430px);
+  min-height: 100dvh;
+  margin: 0 auto;
+  padding: 18px 24px 56px;
+  background: radial-gradient(ellipse 420px 270px at 0 0, #f3ded2bb, transparent),
+    radial-gradient(ellipse 400px 280px at 100% 0, #dfdaf1b0, transparent), #f8f9fb;
+}
+.auth-header { height: 44px; display: flex; align-items: center; justify-content: space-between; }
+.auth-kicker { color: #61656d; font-size: 10px; letter-spacing: .15em; }
+.auth-language { min-width: 44px; min-height: 44px; border: 0; background: none; cursor: pointer; }
+.auth-main { padding-top: clamp(48px, 12vh, 110px); }
+.auth-main h1 { margin: 0; font-size: 40px; font-weight: 400; letter-spacing: -.045em; }
+.auth-subtitle { margin: 12px 0 30px; color: #61656d; font-size: 14px; }
+.auth-card { display: grid; gap: 10px; padding: 24px; border-radius: 24px; background: rgba(255,255,255,.8); box-shadow: 0 8px 18px rgba(32,33,36,.055); }
+.auth-card label { font-size: 13px; }
+.auth-card input { width: 100%; min-height: 48px; margin-bottom: 8px; padding: 0 14px; border: 1px solid #d9dee5; border-radius: 12px; background: #fff; color: #202124; font: inherit; font-size: 16px; }
+.auth-card input:focus-visible, .auth-shell :is(button,a):focus-visible { outline: 3px solid #0878ee; outline-offset: 3px; }
+.auth-submit { min-height: 48px; margin-top: 8px; border: 0; border-radius: 999px; background: #0878ee; color: #fff; font: inherit; font-size: 15px; cursor: pointer; }
+.auth-submit:hover { background: #006bdc; }
+.auth-submit:disabled { opacity: .65; cursor: wait; }
+.auth-error { margin: 0; color: #a22929; font-size: 13px; line-height: 1.5; }
+.auth-demo-link { display: inline-flex; align-items: center; gap: 10px; min-height: 44px; margin-top: 20px; color: #0878ee; font-size: 14px; text-decoration: none; }
+.auth-setup { margin: 0; color: #61656d; font-size: 12px; line-height: 1.5; }
+@media (prefers-reduced-motion: reduce) { .auth-shell *, .auth-shell *::before, .auth-shell *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; } }
