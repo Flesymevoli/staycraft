@@ -96,6 +96,21 @@
 .work-message-ai, .work-message-owner { margin-left: auto; }
 .work-inbox-row:hover { background: #f5f7fa; }
 
+.work-try-section { margin-top: var(--section-gap); }
+.work-try-card { padding: 18px 20px; }
+.work-try-intro { margin: 0 0 14px; color: var(--muted); font-size: 12px; line-height: 1.5; }
+.work-try-card label { display: block; margin-bottom: 8px; font-size: 13px; }
+.work-try-card textarea { display: block; width: 100%; resize: vertical; padding: 12px; border: 1px solid #dce1e8; border-radius: 14px; background: #fff; color: var(--ink); font-size: 14px; line-height: 1.5; }
+.work-try-actions { display: flex; justify-content: flex-end; margin-top: 12px; }
+.work-try-actions button:disabled { opacity: .55; cursor: default; }
+.work-try-feedback { margin: 12px 0 0; color: var(--muted); font-size: 12px; }
+.work-try-error { color: #a22929; }
+.work-try-result { margin-top: 16px; border-top: 1px solid var(--hairline); padding-top: 15px; }
+.work-try-result strong { font-size: 15px; font-weight: 500; }
+.work-try-result p { margin: 5px 0 0; color: var(--muted); font-size: 12px; line-height: 1.5; }
+.work-try-result blockquote { margin: 12px 0; padding: 12px 14px; border: 0; border-radius: 14px; background: #edf5ff; font-size: 13px; line-height: 1.6; }
+.work-try-result small { display: block; margin-top: 6px; color: var(--muted); font-size: 11px; }
+
 
 .work-decision-actions { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
 .work-summary h1 { font-size: 28px; }

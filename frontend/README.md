@@ -10,6 +10,8 @@
 
 `/login` 是正式应用登录入口的本地实现，`/app` 是受保护的占位工作台；接入 Supabase 项目前无法使用真实账号登录。配置方式见 [`AUTH_SETUP`](../docs/AUTH_SETUP.md)。五页 `/native-*` 是公开的课程交互原型，不因 `/app` 的登录保护而变成真实业务页面。
 
+Work 的“试一条客人咨询”可调用本地 FastAPI **规则演示**。需要另开一个终端进入 `backend/`，先安装 `requirements.txt`，再运行 `python -m uvicorn app.main:app --host 127.0.0.1 --port 8000`；前端仍运行 `npm run dev`。若后端使用其他地址，在 `frontend/.env.local` 设置 `BACKEND_API_URL`。早餐、常规入住时间是固定示例事实；结果不会发送、保存或调用模型。后端未运行时页面会提示重试。
+
 经营数据、评价、活动、客人消息及所谓 AI 回复均为虚构示例；原型交互状态仅保存在当前浏览器会话。没有真实数据库、模型、文件解析、消息发送、退款、OTA 同步或发布。下一步开发以 [`PRD`](../docs/PRD.md)、[`DESIGN`](../docs/DESIGN.md)、[`ARCHITECTURE`](../docs/ARCHITECTURE.md) 三份边界文件为准。
 
 `/legacy` 用于查看历史单文件原型；其源文件归档在 [`../archive/prototypes/手机原型_柔白新版_v2.html`](../archive/prototypes/手机原型_柔白新版_v2.html)。需要刷新 `public/prototype.html` 时运行 `npm run sync:prototype`。历史版不作为当前开发基线。

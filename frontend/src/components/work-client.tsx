@@ -5,6 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { ArrowLeft, ArrowRight, Check, ClipboardList, ChartNoAxesCombined, RotateCcw, Sparkles } from "lucide-react";
 import { useDemoStorage } from "./demo-storage";
+import { WorkDecisionDemo } from "./work-decision-demo";
 import "./native-home.css";
 import "./native-work.css";
 
@@ -133,6 +134,7 @@ export function WorkClient({ initialTask = null }: { initialTask?: TaskId | null
         <div><strong>{t("Always-on AI replies", "AI 随时回复")}</strong><p>{autoReply ? t("On · Uses your property information", "已开启 · 依据你的民宿资料") : t("Paused · New enquiries go to you", "已暂停 · 新咨询由你处理")}</p></div>
         <button type="button" role="switch" aria-checked={autoReply} aria-label={t("Always-on AI replies", "AI 随时回复")} className="work-auto-switch" onClick={() => { setAutoReply(!autoReply); setNotice(t("Demo setting updated. Existing conversations stay available.", "演示设置已更新，已有对话仍可查看。")); }}><span /></button>
       </section>
+      <WorkDecisionDemo language={language} autoReply={autoReply} />
       <section className="work-conversations">
         <div className="work-section-head"><h2>{t("Guest messages", "客人消息")}</h2><span>{t("2 conversations", "2 条对话")}</span></div>
         <div className="native-card work-inbox">
