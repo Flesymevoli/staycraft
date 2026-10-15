@@ -2,11 +2,17 @@
 
 from uuid import UUID
 
-from fastapi import Depends, FastAPI
+from typing import Annotated
+
+from fastapi import Body, Depends, FastAPI
 
 from .access import PropertyAccess, require_property_access
 
-from .contracts import ReplyDecision, ReplyDecisionRequest
+from .contracts import (
+    EarlyCheckinAdviceRequest, OperationAdvice, RefundAdviceRequest,
+    ReplyDecision, ReplyDecisionRequest,
+)
+from .operation_service import advise_operation
 from .reply_service import decide_reply
 
 app = FastAPI(title="Homestay AI Assistant API", version="0.1.0")
@@ -20,6 +26,13 @@ async def health() -> dict[str, str]:
 @app.post("/v1/reply-decisions", response_model=ReplyDecision)
 async def reply_decision(request: ReplyDecisionRequest) -> ReplyDecision:
     return decide_reply(request)
+
+
+@app.post("/v1/demo/operation-advice", response_model=OperationAdvice)
+async def operation_advice(
+    request: Annotated[EarlyCheckinAdviceRequest | RefundAdviceRequest, Body(discriminator="kind")],
+) -> OperationAdvice:
+    return advise_operation(request)
 
 
 @app.get("/v1/properties/{property_id}/access")

@@ -51,6 +51,22 @@ class ApiTests(unittest.TestCase):
         status, _ = asyncio.run(call_api("/v1/reply-decisions", {"question": "   "}))
         self.assertEqual(status, 422)
 
+    def test_operation_advice_endpoint_never_reports_external_execution(self):
+        status, response = asyncio.run(call_api("/v1/demo/operation-advice", {
+            "kind": "refund", "requested_on": "2026-09-18", "arrival_on": "2026-09-22",
+            "paid_amount_yuan": 1040, "payment_confirmed": True, "full_refund_min_days": 3,
+        }))
+        self.assertEqual(status, 200)
+        self.assertEqual(response["suggested_refund_yuan"], 1040)
+        self.assertEqual(response["external_status"], "not_started")
+
+    def test_operation_advice_requires_valid_amount(self):
+        status, _ = asyncio.run(call_api("/v1/demo/operation-advice", {
+            "kind": "refund", "requested_on": "2026-09-18", "arrival_on": "2026-09-22",
+            "paid_amount_yuan": -1, "payment_confirmed": True, "full_refund_min_days": 3,
+        }))
+        self.assertEqual(status, 422)
+
 
 if __name__ == "__main__":
     unittest.main()

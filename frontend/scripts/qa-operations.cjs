@@ -2,18 +2,18 @@ const { chromium } = require('C:/Users/86299/.cache/codex-runtimes/codex-primary
 (async()=>{
  const browser=await chromium.launch({headless:true});
  const page=await browser.newPage({viewport:{width:430,height:932}});
- await page.goto('http://127.0.0.1:3000/native-work');
- await page.getByRole('button',{name:'Review decision',exact:true}).first().click();
- await page.getByRole('button',{name:'Allow 12:00 check-in',exact:true}).click();
- await page.getByText('Check-in decision recorded',{exact:true}).waitFor();
- await page.getByRole('button',{name:'Review decision',exact:true}).click();
+ await page.goto('http://127.0.0.1:'+(process.env.QA_PORT||'3000')+'/native-work', {waitUntil:'networkidle'});
+ await page.getByRole('button',{name:'Review advice',exact:true}).first().click();
+ await page.getByRole('button',{name:'Record readiness check',exact:true}).click();
+ await page.getByText('Check-in plan recorded',{exact:true}).waitFor();
+ await page.getByRole('button',{name:'Review advice',exact:true}).click();
  await page.getByRole('button',{name:'Hold for review',exact:true}).click();
- await page.getByText('Refund decision recorded',{exact:true}).waitFor();
+ await page.getByText('Refund plan recorded',{exact:true}).waitFor();
  await page.getByRole('button',{name:'Dismiss',exact:true}).click();
  await page.getByRole('button',{name:'Reset demo',exact:true}).click();
  await page.getByRole('button',{name:'Dismiss',exact:true}).click();
  await page.screenshot({path:'qa-operations-work.png',fullPage:true});
- await page.goto('http://127.0.0.1:3000/native-explore#promotion');
+ await page.goto('http://127.0.0.1:'+(process.env.QA_PORT||'3000')+'/native-explore#promotion');
  await page.getByRole('button',{name:'Generate sample content',exact:true}).click();
  await page.getByLabel('Edit your content',{exact:true}).fill('Edited promotional post');
  await page.getByRole('button',{name:'Save draft',exact:true}).click();

@@ -110,6 +110,11 @@
 .work-try-result p { margin: 5px 0 0; color: var(--muted); font-size: 12px; line-height: 1.5; }
 .work-try-result blockquote { margin: 12px 0; padding: 12px 14px; border: 0; border-radius: 14px; background: #edf5ff; font-size: 13px; line-height: 1.6; }
 .work-try-result small { display: block; margin-top: 6px; color: var(--muted); font-size: 11px; }
+.work-operation-advice > strong { display: block; font-size: 14px; font-weight: 500; line-height: 1.55; }
+.work-operation-basis { margin: 12px 0; padding: 0; list-style: none; color: var(--muted); font-size: 12px; line-height: 1.8; }
+.work-operation-missing { color: #7a5b28 !important; font-size: 12px !important; }
+.work-operation-amount { color: var(--ink) !important; font-size: 13px !important; }
+.work-operation-advice .work-decision-actions { margin-top: 14px; }
 
 
 .work-decision-actions { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }

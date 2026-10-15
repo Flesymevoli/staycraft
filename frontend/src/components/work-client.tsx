@@ -6,6 +6,7 @@ import Image from "next/image";
 import { ArrowLeft, ArrowRight, Check, ClipboardList, ChartNoAxesCombined, RotateCcw, Sparkles } from "lucide-react";
 import { useDemoStorage } from "./demo-storage";
 import { WorkDecisionDemo } from "./work-decision-demo";
+import { WorkOperationDemo, type OperationId } from "./work-operation-demo";
 import "./native-home.css";
 import "./native-work.css";
 
@@ -60,6 +61,14 @@ const baseActivity = [
   { time: "11:46", title: ["Weekly insight generated", "每周分析已生成"], detail: ["Weekday occupancy is lower", "工作日入住率较低"] },
 ] as const;
 
+const decisionNames: Record<string, [string, string]> = {
+  check_readiness: ["Check room readiness · Not executed", "核实房间准备情况 · 未执行"],
+  consider_early: ["Early arrival plan · Not executed", "提前入住方案 · 未执行"],
+  keep_standard: ["Keep standard check-in · Not executed", "按常规时间入住 · 未执行"],
+  refund_proposed: ["Refund proposal · No money moved", "退款建议 · 未发生资金交易"],
+  hold_review: ["Manual review planned · Not executed", "计划人工核实 · 未执行"],
+};
+
 function TabBar({ language }: { language: Language }) {
   const zh = language === "zh";
   const tabs = [
@@ -89,7 +98,6 @@ export function WorkClient({ initialTask = null }: { initialTask?: TaskId | null
   const [drafts, setDrafts] = useState<Partial<Record<TaskId, string>>>({});
   const [notice, setNotice] = useState("");
   const [activityOpen, setActivityOpen] = useState<number | null>(null);
-  const [operation, setOperation] = useState<string | null>(null);
   const [decisions, setDecisions] = useDemoStorage<Record<string, string>>("operationDecisions", {});
   const zh = language === "zh";
   const t = (en: string, cn: string) => (zh ? cn : en);
@@ -118,7 +126,6 @@ export function WorkClient({ initialTask = null }: { initialTask?: TaskId | null
     setConversation(null);
     setFollowup("");
     setDecisions({});
-    setOperation(null);
   };
 
   return <div className="native-shell">
@@ -165,14 +172,10 @@ export function WorkClient({ initialTask = null }: { initialTask?: TaskId | null
       </section>
       <section className="work-needs">
         <div className="work-section-head"><h2>{t("Your decisions", "待你决策")}</h2><span>{String(pending.length + ["arrival", "refund"].filter(id => !decisions[id]).length).padStart(2, "0")}</span></div>
-        {[
-          { id: "arrival", title: t("Early check-in arrangement", "提前入住安排"), meta: t("Room 102 · Alex · Sep 18", "102 房 · Alex · 9 月 18 日"), note: t("AI checked the booking. Confirm whether the room can be ready by 12:00.", "AI 已核对订单，需你确认房间能否在 12:00 前准备好。"), detail: t("Requested arrival: 12:00. Standard check-in: 14:00. Cleaning confirmation is missing. Your decision updates the demo booking and guest notification record.", "申请入住时间 12:00，常规入住时间 14:00。当前缺少清洁完成确认。你的决定将更新演示订单，并生成客人通知记录。"), approve: t("Allow 12:00 check-in", "同意 12:00 入住"), alternative: t("Keep 14:00 check-in", "按 14:00 入住") },
-          { id: "refund", title: t("Cancellation & refund request", "取消与退款申请"), meta: t("Order GH-204 · Casey · ¥1,040 paid", "订单 GH-204 · Casey · 已付 ¥1,040"), note: t("AI suggests a full refund based on the saved cancellation policy.", "AI 根据已保存的取消规则，建议全额退款。"), detail: t("Sample policy: full room-charge refund at least 3 days before arrival. Request: Sep 18; arrival: Sep 22. Paid: ¥1,040; proposed refund: ¥1,040. Approval simulates cancellation, refund completion and a guest notification. No money moves.", "示例规则：入住至少 3 天前取消，全额退还房费。申请日 9 月 18 日，入住日 9 月 22 日。已付 ¥1,040，建议退款 ¥1,040。确认后模拟取消订单、退款完成及通知客人，不发生资金交易。"), approve: t("Approve ¥1,040 refund", "批准退款 ¥1,040"), alternative: t("Hold for review", "暂缓并人工核实") },
-        ].filter(item => !decisions[item.id]).map(item => <article className="native-card work-task-card" key={item.id} id={"operation-" + item.id}>
-          <span className="work-task-type"><ClipboardList size={15} />{t("BOOKING OPERATIONS", "订单处理")}</span><h3>{item.title}</h3><p className="work-meta">{item.meta}</p><p className="work-note">{item.note}</p>
-          <button className="native-primary work-review" type="button" aria-expanded={operation === item.id} onClick={() => setOperation(operation === item.id ? null : item.id)}>{t("Review decision", "查看处理方案")} <ArrowRight size={15} /></button>
-          {operation === item.id && <div className="work-draft"><p>{item.detail}</p><div className="work-decision-actions">{[item.approve, item.alternative].map((label, index) => <button key={label} type="button" className={index === 0 ? "native-primary" : "work-text-action"} onClick={() => { setDecisions(current => ({ ...current, [item.id]: label })); setOperation(null); setNotice(t("Demo decision recorded. See the result in Done.", "演示决定已记录，可在已完成中查看结果。")); }}>{label}</button>)}</div></div>}
-        </article>)}
+        {(["arrival", "refund"] as OperationId[]).filter(id => !decisions[id]).map(id => <WorkOperationDemo key={id} id={id} language={language} onDecision={decision => {
+          setDecisions(current => ({ ...current, [id]: decision }));
+          setNotice(t("Demo plan saved. No external action was performed.", "演示方案已保存，未执行外部操作。"));
+        }} />)}
         {pending.length ? pending.map((id) => {
           const task = tasks[id];
           const open = expanded === id;
@@ -208,7 +211,7 @@ export function WorkClient({ initialTask = null }: { initialTask?: TaskId | null
       <section className="work-done">
         <div className="work-section-head"><h2>{t("Done", "已完成")}</h2><span>{t("AI work & your decisions", "AI 工作与确认记录")}</span></div>
         <p className="work-day">{t("TODAY", "今天")}</p>
-        {Object.entries(decisions).map(([id, decision]) => <div className="work-activity" key={id}><time>14:45</time><Check size={15} /><div><strong>{id === "arrival" ? t("Check-in decision recorded", "入住安排已记录") : t("Refund decision recorded", "退款决定已记录")}</strong><small>{decision}</small><small>{t("Demo decision · No external action", "演示决定 · 未执行外部操作")}</small></div></div>)}
+        {Object.entries(decisions).map(([id, decision]) => <div className="work-activity" key={id}><time>14:45</time><Check size={15} /><div><strong>{id === "arrival" ? t("Check-in plan recorded", "入住方案已记录") : t("Refund plan recorded", "退款方案已记录")}</strong><small>{tx(decisionNames[decision] ?? [decision, decision])}</small><small>{t("Demo decision · No external action", "演示决定 · 未执行外部操作")}</small></div></div>)}
         {[...confirmed.slice().reverse().map(id => ({
           time: "14:45",
           title: [id === "reply" ? "Guest reply confirmed" : id === "promotion" ? "Promotion draft approved" : "Occupancy insight reviewed",

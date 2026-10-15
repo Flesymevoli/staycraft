@@ -1,6 +1,6 @@
 """HTTP contracts for the first guest-message decision flow."""
 
-from datetime import datetime
+from datetime import date, datetime, time
 from typing import Literal
 
 from pydantic import BaseModel, Field, field_validator
@@ -60,3 +60,32 @@ class ReplyDecision(BaseModel):
     citations: list[FactCitation]
     engine: Literal["rules_v1"] = "rules_v1"
     sent: Literal[False] = False
+
+
+class EarlyCheckinAdviceRequest(BaseModel):
+    kind: Literal["early_checkin"]
+    standard_time: time
+    requested_time: time
+    cleaning_ready: bool | None = None
+    room_available: bool | None = None
+
+
+class RefundAdviceRequest(BaseModel):
+    kind: Literal["refund"]
+    requested_on: date
+    arrival_on: date
+    paid_amount_yuan: int = Field(gt=0)
+    payment_confirmed: bool
+    full_refund_min_days: int = Field(ge=0, le=365)
+
+
+class OperationAdvice(BaseModel):
+    kind: Literal["early_checkin", "refund"]
+    recommended_action: Literal["verify_readiness", "consider_early_checkin", "keep_standard_time", "propose_full_refund", "review_refund"]
+    reason_code: Literal["missing_confirmation", "room_not_ready", "not_early", "ready_for_owner", "within_policy", "outside_policy", "payment_unconfirmed"]
+    basis: list[str]
+    missing_checks: list[str]
+    suggested_refund_yuan: int | None = None
+    requires_owner_decision: Literal[True] = True
+    external_status: Literal["not_started"] = "not_started"
+    engine: Literal["sample_rules_v1"] = "sample_rules_v1"
