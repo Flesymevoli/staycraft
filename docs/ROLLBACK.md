@@ -30,3 +30,5 @@ python -m unittest discover -s tests -v
 本模块使用 SQLite schema v1，数据在忽略目录 backend/data/。停止后端后复制整个 data 目录到自行命名的备份目录，再升级数据结构。回滚代码优先 git revert；关闭 HOMESTAY_LOCAL_DATA 后原数据库保留，不会被删除。需要恢复资料时先停服务并备份当前文件，再用已验证的同版本备份替换。不要提交数据库、用 Git 回滚代替数据恢复或自动重置资料。
 
 本机资料模块验收（2026-10-21）：后端 28 项 unittest 通过；前端 lint/build 通过；scripts/qa-local-facts.cjs 覆盖保存/刷新/更新草稿/清空/错误与重试/移动端/来源保护；qa-work-decision.cjs 与 qa-operation-advice.cjs 回归通过。测试会恢复运行前的本机资料。代码回滚使用该模块提交的 git revert；数据恢复按上节独立操作。
+
+模型模块验收（2026-10-21）：35 项后端测试覆盖规则门禁、不合格输出、超时、401/402/429/500、供应商切换与不自动重试；前端 lint/build 通过。qa-model-live.cjs 已用专用虚构数据库和一次 DeepSeek 调用验证 AI 草稿，另外使用模拟响应验证规则备用提示；脚本需显式 RUN_PAID_MODEL_TEST=1，默认不发付费请求。尚无持久处理记录，未开放实际自动发送。关闭 MODEL_ENABLED 并重启后端可立即恢复纯规则模式；回滚使用该模块提交的 git revert，SQLite schema 未改变。

@@ -23,7 +23,7 @@ async function proxy(request: Request, context: { params: Promise<{ action: stri
     if (body && body.length > 16000) return new Response(null, { status: 413 });
     const upstream = await fetch(new URL(paths[action], process.env.BACKEND_API_URL ?? "http://127.0.0.1:8000"), {
       method: request.method, headers: { "Content-Type": "application/json" }, body,
-      cache: "no-store", signal: AbortSignal.timeout(5000),
+      cache: "no-store", signal: AbortSignal.timeout(action === "reply-decision" ? 25000 : 5000),
     });
     return new Response(await upstream.text(), { status: upstream.status, headers: { "Content-Type": "application/json", "Cache-Control": "no-store" } });
   } catch {

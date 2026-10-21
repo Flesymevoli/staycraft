@@ -10,7 +10,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, ConfigDict, field_validator
 
 from .contracts import PropertyFact, ReplyDecisionRequest
-from .reply_service import decide_reply
+from .model_service import generate_reply
 
 
 class SavedFacts(BaseModel):
@@ -104,5 +104,5 @@ def save_facts(values: SavedFacts, store: FactStore = Depends(local_store)):
 
 
 @router.post("/reply-decision")
-def local_reply(question: LocalQuestion, store: FactStore = Depends(local_store)):
-    return decide_reply(ReplyDecisionRequest(**question.model_dump(), facts=store.read()))
+async def local_reply(question: LocalQuestion, store: FactStore = Depends(local_store)):
+    return await generate_reply(ReplyDecisionRequest(**question.model_dump(), facts=store.read()))

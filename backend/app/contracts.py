@@ -56,9 +56,11 @@ class ReplyDecision(BaseModel):
         "needs_confirmation",
         "sensitive_request",
         "unsupported_question",
+        "model_review",
+        "model_unavailable",
     ]
     citations: list[FactCitation]
-    engine: Literal["rules_v1"] = "rules_v1"
+    engine: Literal["rules_v1", "model_v1"] = "rules_v1"
     sent: Literal[False] = False
 
 
