@@ -102,7 +102,6 @@ export function HomeClient() {
         <section className="native-calendar-section" aria-label={t("September 2026 schedule", "2026 年 9 月日程")}>
           <div className="native-section-head">
             <h2>{t("September 2026", "2026 年 9 月")}</h2>
-            <span>{t("Demo data", "示例数据")}</span>
           </div>
           <div className="native-dates">
             {Array.from({ length: 17 }, (_, index) => index + 14).map((day) => {
