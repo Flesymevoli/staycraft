@@ -1,4 +1,5 @@
 """Existing promotion generator backed by fictional context and explicit local save."""
+import asyncio
 import hashlib
 import json
 import os
@@ -90,12 +91,12 @@ async def generate_promotion(store, request, transport=None):
         payload["thinking"]={"type":"disabled"}
     try:
         async with httpx.AsyncClient(timeout=20,transport=transport,follow_redirects=False) as client:
-            response=await client.post(base+"/chat/completions",headers={"Authorization":"Bearer "+key},json=payload)
+            response=await asyncio.wait_for(client.post(base+"/chat/completions",headers={"Authorization":"Bearer "+key},json=payload),timeout=20)
             response.raise_for_status();choice=response.json()["choices"][0]
             content=json.loads(choice["message"]["content"]).get("content")
             if choice.get("finish_reason")=="stop" and isinstance(content,str) and 1<=len(content.strip())<=1200 and not re.search(r"\d|https?://",content):
                 result={"content":content.strip(),"engine":"model_v1","reason":"ready"}
-    except (httpx.HTTPError,ValueError,TypeError,KeyError,IndexError,AttributeError):
+    except (httpx.HTTPError,TimeoutError,ValueError,TypeError,KeyError,IndexError,AttributeError):
         pass
     connection=store.connect()
     try:

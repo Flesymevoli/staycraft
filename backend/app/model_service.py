@@ -1,4 +1,5 @@
 """Optional OpenAI-compatible draft writer. Rules remain the eligibility gate."""
+import asyncio
 import json
 import os
 import re
@@ -50,7 +51,7 @@ async def generate_reply(request: ReplyDecisionRequest, transport=None) -> Reply
         payload["thinking"] = {"type": "disabled"}
     try:
         async with httpx.AsyncClient(timeout=20, transport=transport, follow_redirects=False) as client:
-            response = await client.post(base + "/chat/completions", headers={"Authorization": "Bearer " + key}, json=payload)
+            response = await asyncio.wait_for(client.post(base + "/chat/completions", headers={"Authorization": "Bearer " + key}, json=payload), timeout=20)
             response.raise_for_status()
             choice = response.json()["choices"][0]
             if choice.get("finish_reason") != "stop":
@@ -66,5 +67,5 @@ async def generate_reply(request: ReplyDecisionRequest, transport=None) -> Reply
             # requires a person to review; no sending occurs in this module.
             return baseline.model_copy(update={"draft": draft.strip(), "engine": "model_v1",
                                                "disposition": "needs_review", "reason_code": "model_review"})
-    except (httpx.HTTPError, ValueError, KeyError, IndexError, TypeError, AttributeError):
+    except (httpx.HTTPError, TimeoutError, ValueError, KeyError, IndexError, TypeError, AttributeError):
         return unavailable()

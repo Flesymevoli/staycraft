@@ -1,4 +1,5 @@
 """Computed fictional metrics and optional cached narrative; never executes advice."""
+import asyncio
 import hashlib
 import json
 import os
@@ -81,14 +82,14 @@ async def build_summary(store, days, language, transport=None):
         payload["thinking"]={"type":"disabled"}
     try:
         async with httpx.AsyncClient(timeout=20,transport=transport,follow_redirects=False) as client:
-            response=await client.post(base+"/chat/completions",headers={"Authorization":"Bearer "+key},json=payload)
+            response=await asyncio.wait_for(client.post(base+"/chat/completions",headers={"Authorization":"Bearer "+key},json=payload),timeout=20)
             response.raise_for_status()
             choice=response.json()["choices"][0]
             content=json.loads(choice["message"]["content"])
             paragraphs=content.get("paragraphs")
             if choice.get("finish_reason")=="stop" and isinstance(paragraphs,list) and len(paragraphs)==2 and all(isinstance(p,str) and 1<=len(p.strip())<=450 and not re.search(r"\d",p) for p in paragraphs):
                 result={"paragraphs":[p.strip() for p in paragraphs],"engine":"model_v1","reason":"ready","metrics":metrics}
-    except (httpx.HTTPError,ValueError,TypeError,KeyError,IndexError,AttributeError):
+    except (httpx.HTTPError,TimeoutError,ValueError,TypeError,KeyError,IndexError,AttributeError):
         pass
     connection=store.connect()
     try:

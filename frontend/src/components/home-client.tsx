@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, Check, X } from "lucide-react";
@@ -9,7 +9,7 @@ import { RoomBoard } from "./room-board";
 import "./native-home.css";
 
 type Language = "en" | "zh";
-type Question = "week" | "attention";
+type Question = "week" | "attention" | "unsupported";
 
 const events: Record<number, { time: string; title: [string, string]; room: string }[]> = {
   16: [{ time: "14:00", title: ["Guest check-in", "客人入住"], room: "102" }],
@@ -38,18 +38,50 @@ export function HomeClient() {
   const [assistantOpen, setAssistantOpen] = useState(false);
   const [question, setQuestion] = useState<Question | null>(null);
   const [draft, setDraft] = useState("");
+  const [answer, setAnswer] = useState<{language: Language; text: string} | null>(null);
+  const [answerPending, setAnswerPending] = useState(false);
+  const [answerError, setAnswerError] = useState(false);
+  const answerRequest = useRef<AbortController | null>(null);
   const zh = language === "zh";
   const t = (en: string, cn: string) => (zh ? cn : en);
 
-  const ask = (next: Question) => {
+  useEffect(() => () => answerRequest.current?.abort(), []);
+
+  const ask = async (next: Question) => {
+    answerRequest.current?.abort();
+    const controller = new AbortController();
+    answerRequest.current = controller;
     setQuestion(next);
-    setDraft("");
+    setAnswer(null); setAnswerError(false);
+    if (next === "unsupported") {
+      setAnswerPending(false);
+      setAnswer({language, text:t("This demo can explain your business summary and current items needing review. Choose a question below.", "当前演示可以查看经营总结和待处理事项，请选择下方问题。")});
+      return;
+    }
+    setAnswerPending(true);
+    try {
+      if (next === "week") {
+        const response = await fetch(`/api/local/analysis-summary?days=7&language=${language}`, {signal: controller.signal});
+        if (!response.ok) throw new Error();
+        const data = await response.json() as {paragraphs:string[]};
+        if (!controller.signal.aborted) setAnswer({language,text:data.paragraphs.join("\n\n")});
+      } else {
+        const response = await fetch("/api/local/conversations", {signal: controller.signal});
+        if (!response.ok) throw new Error();
+        const data = await response.json() as {items:{messages:{sender:string}[]}[]};
+        const guestItems = data.items.filter(item => !item.messages.some(message => message.sender === "owner")).length;
+        if (!controller.signal.aborted) setAnswer({language,text:t(
+          `${pending.length} booking items and ${guestItems} guest conversations need review. Open Work to check them. Saved demo replies stay on this computer; nothing is sent automatically.`,
+          `有 ${pending.length} 项订单事务和 ${guestItems} 条客人会话等待处理，可以到工作页逐项查看。演示回复保存在本机，不会自动发送。`)});
+      }
+    } catch { if (!controller.signal.aborted) setAnswerError(true); }
+    finally { if (!controller.signal.aborted) setAnswerPending(false); }
   };
 
   const submitQuestion = () => {
     if (!draft.trim()) return;
-    const value = /week|周|occup|入住/i.test(draft) ? "week" : "attention";
-    ask(value);
+    const value = /week|occupancy|business|booking|这周|经营|入住率|预订情况/i.test(draft) ? "week" : /attention|review|pending|todo|待办|处理|待审核/i.test(draft) ? "attention" : "unsupported";
+    void ask(value);
   };
 
   return (
@@ -69,26 +101,24 @@ export function HomeClient() {
           <section className="native-assistant" aria-label={t("Demo assistant", "演示助手")}>
             <div className="native-assistant-heading">
               <h1>{t("✦ What can I help with?", "✦ 我能帮你什么？")}</h1>
-              <button type="button" className="native-close" aria-label={t("Close assistant", "关闭助手")} onClick={() => { setAssistantOpen(false); setQuestion(null); }}><X size={20} /></button>
+              <button type="button" className="native-close" aria-label={t("Close assistant", "关闭助手")} onClick={() => { answerRequest.current?.abort(); setAnswerPending(false); setAssistantOpen(false); setQuestion(null); }}><X size={20} /></button>
             </div>
             <p className="native-muted">{t("Demo assistant · Uses sample data", "演示助手 · 使用示例数据")}</p>
             <label className="native-input-label" htmlFor="native-question">{t("Ask about your homestay", "问问你的民宿")}</label>
             <div className="native-input-row">
               <input id="native-question" value={draft} onChange={(event) => setDraft(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") submitQuestion(); }} placeholder={t("Ask about your homestay...", "问问你的民宿……")} />
-              <button type="button" onClick={submitQuestion} aria-label={t("Ask question", "提交问题")}><ArrowRight size={20} /></button>
+              <button type="button" disabled={answerPending || !draft.trim()} onClick={submitQuestion} aria-label={t("Ask question", "提交问题")}><ArrowRight size={20} /></button>
             </div>
             {question && (
               <div className="native-answer" role="status">
-                <small>{question === "week" ? t("How is this week going?", "这周经营怎么样？") : t("What needs my attention?", "哪些事情需要我处理？")}</small>
-                <p>{question === "week"
-                  ? t("This week's sample occupancy is 70%. Weekdays are quieter than weekends, so a midweek stay offer may be worth reviewing.", "本周示例入住率为 70%。工作日比周末安静，可以考虑审核一份工作日住宿推广草稿。")
-                  : t(pending.length + " items need your review. Nothing is sent or published automatically.", "有 " + pending.length + " 项等待你审核。系统不会自动发送或发布。")}</p>
-                <Link href={question === "week" ? "/native-analysis" : "/native-work"}>{question === "week" ? t("Open Analysis", "打开分析") : t("Open Work", "打开工作")} <ArrowRight size={16} /></Link>
+                <small>{question === "week" ? t("How is this week going?", "这周经营怎么样？") : question === "attention" ? t("What needs my attention?", "哪些事情需要我处理？") : t("Your question", "你的问题")}</small>
+                {answerPending ? <p>{t("Reading your current sample information…", "正在读取当前示例信息…")}</p> : answerError ? <p role="alert">{t("The service is unavailable. Select the question again to retry.", "服务暂不可用，请再次选择问题重试。")}</p> : answer?.language === language ? answer.text.split("\n\n").map((text,index) => <p key={index}>{text}</p>) : <p>{t("Choose a question below to continue.", "请选择下方问题继续。")}</p>}
+                {question !== "unsupported" && <Link href={question === "week" ? "/native-analysis" : "/native-work"}>{question === "week" ? t("Open Analysis", "打开分析") : t("Open Work", "打开工作")} <ArrowRight size={16} /></Link>}
               </div>
             )}
             <div className="native-suggestions">
-              <button type="button" onClick={() => ask("week")}>{t("How is this week going?", "这周经营怎么样？")}</button>
-              <button type="button" onClick={() => ask("attention")}>{t("What needs my attention?", "哪些事情需要我处理？")}</button>
+              <button type="button" onClick={() => void ask("week")}>{t("How is this week going?", "这周经营怎么样？")}</button>
+              <button type="button" onClick={() => void ask("attention")}>{t("What needs my attention?", "哪些事情需要我处理？")}</button>
             </div>
           </section>
         ) : (
