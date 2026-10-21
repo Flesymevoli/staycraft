@@ -53,13 +53,21 @@ class FactStore:
         self.path.parent.mkdir(parents=True, exist_ok=True)
         connection = sqlite3.connect(self.path)
         version = connection.execute("PRAGMA user_version").fetchone()[0]
-        if version not in (0, 1):
+        if version not in (0, 1, 2):
             connection.close()
             raise RuntimeError("Unsupported local database version; restore matching code or migrate explicitly")
         if version == 0:
             with connection:
                 connection.execute("CREATE TABLE IF NOT EXISTS facts (key TEXT PRIMARY KEY, value TEXT NOT NULL, updated_at TEXT NOT NULL)")
                 connection.execute("PRAGMA user_version = 1")
+        if version < 2:
+            with connection:
+                connection.execute("""CREATE TABLE IF NOT EXISTS reply_runs (
+                    id TEXT PRIMARY KEY, created_at TEXT NOT NULL,
+                    question TEXT NOT NULL, language TEXT NOT NULL,
+                    result_json TEXT NOT NULL
+                )""")
+                connection.execute("PRAGMA user_version = 2")
         return connection
 
     def read(self) -> list[PropertyFact]:
@@ -79,6 +87,29 @@ class FactStore:
                     (k, v, datetime.now(timezone.utc).isoformat())
                     for k, v in values.model_dump().items() if v
                 ])
+        finally:
+            connection.close()
+
+    def record_reply(self, question: str, language: str, result):
+        from uuid import uuid4
+        connection = self.connect()
+        try:
+            with connection:
+                connection.execute("INSERT INTO reply_runs VALUES (?,?,?,?,?)", (
+                    str(uuid4()), datetime.now(timezone.utc).isoformat(), question,
+                    language, result.model_dump_json(),
+                ))
+        finally:
+            connection.close()
+
+    def reply_history(self, limit: int = 50):
+        import json
+        connection = self.connect()
+        try:
+            return [{"id": row[0], "created_at": row[1], "question": row[2],
+                     "language": row[3], "result": json.loads(row[4])}
+                    for row in connection.execute(
+                        "SELECT id,created_at,question,language,result_json FROM reply_runs ORDER BY created_at DESC,id DESC LIMIT ?", (limit,))]
         finally:
             connection.close()
 
@@ -105,4 +136,11 @@ def save_facts(values: SavedFacts, store: FactStore = Depends(local_store)):
 
 @router.post("/reply-decision")
 async def local_reply(question: LocalQuestion, store: FactStore = Depends(local_store)):
-    return await generate_reply(ReplyDecisionRequest(**question.model_dump(), facts=store.read()))
+    result = await generate_reply(ReplyDecisionRequest(**question.model_dump(), facts=store.read()))
+    store.record_reply(question.question, question.language, result)
+    return result
+
+
+@router.get("/reply-history")
+def reply_history(store: FactStore = Depends(local_store)):
+    return {"items": store.reply_history()}

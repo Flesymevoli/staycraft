@@ -10,17 +10,38 @@ from unittest.mock import patch
 import httpx
 from app.main import app
 from app.local_facts import FactStore, SavedFacts
+from app.contracts import ReplyDecisionRequest
+from app.reply_service import decide_reply
 
 class LocalFactTests(unittest.TestCase):
+    def test_schema_upgrade_preserves_old_facts_and_history_survives_fact_changes(self):
+        with tempfile.TemporaryDirectory() as folder:
+            path = Path(folder) / 'facts.sqlite3'
+            with closing(sqlite3.connect(path)) as db:
+                db.execute('CREATE TABLE facts (key TEXT PRIMARY KEY, value TEXT NOT NULL, updated_at TEXT NOT NULL)')
+                db.execute("INSERT INTO facts VALUES ('breakfast','08:00–09:00','2026-10-21T00:00:00+00:00')")
+                db.execute('PRAGMA user_version=1')
+                db.commit()
+            store=FactStore(path)
+            facts=store.read()
+            self.assertEqual(facts[0].value,'08:00–09:00')
+            result=decide_reply(ReplyDecisionRequest(question='When is breakfast?',facts=facts))
+            store.record_reply('When is breakfast?','en',result)
+            store.save(SavedFacts(breakfast='09:00–10:00'))
+            history=FactStore(path).reply_history()
+            self.assertEqual(history[0]['result']['citations'][0]['value'],'08:00–09:00')
+            self.assertFalse(history[0]['result']['sent'])
+            self.assertEqual(len(FactStore(path).reply_history()),1)
+
     def test_newer_schema_is_not_downgraded(self):
         with tempfile.TemporaryDirectory() as folder:
             path = Path(folder) / 'facts.sqlite3'
             with closing(sqlite3.connect(path)) as db:
-                db.execute('PRAGMA user_version = 2')
+                db.execute('PRAGMA user_version = 3')
             with self.assertRaises(RuntimeError):
                 FactStore(path).read()
             with closing(sqlite3.connect(path)) as db:
-                self.assertEqual(db.execute('PRAGMA user_version').fetchone()[0], 2)
+                self.assertEqual(db.execute('PRAGMA user_version').fetchone()[0], 3)
 
     def test_persist_update_and_clear(self):
         with tempfile.TemporaryDirectory() as folder:
@@ -54,6 +75,10 @@ class LocalFactTests(unittest.TestCase):
                     result = (await client.post('/v1/local/reply-decision', json=question)).json()
                     self.assertEqual(result['citations'][0]['value'], '08:00–10:30')
                     self.assertFalse(result['sent'])
+                    history=(await client.get('/v1/local/reply-history')).json()['items']
+                    self.assertEqual(len(history),2)
+                    self.assertIn('id',history[0])
+                    self.assertEqual(history[0]['result']['reason_code'],'ready')
                     forged = await client.post('/v1/local/reply-decision', json={**question, 'facts': []})
                     self.assertEqual(forged.status_code, 422)
                     invalid = await client.put('/v1/local/facts', json={'breakfast': '26:00–27:00'})
