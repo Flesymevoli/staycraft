@@ -1,6 +1,6 @@
-# Backend (first development slice)
+# Backend
 
-This FastAPI service decides whether a new guest question can use a **confirmed** property fact. It returns a draft and its citation, or a review reason. `auto_reply_ready` means eligible for a future send flow; `sent` is always `false`. The current rules are a conservative baseline, not model-generated AI, and no channel or database is connected yet.
+This FastAPI service decides whether a new guest question can use a **confirmed** property fact. It returns a draft and its citation, or a review reason. `auto_reply_ready` means eligible for a future send flow; `sent` is always `false`. The standalone rules endpoint remains a conservative baseline. The localhost-only application endpoints now load confirmed facts from SQLite and optionally call a configured model; saved owner replies are local demonstrations, never channel sends.
 
 From the repository root, install `backend/requirements.txt`, then run `uvicorn app.main:app --app-dir backend --reload`. The API is available at `POST /v1/reply-decisions` and `GET /health`.
 
