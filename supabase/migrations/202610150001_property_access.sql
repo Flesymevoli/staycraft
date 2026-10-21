@@ -1,4 +1,5 @@
--- Single-property MVP access boundary. Apply only after a Supabase project exists.
+-- Single-property MVP access boundary. Apply once to the new Supabase project.
+begin;
 create table public.properties (
   id uuid primary key default gen_random_uuid(),
   name text not null check (length(trim(name)) between 1 and 120),
@@ -18,6 +19,11 @@ create index property_memberships_user_id_idx on public.property_memberships(use
 alter table public.properties enable row level security;
 alter table public.property_memberships enable row level security;
 
+-- RLS does not grant table access. Be explicit across old/new project defaults.
+revoke all on public.properties, public.property_memberships from public, anon, authenticated;
+grant usage on schema public to authenticated;
+grant select on public.properties, public.property_memberships to authenticated;
+
 -- Membership records are provisioned by the project administrator. Clients cannot
 -- create a property or grant themselves access via the public API.
 create policy "members can read their own membership"
@@ -30,3 +36,5 @@ create policy "members can read their property"
     select 1 from public.property_memberships m
     where m.property_id = properties.id and m.user_id = (select auth.uid())
   ));
+
+commit;

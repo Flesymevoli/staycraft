@@ -77,6 +77,26 @@ class AccessTests(unittest.TestCase):
         response = asyncio.run(request_access())
         self.assertEqual(response.status_code, 503)
 
+    def test_missing_cloud_schema_is_unavailable_not_authorized(self):
+        gateway, calls = gateway_for(membership_status=404)
+        app.dependency_overrides[get_gateway] = lambda: gateway
+        response = asyncio.run(request_access())
+        self.assertEqual(response.status_code, 503)
+        self.assertEqual(len(calls), 2)
+
+    def test_unrecognized_role_cannot_gain_property_access(self):
+        gateway, _ = gateway_for(rows=[{"property_id": PROPERTY_ID, "role": "admin"}])
+        app.dependency_overrides[get_gateway] = lambda: gateway
+        response = asyncio.run(request_access())
+        self.assertEqual(response.status_code, 503)
+
+    def test_expired_session_is_rejected_before_membership_lookup(self):
+        gateway, calls = gateway_for(identity_status=403)
+        app.dependency_overrides[get_gateway] = lambda: gateway
+        response = asyncio.run(request_access(token="expired-token"))
+        self.assertEqual(response.status_code, 401)
+        self.assertEqual(len(calls), 1)
+
     def test_access_never_trusts_a_mismatched_record(self):
         gateway, _ = gateway_for(rows=[{"property_id": str(UUID(USER_ID)), "role": "owner"}])
         app.dependency_overrides[get_gateway] = lambda: gateway
