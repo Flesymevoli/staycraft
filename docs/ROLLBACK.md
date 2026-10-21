@@ -66,3 +66,5 @@ v6→v7追加history-/future-虚构订单，保留原订单、房态、已保存
 回滚先停服务并备份当前v8，然后revert本模块；旧v7代码须使用上述v7备份的副本。恢复旧备份不包含之后的方案记录，保留v8备份用于恢复；不能用重置演示或手改user_version删除方案冒充回滚。原演示重置仅影响会话控件。复测Mine事实、客房状态、Home待办和Work保存记录。
 
 日程适配不改变schema v8、不写订单，可独立revert日程提交，保留v8数据层。63项后端测试、lint/build及qa-home-schedule/qa-home-assistant-data在独立schedule-qa-20261021.sqlite3通过；涵盖日期、未知时间、规则时间标签、加载/空/错误恢复、中英文与320–430px。不能用日程回滚替换或删除方案记录。
+
+Work经营洞察口径修正仅改原组件，schema仍v8；qa-work-booking-insight及日程/经营指标/首页助手浏览器回归通过。回滚此提交不需恢复数据库，但会恢复旧独立样本正文，应避免将其展示为同源经营结论。

@@ -134,3 +134,5 @@ v7→v8增加operation_requests（请求、关联订单、虚构付款/规则样
 ### 原首页日程适配
 
 GET /v1/local/schedule读取同一订单表，在单一读事务中返回2026-09-14至30日的入住/离店事件，排除cancelled。事件携带订单ID、房号、类型和日期，confirmed未来入住的time可取确认事实，其余time=null，time_basis标注standard_policy或not_recorded。HomeSchedule沿用原日期条/展开样式；回环模式失败不回退假日程，只有404公开原型使用历史样本。不增加schema，不写订单，订单方案记录不会删除日程。
+
+Work原经营洞察复用useOperationMetrics(7)与相同接口，按真实weekday标记汇总房间夜，再组织规则解释。准备/审核入口仅改变原会话内analysisReady/confirmed状态，不创建后台AI任务。只在数据读取中显示进度条；失败/缺客房禁止准备和审核，正文与语言改变时同步，不使用旧缓存文本冒充本次结果。无schema变化。

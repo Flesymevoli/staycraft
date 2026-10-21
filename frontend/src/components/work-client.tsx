@@ -8,6 +8,7 @@ import { useDemoStorage } from "./demo-storage";
 import { WorkInbox } from "./work-inbox";
 import { WorkOperationDemo } from "./work-operation-demo";
 import { useLocalOperations } from "./local-operations";
+import { useOperationMetrics } from "./operation-metrics";
 import "./native-home.css";
 import "./native-work.css";
 
@@ -45,14 +46,14 @@ const tasks: Record<TaskId, {
   analysis: {
     type: ["ANALYSIS", "经营分析"],
     title: ["Weekday occupancy insight", "工作日入住率洞察"],
-    meta: ["Sample booking records · This week", "示例预订记录 · 本周"],
+    meta: ["Sample booking records · Last 7 days", "示例预订记录 · 近 7 天"],
     note: ["Your insight is ready to review.", "分析已准备好，等待查看。"],
     action: ["Review insight", "查看分析"],
     draft: [
-      "Weekday occupancy averages 64%, compared with 85% at the weekend. Consider a midweek stay offer; review your costs before deciding on any discount.",
-      "工作日平均入住率为 64%，周末为 85%。可考虑工作日住宿推广；决定折扣前请先核对成本。",
+      "Reservation data has not loaded. Retry before reviewing this insight.",
+      "订单数据尚未读取，请重试后查看洞察。",
     ],
-    source: ["Sample: 32 / 50 weekday room nights and 17 / 20 weekend room nights. This is not a market forecast.", "示例：工作日 32 / 50 间夜，周末 17 / 20 间夜。不代表市场预测。"],
+    source: ["No calculation available yet.", "暂未获得计算结果。"],
   },
 };
 
@@ -97,9 +98,21 @@ export function WorkClient({ initialTask = null }: { initialTask?: TaskId | null
   const [notice, setNotice] = useState("");
   const [activityOpen, setActivityOpen] = useState<number | null>(null);
   const operations = useLocalOperations();
+  const booking = useOperationMetrics(7);
   const zh = language === "zh";
   const t = (en: string, cn: string) => (zh ? cn : en);
   const tx = (value: readonly [string, string]) => value[zh ? 1 : 0];
+  const insightReady = booking.status === "ready" && !!booking.data?.capacity_room_nights;
+  const metrics = booking.data;
+  const weekdays = metrics?.daily.filter(d => !d.weekend) ?? [];
+  const weekends = metrics?.daily.filter(d => d.weekend) ?? [];
+  const nights = (items: typeof weekdays) => `${items.reduce((sum,d) => sum+d.occupied_nights,0)} / ${items.reduce((sum,d) => sum+d.capacity_nights,0)}`;
+  const weekdayOpportunity = metrics?.weekday_pct !== null && metrics?.weekend_pct !== null && metrics && metrics.weekday_pct! < metrics.weekend_pct!;
+  const insightTask = insightReady && metrics ? { ...tasks.analysis,
+    draft: [`Weekday occupancy averages ${metrics.weekday_pct}%, compared with ${metrics.weekend_pct}% at the weekend. ${weekdayOpportunity ? "Review a weekday promotion; check costs before any discount." : "Review daily availability before choosing a promotion."}`,
+      `工作日平均入住率为 ${metrics.weekday_pct}%，周末为 ${metrics.weekend_pct}%。${weekdayOpportunity ? "可以评估工作日推广，决定折扣前先核对成本。" : "先查看每日空房情况，再选择推广时段。"}`] as [string,string],
+    source: [`${metrics.period_start} – ${metrics.period_end} · Sample reservations: weekdays ${nights(weekdays)} room nights; weekends ${nights(weekends)}. Rules-based insight, not a market forecast.`,
+      `${metrics.period_start} – ${metrics.period_end} · 示例订单：工作日 ${nights(weekdays)} 间夜；周末 ${nights(weekends)} 间夜。规则解读，不代表市场预测。`] as [string,string] } : tasks.analysis;
   const candidates: TaskId[] = analysisReady ? ["analysis"] : [];
   const pending = candidates.filter(id => !confirmed.includes(id));
 
@@ -146,36 +159,38 @@ export function WorkClient({ initialTask = null }: { initialTask?: TaskId | null
           setNotice(t("Demo plan saved. No external action was performed.", "演示方案已保存，未执行外部操作。"));
         }} />)}
         {pending.length ? pending.map((id) => {
-          const task = tasks[id];
+          const task = id === "analysis" ? insightTask : tasks[id];
           const open = expanded === id;
           return <article className="native-card work-task-card" key={id}>
             <span className="work-task-type">{id === "reply" ? <ClipboardList size={15} /> : id === "analysis" ? <ChartNoAxesCombined size={15} /> : <Sparkles size={15} />}{tx(task.type)}</span>
             <h3>{tx(task.title)}</h3>
             <p className="work-meta">{tx(task.meta)}</p>
             <p className="work-note">{tx(task.note)}</p>
-            <button className="native-primary work-review" type="button" aria-expanded={open} aria-controls={"work-draft-" + id} onClick={() => {
+            {id === "analysis" && !insightReady && <p role={booking.status === "error" ? "alert" : "status"}>{booking.status === "loading" ? t("Reading reservation data…", "正在读取订单数据…") : t("Reservation data is unavailable. Retry in Booking insight below.", "订单数据暂不可用，请在下方经营洞察中重试。")}</p>}
+            <button className="native-primary work-review" disabled={id === "analysis" && !insightReady} type="button" aria-expanded={open} aria-controls={"work-draft-" + id} onClick={() => {
               setExpanded(open ? null : id);
-              if (drafts[id] === undefined) setDrafts(current => ({ ...current, [id]: tx(task.draft) }));
+              if (id !== "analysis" && drafts[id] === undefined) setDrafts(current => ({ ...current, [id]: tx(task.draft) }));
               setNotice("");
             }}>{tx(task.action)} <ArrowRight size={15} /></button>
             {open && <div className="work-draft" id={"work-draft-" + id}>
-              <label htmlFor={"work-text-" + id}>{t("AI draft · Sample", "AI 草稿 · 示例")}</label>
-              <textarea id={"work-text-" + id} rows={5} value={drafts[id] ?? tx(task.draft)} readOnly={id === "analysis"} onChange={event => setDrafts(current => ({ ...current, [id]: event.target.value }))} />
+              <label htmlFor={"work-text-" + id}>{id === "analysis" ? t("Booking insight · Sample", "经营洞察 · 示例") : t("AI draft · Sample", "AI 草稿 · 示例")}</label>
+              <textarea id={"work-text-" + id} rows={5} value={id === "analysis" ? tx(task.draft) : drafts[id] ?? tx(task.draft)} readOnly={id === "analysis"} onChange={event => setDrafts(current => ({ ...current, [id]: event.target.value }))} />
               <p>{tx(task.source)}</p>
-              <button className="native-primary" type="button" onClick={() => confirm(id)}>{id === "analysis" ? t("Mark as reviewed", "标记为已查看") : t("Confirm & save", "确认并保存")} <ArrowRight size={15} /></button>
+              <button className="native-primary" disabled={id === "analysis" && !insightReady} type="button" onClick={() => confirm(id)}>{id === "analysis" ? t("Mark as reviewed", "标记为已查看") : t("Confirm & save", "确认并保存")} <ArrowRight size={15} /></button>
               <small>{t("Demo only. Nothing is sent or published.", "仅供演示，不会发送或发布内容。")}</small>
             </div>}
           </article>;
         }) : operations.status === "ready" && !operations.pending.length && <div className="work-all-clear">{t("All caught up. The next decision will appear here.", "都处理好了，新的确认事项会出现在这里。")}</div>}
       </section>
       <section className="work-working">
-        <div className="work-section-head"><h2>{t("Working", "正在处理")}</h2><span className="work-dots" aria-hidden="true">···</span></div>
-        {analysisReady ? <p className="native-muted">{t("Nothing running right now. The latest insight is ready.", "当前没有处理中任务，最新分析已准备好。")}</p> :
-          <>
-            <div className="work-working-row"><ChartNoAxesCombined size={22} /><div><h3>{t("Analysing this week's bookings", "正在分析本周预订")}</h3><p>{t("Looking for changes in weekday occupancy.", "正在寻找工作日入住率的变化。")}</p></div></div>
-            <div className="work-progress" role="progressbar" aria-label={t("Analysing bookings", "正在分析预订")} aria-valuetext={t("Analysis in progress", "分析正在进行中")}><span /></div>
-            <button className="work-text-action" type="button" onClick={() => { setAnalysisReady(true); setNotice(t("Analysis is ready for your review.", "分析已完成，等待你查看。")); }}>{t("Demo: finish analysis", "演示：完成分析")} <ArrowRight size={15} /></button>
-          </>}
+        <div className="work-section-head"><h2>{t("Booking insight", "经营洞察")}</h2></div>
+        {booking.status === "loading" ? <>
+          <p role="status">{t("Reading reservation data…", "正在读取订单数据…")}</p>
+          <div className="work-progress" role="progressbar" aria-label={t("Reading bookings", "读取订单")}><span /></div>
+        </> : booking.status === "error" ? <p role="alert">{t("Could not load booking data.", "订单数据读取失败。 ")}<button type="button" className="work-text-action" onClick={booking.retry}>{t("Retry", "重试")}</button></p> : !insightReady ? <p>{t("No room inventory available.", "暂无客房资料，暂不能准备洞察。")}</p> : analysisReady ? <p className="native-muted">{t("Nothing running right now. The latest insight is ready.", "当前没有处理中任务，最新洞察已准备好。")}</p> : <>
+          <div className="work-working-row"><ChartNoAxesCombined size={22}/><div><h3>{t("Booking data is ready", "订单数据已准备好")}</h3><p>{t("Review the same recent bookings used in Analysis.", "依据分析页同一批近期订单，查看经营洞察。")}</p></div></div>
+          <button className="work-text-action" type="button" onClick={() => { setAnalysisReady(true); setNotice(t("Booking insight is ready for review.", "经营洞察已准备好，等待查看。")); }}>{t("Prepare insight", "准备洞察")} <ArrowRight size={15}/></button>
+        </>}
       </section>
       <section className="work-done">
         <div className="work-section-head"><h2>{t("Done", "已完成")}</h2><span>{t("AI work & your decisions", "AI 工作与确认记录")}</span></div>
