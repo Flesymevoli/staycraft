@@ -176,6 +176,6 @@ room-preview-store使用按已验证userId隔离的sessionStorage键staycraft-ro
 HomeSchedulePreview独立负责日期与常驻日程空态，RoomPreviewBoard只负责工作台客房展示。/app/rooms/new及/app/rooms/[roomId]使用work导航上下文。房型设置返回工作台。账户隔离的sessionStorage预览结构与原API均未变动，无后端或数据库变更。
 
 
-### 分步添加与清洁状态（2026-10-22）
+### 同页添加客房与复用房型（2026-10-22）
 
-RoomForm首次无房型时仅验证并保存房型，成功后展开客房表单；创建客房仍复用原校验与独立保存。仅已有room显示housekeeping与active编辑控件。存储结构、API、后端均不变。
+RoomForm将新房型、房间与按房型ID保存的本机图片通过单次save写入原sessionStorage文档，验证失败或保存失败不产生独立房型记录。已有房型通过typeId引用共用图片和价格。无数据结构、API或后端变更；localPhoto复用原缩放及大小约束。
