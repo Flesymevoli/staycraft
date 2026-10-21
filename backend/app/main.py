@@ -14,8 +14,14 @@ from .contracts import (
 )
 from .operation_service import advise_operation
 from .reply_service import decide_reply
+from .local_facts import router as local_router
 
 app = FastAPI(title="Homestay AI Assistant API", version="0.1.0")
+
+app.include_router(local_router)
+
+from .local_facts import router as local_router
+app.include_router(local_router)
 
 
 @app.get("/health")

@@ -7,11 +7,11 @@
 
 - **前端：** Next.js App Router + React + TypeScript + Tailwind CSS。仓库目前使用 Next.js 16.3.6、React 19.2.8、Tailwind 4；页面视觉主要由 `native-*.css` 实现，Tailwind 已安装但不是现有组件的主要样式写法。需要复杂表单、弹窗等组件时可有选择地引入 shadcn/ui，须遵循 [DESIGN.md](DESIGN.md) 令牌，不整站替换现有视觉。
 - **后端：** Python + FastAPI + Pydantic。已建立咨询判断接口、保守规则，以及 Supabase 令牌与民宿成员资格核验接口；尚未接入真实项目、数据库数据、模型或消息渠道。前后端放在同一个仓库，分别在 `frontend/` 与 `backend/`，便于接口和文档同步，但独立构建、部署。
-- **数据库与登录：** 选用 Supabase 托管的单个 PostgreSQL 数据库及 Supabase Auth。MVP 不引入 Redis、第二套数据库或复杂任务队列；持久数据在数据库，短期 UI 状态留在前端。数据库变更用版本化迁移管理，开发环境与正式环境隔离。Supabase 是数据与认证服务，**不是 FastAPI 的运行环境**。
+- **数据库与登录：** 选用 Supabase 托管的单个 PostgreSQL 数据库及 Supabase Auth。正式 MVP 不引入 Redis、第二套数据库或复杂任务队列；等待云端配置期间允许独立的 SQLite 单机开发适配器；持久数据在数据库，短期 UI 状态留在前端。数据库变更用版本化迁移管理，开发环境与正式环境隔离。Supabase 是数据与认证服务，**不是 FastAPI 的运行环境**。
 - **部署目标：** 前端 Vercel、FastAPI Render Web Service、数据/认证 Supabase。此处是后续上线方案，不代表现在已经部署；发布前再核对地区、费用、环境变量和服务可用性。Softr 课程演示保持独立，不作为这套代码的运行时。
 - **AI：** 第一阶段直接通过服务端模型 SDK 和可替换的 provider 接口调用，不引入 LangChain；具体模型按回复质量、延迟、成本和数据处理要求测试后配置。模型密钥只在后端环境变量中。
 - **当前运行形式：** `frontend/` 五页本地交互原型，加独立的 `/login` 与受保护 `/app` 占位入口。`src/app` 负责路由，`src/components` 放页面客户端组件和样式，`public` 放字体、图标和示例图片。`/legacy` 是归档单文件的对照预览，不是新功能入口。
-- **当前数据：** 五页原型仍使用固定示例与 `sessionStorage` 会话状态；`useDemoStorage` 管理部分语言、资料、决策和草稿。已有认证代码和第一条后端接口，但没有已配置的真实账号、民宿数据、模型、支付、预订或 OTA 接口。
+- **当前数据：** 五页原型主要使用固定示例与 `sessionStorage` 会话状态；Mine 回复依据与 Work 新咨询已使用独立 SQLite 本机资料；`useDemoStorage` 管理部分语言、资料、决策和草稿。已有认证代码和第一条后端接口，但没有已配置的真实账号、民宿数据、模型、支付、预订或 OTA 接口。
 
 ## 2. 当前目录与目标边界
 
@@ -84,3 +84,11 @@
 - Supabase 提供 PostgreSQL 与认证；其 Edge Functions 使用 TypeScript/Deno，因此不能把 Python FastAPI 直接当作 Supabase Edge Function 部署：[数据库连接](https://supabase.com/docs/guides/database/connecting-to-postgres)、[认证](https://supabase.com/docs/guides/auth)、[Edge Functions](https://supabase.com/docs/guides/functions)。
 - Vercel 支持 Next.js 部署，Render 提供 FastAPI Web Service 部署指南：[Vercel 文档](https://vercel.com/docs/frameworks/full-stack/nextjs)、[Render 文档](https://render.com/docs/deploy-fastapi)。
 - shadcn/ui 官方支持 Tailwind 4 与 React 19；只在需要时采用其可复用组件：[shadcn/ui 文档](https://ui.shadcn.com/docs/tailwind-v4)。
+
+## 本地资料串联（2026-10-20）
+
+正式账号与数据库仍待 Supabase 配置。为独立验证 Mine → Work，本地模式使用 Python 标准库 SQLite，仅保存早餐时段与常规入住时间。两个服务都须显式设置 `HOMESTAY_LOCAL_DATA=1`，并只监听 127.0.0.1；不要在共享/托管部署开启。Next 校验 localhost 主机及写入来源；FastAPI 只接受回环客户端。本模式不是正式鉴权的替代品。
+
+资料默认为空，不自动种入示例。Mine「回复依据」确认保存后写入 `backend/data/local.sqlite3`（Git 忽略）；留空保存删除该依据。服务端校验时间格式、早餐起止顺序，并在事务中更新。Work 新咨询由服务端读取这些已确认资料，不接受浏览器注入事实；缺失资料转人工。其他 Mine 字段、历史消息和例外事务仍为示例。尚未接模型或实际发送。
+
+API：GET/PUT `/v1/local/facts`；POST `/v1/local/reply-decision`。SQLite schema v1：facts(key PK, value, updated_at)，创建仅在首次使用时执行；后续结构变更须增量迁移，不覆盖现有资料。正式多用户链仍走 Supabase Auth/RLS，待第 3 项完成。

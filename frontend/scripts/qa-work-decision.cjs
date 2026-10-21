@@ -3,6 +3,15 @@ const { chromium } = require('C:/Users/86299/.cache/codex-runtimes/codex-primary
 (async () => {
   const browser = await chromium.launch({ headless: true });
   const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
+  let previous;
+  try {
+  if (process.env.EXPECT_BACKEND_OFF !== '1') {
+    const response = await page.request.get('http://127.0.0.1:3100/api/local/facts');
+    if (!response.ok()) throw Error('Enable local data on both servers');
+    previous = Object.fromEntries((await response.json()).facts.map(f => [f.key, f.value]));
+    const saved = await page.request.put('http://127.0.0.1:3100/api/local/facts', {data: {breakfast:'07:30–10:00',checkin:'14:00'}});
+    if (!saved.ok()) throw Error('Could not prepare test facts');
+  }
   await page.goto('http://127.0.0.1:3100/native-work', { waitUntil: 'networkidle' });
   const question = page.locator('#work-demo-question');
   const button = page.getByRole('button', { name: 'Check reply' });
@@ -13,7 +22,6 @@ const { chromium } = require('C:/Users/86299/.cache/codex-runtimes/codex-primary
     await button.click();
     await page.locator('.work-try-error').getByText('The local decision service is unavailable.').waitFor();
     if (await page.locator('.work-try-result').count()) throw Error('Stale result shown after failure');
-    await browser.close();
     console.log('Work rule demo: backend failure and retry guidance passed');
     return;
   }
@@ -38,6 +46,9 @@ const { chromium } = require('C:/Users/86299/.cache/codex-runtimes/codex-primary
     await page.setViewportSize({ width, height: 844 });
     if (await page.evaluate(() => document.documentElement.scrollWidth > innerWidth)) throw Error(`Horizontal overflow at ${width}px`);
   }
-  await browser.close();
   console.log('Work rule demo: grounded draft, disabled automation, refund handoff, unsent status and mobile widths passed');
+  } finally {
+    if (previous) await page.request.put('http://127.0.0.1:3100/api/local/facts', {data:previous});
+    await browser.close();
+  }
 })().catch(error => { console.error(error); process.exitCode = 1; });

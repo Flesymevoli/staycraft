@@ -15,7 +15,7 @@ type Decision = {
 const reasons: Record<Decision["reason_code"], [string, string]> = {
   ready: ["Fact found. Draft is ready for review.", "已找到依据，可查看回复草稿。"],
   auto_reply_off: ["Automatic replies are paused. Review the draft yourself.", "自动回复已暂停，请你审核草稿。"],
-  missing_fact: ["No confirmed sample fact can answer this question.", "示例资料中没有足够的已确认依据。"],
+  missing_fact: ["No confirmed fact can answer this question. Add it in Mine first.", "没有足够的已确认依据，请先到「我的」补充资料。"],
   needs_confirmation: ["This needs an availability or arrangement check.", "需要先核实可用情况或具体安排。"],
   sensitive_request: ["Refunds and cancellations need your decision.", "退款与取消需由你决定。"],
   unsupported_question: ["This question needs a person to review it.", "这个问题需要人工查看。"],
@@ -36,7 +36,7 @@ export function WorkDecisionDemo({ language, autoReply }: { language: Language; 
     setError(false);
     setDecision(null);
     try {
-      const response = await fetch("/api/demo/reply-decision", {
+      const response = await fetch("/api/local/reply-decision", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ question: question.trim(), language, auto_reply_enabled: autoReply }),
@@ -53,7 +53,8 @@ export function WorkDecisionDemo({ language, autoReply }: { language: Language; 
   return <section className="work-try-section" aria-labelledby="work-try-heading">
     <div className="work-section-head"><h2 id="work-try-heading">{t("Try a guest question", "试一条客人咨询")}</h2><span>{t("RULE DEMO", "规则演示")}</span></div>
     <div className="native-card work-try-card">
-      <p className="work-try-intro">{t("Uses sample breakfast and check-in facts. No message is sent.", "使用示例早餐和入住资料，不会发送消息。")}</p>
+      <p className="work-try-intro">{t("Uses the reply facts saved in Mine on this computer. No message is sent.", "使用「我的」中已保存到本机的回复依据，不会发送消息。")}</p>
+      <a href="/native-mine">{t("Manage reply facts →", "维护回复依据 →")}</a>
       <form onSubmit={submit}>
         <label htmlFor="work-demo-question">{t("Guest's question", "客人的问题")}</label>
         <textarea id="work-demo-question" rows={2} maxLength={2000} value={question} onChange={event => { setQuestion(event.target.value); setDecision(null); setError(false); }} placeholder={t("What time is breakfast?", "早餐时间是几点？")} />
@@ -65,7 +66,7 @@ export function WorkDecisionDemo({ language, autoReply }: { language: Language; 
         <strong>{decision.disposition === "auto_reply_ready" ? t("Draft available", "已有回复草稿") : t("Needs your review", "需要你处理")}</strong>
         <p>{reasons[decision.reason_code][zh ? 1 : 0]}</p>
         {decision.draft && <blockquote>{decision.draft}</blockquote>}
-        {decision.citations.length > 0 && <small>{t("Based on sample fact: ", "依据示例资料：")}{decision.citations.map(item => item.value).join(" · ")}</small>}
+        {decision.citations.length > 0 && <small>{t("Based on saved fact: ", "依据已保存资料：")}{decision.citations.map(item => item.value).join(" · ")}</small>}
         <small>{t("Rule-based preview · Not AI-generated · Not sent", "规则生成预览 · 非模型生成 · 未发送")}</small>
       </div>}
     </div>
