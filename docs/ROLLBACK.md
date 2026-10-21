@@ -58,3 +58,9 @@ Explore 推广模块验收（2026-10-21）：49 项后端测试、lint/build 通
 v6→v7追加history-/future-虚构订单，保留原订单、房态、已保存回复与草稿；模型缓存包含新指标，旧缓存不冒充本次结果。升级前已通过SQLite backup保存backend/data/backups/before-metrics-v7-20261021.sqlite3（v6）。57项后端测试、lint/build及qa-operation-metrics/qa-analysis-summary/qa-home-assistant-data/qa-room-board四组浏览器回归通过，模型关闭；浏览器写入仅使用独立metrics-qa-20261021.sqlite3。
 
 代码回退先停服务并备份当前v7，再revert对应模块提交；旧v6代码必须使用上述v6备份的工作副本或保留支持v7的数据层，不能强改版本号。恢复旧备份会丢弃升级后的修改，保留当前v7备份。标题布局可独立revert c19e588，不涉及数据库。回滚后验证Home房态、Work既有消息和Analysis原型可读。
+
+## 本机订单方案（schema v8）
+
+升级新增operation_requests/operation_decisions，保留订单、付款样本与外部执行状态分离。升级前已备份v7至backend/data/backups/before-operations-v8-20261021.sqlite3。61项后端测试、lint/build通过；qa-local-operations/qa-home-assistant-data/qa-operation-metrics在独立operations-qa-20261021.sqlite3、关闭模型环境通过，测试不处理主预览待办。
+
+回滚先停服务并备份当前v8，然后revert本模块；旧v7代码须使用上述v7备份的副本。恢复旧备份不包含之后的方案记录，保留v8备份用于恢复；不能用重置演示或手改user_version删除方案冒充回滚。原演示重置仅影响会话控件。复测Mine事实、客房状态、Home待办和Work保存记录。

@@ -6,7 +6,8 @@ import Image from "next/image";
 import { ArrowRight, Check, ClipboardList, ChartNoAxesCombined, RotateCcw, Sparkles } from "lucide-react";
 import { useDemoStorage } from "./demo-storage";
 import { WorkInbox } from "./work-inbox";
-import { WorkOperationDemo, type OperationId } from "./work-operation-demo";
+import { WorkOperationDemo } from "./work-operation-demo";
+import { useLocalOperations } from "./local-operations";
 import "./native-home.css";
 import "./native-work.css";
 
@@ -95,7 +96,7 @@ export function WorkClient({ initialTask = null }: { initialTask?: TaskId | null
   const [drafts, setDrafts] = useState<Partial<Record<TaskId, string>>>({});
   const [notice, setNotice] = useState("");
   const [activityOpen, setActivityOpen] = useState<number | null>(null);
-  const [decisions, setDecisions] = useDemoStorage<Record<string, string>>("operationDecisions", {});
+  const operations = useLocalOperations();
   const zh = language === "zh";
   const t = (en: string, cn: string) => (zh ? cn : en);
   const tx = (value: readonly [string, string]) => value[zh ? 1 : 0];
@@ -117,9 +118,9 @@ export function WorkClient({ initialTask = null }: { initialTask?: TaskId | null
     setAnalysisReady(false);
     setExpanded(null);
     setDrafts({});
-    setNotice(t("Demo controls reset. Saved conversations stay on this computer.", "演示设置已重置，已保存的会话记录仍保留在本机。"));
+    setNotice(t("Demo controls reset. Saved conversations and booking plans stay on this computer.", "演示设置已重置，已保存的会话与订单方案仍保留在本机。"));
     setAutoReply(true);
-    setDecisions({});
+    operations.resetPrototype();
   };
 
   return <div className="native-shell">
@@ -137,9 +138,11 @@ export function WorkClient({ initialTask = null }: { initialTask?: TaskId | null
       </section>
       <WorkInbox language={language} autoReply={autoReply} />
       <section className="work-needs">
-        <div className="work-section-head"><h2>{t("Your decisions", "待你决策")}</h2><span>{String(pending.length + ["arrival", "refund"].filter(id => !decisions[id]).length).padStart(2, "0")}</span></div>
-        {(["arrival", "refund"] as OperationId[]).filter(id => !decisions[id]).map(id => <WorkOperationDemo key={id} id={id} language={language} onDecision={decision => {
-          setDecisions(current => ({ ...current, [id]: decision }));
+        <div className="work-section-head"><h2>{t("Your decisions", "待你决策")}</h2><span>{operations.status === "ready" ? String(pending.length + operations.pending.length).padStart(2, "0") : "—"}</span></div>
+        {operations.status === "loading" && <p role="status">{t("Loading booking requests…", "正在读取订单申请…")}</p>}
+        {operations.status === "error" && <p role="alert">{t("Could not load booking requests.", "订单申请读取失败。 ")}<button type="button" className="work-text-action" onClick={operations.retry}>{t("Retry", "重试")}</button></p>}
+        {operations.pending.map(operation => <WorkOperationDemo key={operation.id} id={operation.id} operation={operation} source={operations.data!.source} language={language} onDecision={(decision, result) => {
+          if (result) operations.update(result); else operations.recordPrototype(operation.id, decision);
           setNotice(t("Demo plan saved. No external action was performed.", "演示方案已保存，未执行外部操作。"));
         }} />)}
         {pending.length ? pending.map((id) => {
@@ -163,7 +166,7 @@ export function WorkClient({ initialTask = null }: { initialTask?: TaskId | null
               <small>{t("Demo only. Nothing is sent or published.", "仅供演示，不会发送或发布内容。")}</small>
             </div>}
           </article>;
-        }) : ["arrival", "refund"].every(id => decisions[id]) && <div className="work-all-clear">{t("All caught up. The next decision will appear here.", "都处理好了，新的确认事项会出现在这里。")}</div>}
+        }) : operations.status === "ready" && !operations.pending.length && <div className="work-all-clear">{t("All caught up. The next decision will appear here.", "都处理好了，新的确认事项会出现在这里。")}</div>}
       </section>
       <section className="work-working">
         <div className="work-section-head"><h2>{t("Working", "正在处理")}</h2><span className="work-dots" aria-hidden="true">···</span></div>
@@ -177,7 +180,7 @@ export function WorkClient({ initialTask = null }: { initialTask?: TaskId | null
       <section className="work-done">
         <div className="work-section-head"><h2>{t("Done", "已完成")}</h2><span>{t("AI work & your decisions", "AI 工作与确认记录")}</span></div>
         <p className="work-day">{t("TODAY", "今天")}</p>
-        {Object.entries(decisions).map(([id, decision]) => <div className="work-activity" key={id}><time>14:45</time><Check size={15} /><div><strong>{id === "arrival" ? t("Check-in plan recorded", "入住方案已记录") : t("Refund plan recorded", "退款方案已记录")}</strong><small>{tx(decisionNames[decision] ?? [decision, decision])}</small><small>{t("Demo decision · No external action", "演示决定 · 未执行外部操作")}</small></div></div>)}
+        {operations.data?.decisions.map(({id, decision, created_at}) => <div className="work-activity" key={id}><time>{created_at ? new Date(created_at).toLocaleTimeString(zh ? "zh-CN" : "en-GB", {hour:"2-digit",minute:"2-digit"}) : "—"}</time><Check size={15} /><div><strong>{id === "arrival" ? t("Check-in plan recorded", "入住方案已记录") : t("Refund plan recorded", "退款方案已记录")}</strong><small>{tx(decisionNames[decision] ?? [decision, decision])}</small><small>{t("Demo decision · No external action", "演示决定 · 未执行外部操作")}</small></div></div>)}
         {[...confirmed.slice().reverse().map(id => ({
           time: "14:45",
           title: [id === "reply" ? "Guest reply confirmed" : id === "promotion" ? "Promotion draft approved" : "Occupancy insight reviewed",

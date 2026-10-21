@@ -72,6 +72,8 @@ class RoomTests(unittest.TestCase):
                 db.execute("INSERT INTO promotion_drafts VALUES ('preserved','Owner draft','today')")
                 db.execute("DROP TABLE demo_reservations")
                 db.execute("DROP TABLE demo_rooms")
+                db.execute("DROP TABLE operation_decisions")
+                db.execute("DROP TABLE operation_requests")
                 db.execute("PRAGMA user_version=5")
                 db.commit()
             with closing(FactStore(path).connect()) as db:

@@ -24,7 +24,7 @@ class LocalFactTests(unittest.TestCase):
             with ThreadPoolExecutor(max_workers=8) as pool:
                 self.assertEqual(list(pool.map(open_database,range(8))),[2]*8)
             with closing(sqlite3.connect(path)) as connection:
-                self.assertEqual(connection.execute('PRAGMA user_version').fetchone()[0],7)
+                self.assertEqual(connection.execute('PRAGMA user_version').fetchone()[0],8)
 
     def test_schema_upgrade_preserves_old_facts_and_history_survives_fact_changes(self):
         with tempfile.TemporaryDirectory() as folder:
@@ -49,11 +49,11 @@ class LocalFactTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as folder:
             path = Path(folder) / 'facts.sqlite3'
             with closing(sqlite3.connect(path)) as db:
-                db.execute('PRAGMA user_version = 8')
+                db.execute('PRAGMA user_version = 9')
             with self.assertRaises(RuntimeError):
                 FactStore(path).read()
             with closing(sqlite3.connect(path)) as db:
-                self.assertEqual(db.execute('PRAGMA user_version').fetchone()[0], 8)
+                self.assertEqual(db.execute('PRAGMA user_version').fetchone()[0], 9)
 
     def test_persist_update_and_clear(self):
         with tempfile.TemporaryDirectory() as folder:

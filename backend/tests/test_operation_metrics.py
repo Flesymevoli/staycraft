@@ -90,9 +90,11 @@ class MetricTests(unittest.TestCase):
                 db.execute("INSERT INTO promotion_drafts VALUES ('saved','Keep me','today')")
                 before=db.execute("SELECT * FROM demo_reservations ORDER BY id").fetchall()
                 db.execute("PRAGMA user_version=6")
+                db.execute("DROP TABLE operation_decisions")
+                db.execute("DROP TABLE operation_requests")
                 db.commit()
             with closing(store.connect()) as db:
-                self.assertEqual(db.execute("PRAGMA user_version").fetchone()[0],7)
+                self.assertEqual(db.execute("PRAGMA user_version").fetchone()[0],8)
                 self.assertEqual(db.execute("SELECT housekeeping FROM demo_rooms WHERE number='102'").fetchone()[0],"clean")
                 self.assertEqual(db.execute("SELECT content FROM promotion_drafts WHERE id='saved'").fetchone()[0],"Keep me")
                 self.assertEqual(db.execute("SELECT * FROM demo_reservations WHERE id LIKE 'demo-%' ORDER BY id").fetchall(),before)

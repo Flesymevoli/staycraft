@@ -7,6 +7,7 @@ import { ArrowRight, Check, X } from "lucide-react";
 import { useDemoStorage } from "./demo-storage";
 import { RoomBoard } from "./room-board";
 import { HomeOccupancy } from "./home-occupancy";
+import { useLocalOperations } from "./local-operations";
 import "./native-home.css";
 
 type Language = "en" | "zh";
@@ -32,8 +33,8 @@ const tabs = [
 
 export function HomeClient() {
   const [language, setLanguage] = useDemoStorage<Language>("language", "en");
-  const [decisions] = useDemoStorage<Record<string, string>>("operationDecisions", {});
-  const pending = ["arrival", "refund"].filter(id => !decisions[id]);
+  const operations = useLocalOperations();
+  const pending = operations.pending.map(item => item.id);
   const [selectedDay, setSelectedDay] = useState(17);
   const [scheduleOpen, setScheduleOpen] = useState(false);
   const [assistantOpen, setAssistantOpen] = useState(false);
@@ -67,13 +68,15 @@ export function HomeClient() {
         const data = await response.json() as {paragraphs:string[]};
         if (!controller.signal.aborted) setAnswer({language,text:data.paragraphs.join("\n\n")});
       } else {
-        const response = await fetch("/api/local/conversations", {signal: controller.signal});
-        if (!response.ok) throw new Error();
+        const [response, operationResponse] = await Promise.all([fetch("/api/local/conversations", {signal: controller.signal}), fetch("/api/local/operations", {signal: controller.signal})]);
+        if (!response.ok || (!operationResponse.ok && operationResponse.status !== 404)) throw new Error();
+        const currentOperations = operationResponse.ok ? await operationResponse.json() as {items:{id:string}[];decisions:{id:string}[]} : null;
+        const bookingItems = currentOperations ? currentOperations.items.filter(item => !currentOperations.decisions.some(d => d.id === item.id)).length : pending.length;
         const data = await response.json() as {items:{messages:{sender:string}[]}[]};
         const guestItems = data.items.filter(item => !item.messages.some(message => message.sender === "owner")).length;
         if (!controller.signal.aborted) setAnswer({language,text:t(
-          `${pending.length} booking items and ${guestItems} guest conversations need review. Open Work to check them. Saved demo replies stay on this computer; nothing is sent automatically.`,
-          `有 ${pending.length} 项订单事务和 ${guestItems} 条客人会话等待处理，可以到工作页逐项查看。演示回复保存在本机，不会自动发送。`)});
+          `${bookingItems} booking items and ${guestItems} guest conversations need review. Open Work to check them. Saved demo replies stay on this computer; nothing is sent automatically.`,
+          `有 ${bookingItems} 项订单事务和 ${guestItems} 条客人会话等待处理，可以到工作页逐项查看。演示回复保存在本机，不会自动发送。`)});
       }
     } catch { if (!controller.signal.aborted) setAnswerError(true); }
     finally { if (!controller.signal.aborted) setAnswerPending(false); }
@@ -172,16 +175,18 @@ export function HomeClient() {
           <div className="native-section-head native-overview-head"><h2>{t("Your stay at a glance", "经营一览")}</h2><small>{t("Last 7 days · Sample", "近 7 天 · 示例")}</small></div>
           <HomeOccupancy zh={zh}/>
           <article className="native-card native-pending">
-            <div className="native-pending-head"><span>{t("Needs you", "待你处理")}</span><span>{pending.length}</span></div>
+            <div className="native-pending-head"><span>{t("Needs you", "待你处理")}</span><span>{operations.status === "ready" ? pending.length : "—"}</span></div>
+            {operations.status === "loading" && <p role="status">{t("Loading booking requests…", "正在读取订单申请…")}</p>}
+            {operations.status === "error" && <p role="alert">{t("Could not load booking requests.", "订单申请读取失败。 ")}<button type="button" className="native-soft-link" onClick={operations.retry}>{t("Retry", "重试")}</button></p>}
             {pending.includes("arrival") && <div className="native-task">
-              <div><strong>{t("Early check-in", "提前入住安排")}</strong><small>{t("Room 102 · Decision needed", "102 房 · 等待确认")}</small></div>
+              <div><strong>{t("Early check-in", "提前入住安排")}</strong><small>{t(`Room ${operations.pending.find(item => item.id === "arrival")?.room} · Decision needed`, `${operations.pending.find(item => item.id === "arrival")?.room} 房 · 等待确认`)}</small></div>
               <Link className="native-primary" href="/native-work#operation-arrival">{t("Review", "查看")}</Link>
             </div>}
             {pending.includes("refund") && <div className="native-task">
-              <div><strong>{t("Cancellation & refund", "取消与退款")}</strong><small>{t("GH-204 · Decision needed", "GH-204 · 等待确认")}</small></div>
+              <div><strong>{t("Cancellation & refund", "取消与退款")}</strong><small>{operations.pending.find(item => item.id === "refund")?.order_id} · {t("Decision needed", "等待确认")}</small></div>
               <Link className="native-primary" href="/native-work#operation-refund">{t("Review", "查看")}</Link>
             </div>}
-            {!pending.length && <p className="native-muted">{t("All caught up for now.", "目前都处理好了。")}</p>}
+            {operations.status === "ready" && !pending.length && <p className="native-muted">{t("All caught up for now.", "目前都处理好了。")}</p>}
             <Link className="native-soft-link" href="/native-work">{t("Open Work", "打开工作")} <ArrowRight size={15} /></Link>
           </article>
         </section>

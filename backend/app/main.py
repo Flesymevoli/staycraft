@@ -20,6 +20,7 @@ from .analysis_service import router as analysis_router
 from .promotion_service import router as promotion_router
 from .room_service import router as room_router
 from .operation_metrics import router as metrics_router
+from .local_operations import router as operations_router
 
 app = FastAPI(title="Homestay AI Assistant API", version="0.1.0")
 
@@ -29,6 +30,7 @@ app.include_router(analysis_router)
 app.include_router(promotion_router)
 app.include_router(room_router)
 app.include_router(metrics_router)
+app.include_router(operations_router)
 
 from .local_facts import router as local_router
 app.include_router(local_router)

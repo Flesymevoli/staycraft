@@ -126,3 +126,7 @@ GET /v1/local/analysis-summary?days=7|28&language=en|zh；示例指标由 analys
 ### 订单指标计算约定
 
 v6→v7仅追加前缀history-/future-的虚构订单样本，保留现有记录与清洁状态，不新建用户功能入口。GET /v1/local/operation-metrics?days=7|28返回来源、起止日期、逐日已占用/可售间夜、期间汇总、上期差值、工作日/周末占用率、下周预订间夜。固定as_of=2026-09-17，完成日截止前一天。所有指标用同一个SQLite读事务，按房间+日期去重，入住排除confirmed/cancelled，未来预订排除cancelled/checked_out。没有历史预订快照，不推断历史booking pace。Home与Analysis共享前端数据契约与此接口；总结读取同一计算函数，缓存摘要包含完整指标以便订单变化自动失效。旧独立百分比序列只保留作公开静态原型的404回退，不参与本机指标；读取错误不回退。模型仍只解释计算结果，不计算数字或执行操作。
+
+### 本机订单事务契约
+
+v7→v8增加operation_requests（请求、关联订单、虚构付款/规则样本）和operation_decisions（operation_id PK、decision、request_id UNIQUE、fingerprint、advice_json、created_at）。GET /v1/local/operations读取列表与历史方案；POST /operation-advice仅接受id，服务端装配规则依据；POST /operation-decision接受id/decision/fingerprint/request_id，BEGIN IMMEDIATE中重新计算依据并限制可选动作，409拒绝过期或冲突操作，同一request_id相同内容返回原结果。方案与依据快照、UTC保存时间一起记录，external_status恒为not_started。今日空房且已清洁才能建议考虑提前入住；常规时间必须来自确认事实；将来日期的房态未知。不开放订单编辑、退款执行或删除方案接口。Home/Work读取同一列表，sessionStorage仅用于公开原型404回退和非持久化控件。
