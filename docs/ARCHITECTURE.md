@@ -164,3 +164,8 @@ property_details(property_id PK/FK, profile JSONB, revision UUID, updated_at)保
 /api/workspace/inventory经getUser、成员关系及用户JWT/RLS读取/保存，property_id始终服务端解析，同源和160KB限制。/api/workspace/room-photo仅成员可上传/读取：客户端压缩到960px WebP，服务端检查256KB/魔数；路径由服务端生成propertyUUID/photoUUID.webp。room-photos桶私有，用户JWT按民宿目录授权，文件不覆盖、不开放匿名读取，无AI调用。替换图片保留旧对象，暂未做孤立文件清理；未来公开客人展示需要单独设计发布边界，不能直接暴露私有图。
 
 本模块迁移20261021190759由CLI创建，云端尚未执行；独立QA模拟REST/Storage，未冒充数据库RLS验收。SQLite及示例native房态保持独立，正式/app从配置接口读取，尚无真实预订入住率。
+
+
+前端客房预览（2026-10-22）：新增/app/rooms/new与/app/rooms/[roomId]，沿用每页getUser验证；renderWorkspace仅增加用户ID范围及房间路由参数，不改任何业务API、数据库迁移或后端服务。当前Home和Mine改用RoomPreviewBoard/RoomTypesPreview/RoomPreviewDetail，不调用先前准备的inventory或room-photo接口。基本资料仍沿用既有profile接口，其行为未改变。
+
+room-preview-store使用按已验证userId隔离的sessionStorage键staycraft-room-preview-v1:{userId}，useSyncExternalStore订阅同页事件，保存前使用现有配置校验，房型/房间稳定UUID并共享同一文档。图片在浏览器压缩为800px WebP data URL，限制单图40万字符，仅存在当前标签页预览，不上传。写入失败保留输入且不显示成功；无效/缺失房间给返回首页，不读取其他账号键。不同标签页/设备与同民宿其他账号不共享此预览，不冒充云端隔离或同步。prepared property_inventory迁移与接口保留待后续，当前前端验收脚本为qa-room-preview；旧qa-property-inventory针对之前云端编辑UI，不代表本轮UI。

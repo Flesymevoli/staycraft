@@ -6,7 +6,7 @@ import { WorkspaceClient, type WorkspaceSection, type WorkspaceConnection } from
 import { signOut } from "@/app/login/actions";
 import { validateProfile } from "@/lib/property-profile";
 
-export async function renderWorkspace(section: WorkspaceSection) {
+export async function renderWorkspace(section: WorkspaceSection, roomId?: string) {
   if (!hasSupabaseConfig()) redirect("/login");
   const supabase = await createClient();
   let email: string | undefined;
@@ -37,5 +37,5 @@ export async function renderWorkspace(section: WorkspaceSection) {
     }
   } catch { /* Missing schema or a service failure is not an empty successful read. */ }
 
-  return <WorkspaceClient section={section} email={email ?? ""} connection={connection} signOutAction={signOut} />;
+  return <WorkspaceClient section={section} userId={userId} roomId={roomId} email={email ?? ""} connection={connection} signOutAction={signOut} />;
 }

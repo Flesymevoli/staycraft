@@ -75,8 +75,8 @@ const cookie = index => {
     await page.goto(base + '/app');
     await page.setViewportSize({ width: 390, height: 844 });
     await page.screenshot({ path: 'qa-workspace-home.png', fullPage: true });
-    await page.getByRole('link', { name: '管理', exact: true }).click();
-    await page.waitForURL('**/app/mine#rooms');
+    await page.locator('.native-section-head').getByRole('link', { name: '添加客房', exact: true }).click();
+    await page.waitForURL('**/app/rooms/new');
     await page.goto(base + '/app/analysis');
     await page.screenshot({ path: 'qa-workspace-analysis.png', fullPage: true });
     console.log('PASS: protected five-page empty workspace; no sample/local API leakage; per-account fixtures; missing-schema retry; sign-out; bilingual; 320/390/658px. Auth responses mocked only in isolated QA process; no live cloud writes.');
