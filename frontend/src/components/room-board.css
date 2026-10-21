@@ -1,4 +1,4 @@
-.room-board { margin-top: 18px; --room-ready: var(--blue); --room-cleaning: var(--muted); --room-occupied: var(--ink); }
+.room-board { margin-top: 18px; --room-ready: #317653; --room-cleaning: var(--blue); --room-occupied: var(--ink); }
 .room-board-surface { padding: 16px 14px 12px; background: var(--card-surface); border: 1px solid white; border-radius: var(--card-radius); box-shadow: var(--card-shadow); }
 .room-board-legend { display: flex; flex-wrap: wrap; gap: 14px; padding-bottom: 14px; border-bottom: 1px solid var(--hairline); }
 .room-board-legend > span { display: inline-flex; align-items: center; gap: 5px; color: var(--muted); font-size: 11px; }
