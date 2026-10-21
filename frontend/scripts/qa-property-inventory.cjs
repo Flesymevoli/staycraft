@@ -39,6 +39,18 @@ function cookie(index){const enc=v=>Buffer.from(JSON.stringify(v)).toString('bas
   assert.equal((await context.request.put(base+'/api/workspace/inventory',{headers:{origin:base},data:{inventory:saved.inventory,revision:saved.revision}})).status(),409);
   await page.goto(base+'/app/mine');await page.getByLabel('房型名称',{exact:true}).fill('QA_SAVE_FAILURE');await page.getByRole('button',{name:'保存房间设置',exact:true}).click();await page.getByRole('alert').filter({hasText:'保存未成功'}).waitFor();assert.equal(await page.getByLabel('房型名称',{exact:true}).inputValue(),'QA_SAVE_FAILURE');
   for(const width of [320,390,658,1280]){await page.setViewportSize({width,height:900});for(const route of ['/app/mine','/app']){await page.goto(base+route);await page.locator('.inventory-fields,.inventory-home').first().waitFor();assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,`overflow ${width} ${route}`);}}
-  assert.deepEqual(errors,[]);console.log('PASS inventory: templates/photo/rooms/duplicate validation/rename/archive/home refresh; origin/member/photo scope/revision/delete guards; failure retention; 320/390/658/1280. Cloud is mocked.');
+  const offline=await browser.newContext({viewport:{width:390,height:844}});await offline.addCookies([cookie(1)]);const draftPage=await offline.newPage();let block=true;
+  await draftPage.route('**/api/workspace/inventory',route=>block?route.fulfill({status:503,contentType:'application/json',body:'{"error":"inventory_unavailable"}'}):route.continue());
+  await draftPage.goto(base+'/app/mine');await draftPage.getByText(/暂时无法连接，可先编辑房型和房号/).waitFor();
+  assert.equal(await draftPage.getByLabel('房型模板',{exact:true}).isEnabled(),true);
+  await draftPage.getByLabel('房型模板',{exact:true}).selectOption('twin');await draftPage.getByRole('button',{name:'添加房型',exact:true}).click();await draftPage.getByLabel('每晚价格（元）',{exact:true}).fill('580');
+  await draftPage.getByRole('button',{name:'添加房间',exact:true}).click();await draftPage.getByLabel('房间 1 房号',{exact:true}).fill('DRAFT-301');
+  assert.equal(await draftPage.getByRole('button',{name:'保存房间设置',exact:true}).isDisabled(),true);
+  assert.equal(await draftPage.getByLabel('房型 1 图片',{exact:true}).isDisabled(),true);
+  await draftPage.locator('.inventory-status').getByRole('button',{name:'重试',exact:true}).click();await draftPage.getByText(/暂时无法连接，可先编辑房型和房号/).waitFor();assert.equal(await draftPage.getByLabel('房间 1 房号',{exact:true}).inputValue(),'DRAFT-301');
+  await draftPage.screenshot({path:'qa-inventory-offline-edit.png',fullPage:true});
+  block=false;await draftPage.locator('.inventory-status').getByRole('button',{name:'重试',exact:true}).click();await draftPage.getByRole('alert').filter({hasText:'云端已有房间设置'}).waitFor();assert.equal(await draftPage.getByLabel('房间 1 房号',{exact:true}).inputValue(),'DRAFT-301');assert.equal(await draftPage.getByRole('button',{name:'保存房间设置',exact:true}).isDisabled(),true);
+  await draftPage.getByRole('button',{name:'重新读取已保存设置',exact:true}).click();await draftPage.getByLabel('房间 1 房号',{exact:true}).waitFor();await draftPage.waitForFunction(()=>document.querySelector('input[aria-label="房间 1 房号"]')?.value==='A101');assert.equal(await draftPage.getByRole('button',{name:'保存房间设置',exact:true}).isEnabled(),true);
+  assert.deepEqual(errors,[]);console.log('PASS inventory: templates/photo/rooms/duplicate validation/rename/archive/home refresh; access/conflict guards; offline edits/retry preservation/reconnect conflict/reload; 320/390/658/1280. Cloud is mocked.');
  }finally{if(browser)await browser.close();child.kill();}
 })().catch(e=>{console.error(e);process.exitCode=1;});
