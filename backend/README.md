@@ -30,3 +30,5 @@ backend/.env.example 提供变量示例；目前进程从环境变量读取，�
 Work 会话回归脚本 `frontend/scripts/qa-work-inbox.cjs` 会写演示回复，须使用独立的全新虚构数据库。默认 QA_PORT=3101、QA_BACKEND=http://127.0.0.1:8013；建议 MODEL_ENABLED=0，避免浏览器回归重复消费API。当前仅迁移两条既有虚构消息，不连接OTA。旧 qa-work-decision/qa-local-facts/qa-model-live 脚本针对已移除的独立测试表单，保留作历史参考，当前界面回归使用 qa-work-inbox。
 
 本机房态：GET `/v1/local/room-board` 返回固定2026-09-17快照、客房和派生统计；POST `/v1/local/room-clean` 接收 `{"room_number":"102"}`，只更新空房清洁状态，在住返回409。schema v6增量插入10间虚构客房和9笔虚构订单，不覆盖旧资料。`frontend/scripts/qa-room-board.cjs` 默认QA_PORT=3102，必须连接独立新建虚构测试库；脚本会将102标记清洁，不可指向展示库或真实数据。
+
+当前schema v7在v6基础上追加虚构历史与未来订单。GET `/v1/local/operation-metrics?days=7|28` 提供7/28日逐日/汇总指标，完成日截止2026-09-16；下周预订取2026-09-21至27日房间夜，按房间和日期去重。`analysis-summary`与推广模型上下文复用同一计算，清洁状态不参与入住率。`frontend/scripts/qa-operation-metrics.cjs`默认QA_PORT=3102，关闭模型后检查Home/Analysis/总结同源、图表明细、加载/空/失败与移动端；不导入真实数据或发起平台动作。

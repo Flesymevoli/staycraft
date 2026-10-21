@@ -9,13 +9,15 @@ from app.main import app
 CONFIG={'MODEL_ENABLED':'1','MODEL_API_KEY':'test-key','MODEL_BASE_URL':'https://api.deepseek.com','MODEL_NAME':'deepseek-flash'}
 class AnalysisTests(unittest.TestCase):
     def test_metrics_are_computed_and_keep_external_signals_separate(self):
-        metrics=sample_metrics(7)
+        with tempfile.TemporaryDirectory() as folder:
+            store=FactStore(Path(folder)/'metrics.sqlite3')
+            metrics=sample_metrics(7,store)
         self.assertEqual(metrics['occupancy_pct'],70)
-        self.assertEqual(metrics['weekday_pct'],64)
-        self.assertEqual(metrics['weekend_pct'],85)
+        self.assertEqual(metrics['weekday_pct'],60)
+        self.assertEqual(metrics['weekend_pct'],95)
         self.assertEqual(metrics['satisfaction'],4.8)
-        self.assertEqual(sample_metrics(28)['occupancy_pct'],64)
-        self.assertNotIn('occupied_room_nights',metrics)
+        self.assertEqual(metrics['occupied_room_nights'],49)
+        self.assertEqual(metrics['capacity_room_nights'],70)
         self.assertTrue(metrics['sample'])
 
     def test_success_cached_and_language_range_are_distinct(self):

@@ -66,7 +66,7 @@ async def generate_promotion(store, request, transport=None):
     if not key or not model or urlparse(base).scheme!="https":
         return result
     context={"sample":True,"property":"Garden House, a fictional quiet garden homestay", "idea":"fictional lakeside weekend market" if request.context=="market" else "fictional village morning walk",
-        "channel":request.channel,"metrics":sample_metrics(7),"confirmed_time_facts":[{"key":f.key,"value":f.value} for f in store.read()]}
+        "channel":request.channel,"metrics":sample_metrics(7,store),"confirmed_time_facts":[{"key":f.key,"value":f.value} for f in store.read()]}
     fingerprint="promotion:"+hashlib.sha256(json.dumps({"version":1,"request":request.model_dump(),"context":context,"model":model,"base":base},sort_keys=True).encode()).hexdigest()
     connection=store.connect()
     try:

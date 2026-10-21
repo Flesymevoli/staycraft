@@ -12,24 +12,11 @@ import httpx
 from fastapi import APIRouter, Depends, Query
 
 from .local_facts import FactStore, local_store
+from .operation_metrics import compute_metrics
 
 router=APIRouter(prefix="/v1/local")
-WEEKS=[
-    [40,50,60,60,70,80,60], [50,50,60,60,70,90,60],
-    [40,60,60,60,80,90,65], [50,60,60,70,80,100,70],
-]
-
-
-def sample_metrics(days: int):
-    values=[value for week in WEEKS for value in week][-days:]
-    # These are daily percentage fixtures, not raw reservation rows. Do not
-    # invent integer room-night counts from rounded percentages.
-    weekday=[value for index,value in enumerate(values) if index%7<5]
-    weekend=[value for index,value in enumerate(values) if index%7>=5]
-    return {"sample":True,"period_days":days,"period_end":"2026-09-20",
-        "occupancy_pct":round(sum(values)/len(values)),
-        "weekday_pct":round(sum(weekday)/len(weekday)),"weekend_pct":round(sum(weekend)/len(weekend)),
-        "next_week_booked_nights":32,"next_week_capacity_nights":70,"previous_booking_pace":26,
+def sample_metrics(days: int, store: FactStore):
+    return {**compute_metrics(store, days),
         "rate_yuan":520,"market_range_yuan":[460,590],"satisfaction":(5*32+4*8)/40,
         "rating_count":40,
         "external_context":"Fictional local event on September 26; demand is a separate sample signal, not measured occupancy.",
@@ -37,17 +24,23 @@ def sample_metrics(days: int):
 
 
 def fallback(language, metrics, reason):
+    no_data = metrics["occupancy_pct"] is None
+    weekday_opportunity = not no_data and metrics["weekday_pct"] < metrics["weekend_pct"]
     if language=="zh":
-        paragraphs=["周末比工作日更满，接下来可以把重点放在工作日的空房。下周的预订进度有所改善，可以结合周边活动，尝试吸引愿意多住一晚的客人。",
+        observation = "暂无客房资料，暂时不能计算入住率。请先核实客房与订单资料。" if no_data else "周末比工作日更满，接下来可以把重点放在工作日的空房。" if weekday_opportunity else "工作日入住情况不弱于周末，可以按日期查看剩余空房，再选择推广时段。"
+        paragraphs=[observation+"下周预订进度来自当前订单，没有历史快照，暂不判断预订是否加快。",
           "示例房价处在同类住宿的参考范围内，可以先评估有针对性的推广，再决定是否调整价格。客人整体评价不错，早餐方面可以先看看具体反馈，确认哪些地方值得改善。"]
     else:
-        paragraphs=["Weekends are busier than weekdays. Focus next on filling weekday availability. Next week's booking pace has improved; nearby events may offer a reason for guests to stay a little longer.",
+        observation = "No room inventory is available, so occupancy cannot be calculated. Review the room and reservation records first." if no_data else "Weekends are busier than weekdays. Focus next on filling weekday availability." if weekday_opportunity else "Weekday occupancy is at least as strong as weekends. Review daily availability before choosing promotion dates."
+        paragraphs=[observation+" Next week's bookings come from current orders; without a historical snapshot, no pace change is inferred.",
           "Your sample rate sits within the comparison range. Review a focused promotion before deciding on a price change. Guest ratings are positive overall; read the breakfast comments before choosing improvements."]
     return {"paragraphs":paragraphs,"engine":"rules_v1","reason":reason,"metrics":metrics}
 
 
 async def build_summary(store, days, language, transport=None):
-    metrics=sample_metrics(days)
+    metrics=sample_metrics(days, store)
+    if metrics["occupancy_pct"] is None:
+        return fallback(language,metrics,"no_data")
     enabled=os.getenv("MODEL_ENABLED")=="1"
     key=os.getenv("MODEL_API_KEY","")
     base=os.getenv("MODEL_BASE_URL","").rstrip("/")

@@ -5,6 +5,8 @@ paths["room-board"] = "/v1/local/room-board";
 paths["room-clean"] = "/v1/local/room-clean";
 methods["room-board"] = ["GET"];
 methods["room-clean"] = ["POST"];
+paths["operation-metrics"] = "/v1/local/operation-metrics";
+methods["operation-metrics"] = ["GET"];
 
 async function proxy(request: Request, context: { params: Promise<{ action: string }> }) {
   const { action } = await context.params;
@@ -29,10 +31,10 @@ async function proxy(request: Request, context: { params: Promise<{ action: stri
     if (body && body.length > 16000) return new Response(null, { status: 413 });
     const url = new URL(paths[action], process.env.BACKEND_API_URL ?? "http://127.0.0.1:8000");
     if (action === "conversation") url.searchParams.set("thread_id", new URL(request.url).searchParams.get("thread_id") ?? "");
-    if (action === "analysis-summary") {
+    if (action === "analysis-summary" || action === "operation-metrics") {
       const query = new URL(request.url).searchParams;
       url.searchParams.set("days", query.get("days") ?? "7");
-      url.searchParams.set("language", query.get("language") ?? "en");
+      if (action === "analysis-summary") url.searchParams.set("language", query.get("language") ?? "en");
     }
     if (action === "promotion-draft" && request.method === "GET") {
       const query = new URL(request.url).searchParams;

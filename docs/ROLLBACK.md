@@ -52,3 +52,9 @@ Explore 推广模块验收（2026-10-21）：49 项后端测试、lint/build 通
 升级仅新增demo_rooms和demo_reservations，不修改既有facts、消息或推广草稿。升级前已通过SQLite backup生成backend/data/backups/before-room-v6-20261021.sqlite3（v5，Git忽略）；服务使用backend/data/staycraft-demo.sqlite3（v6）。53项后端测试及qa-room-board.cjs浏览器验收通过，测试写入独立的rooms-qa-20261021.sqlite3，不修改展示库房态。
 
 需要回滚时停止前后端，先另备份当前v6数据库，再revert本模块提交；旧v5代码需使用上述v5备份的工作副本，不能直接打开v6或手改user_version。恢复旧备份会舍弃升级后新增的清洁操作和其他修改，原v6备份须保留以便恢复。只回滚指标卡/日历样式无需更换数据库。回滚后复测Mine已保存资料、Work会话与房态页面。
+
+## 统一订单指标（schema v7）
+
+v6→v7追加history-/future-虚构订单，保留原订单、房态、已保存回复与草稿；模型缓存包含新指标，旧缓存不冒充本次结果。升级前已通过SQLite backup保存backend/data/backups/before-metrics-v7-20261021.sqlite3（v6）。57项后端测试、lint/build及qa-operation-metrics/qa-analysis-summary/qa-home-assistant-data/qa-room-board四组浏览器回归通过，模型关闭；浏览器写入仅使用独立metrics-qa-20261021.sqlite3。
+
+代码回退先停服务并备份当前v7，再revert对应模块提交；旧v6代码必须使用上述v6备份的工作副本或保留支持v7的数据层，不能强改版本号。恢复旧备份会丢弃升级后的修改，保留当前v7备份。标题布局可独立revert c19e588，不涉及数据库。回滚后验证Home房态、Work既有消息和Analysis原型可读。

@@ -122,3 +122,7 @@ GET /v1/local/analysis-summary?days=7|28&language=en|zh；示例指标由 analys
 ### 本机客房与订单快照
 
 下一次增量迁移v5→v6增加demo_rooms和demo_reservations，仅首次迁移插入虚构快照，不覆盖既有事实、消息、草稿。房态由固定演示时点2026-09-17的在住订单与独立清洁状态计算；到店日包含、离店日不包含，confirmed/cancelled/checked_out不算在住。GET /v1/local/room-board读取派生房态、统计与简短订单提示；POST /v1/local/room-clean接收房号，在同一写事务内重新检查在住订单后才设置clean，同一清洁操作重复提交结果一致，在住返回409。没有订单编辑或入住/退房接口。仍受本机模式/回环限制，托管鉴权未完成。公开原型在本机接口明确404时保留前端样本；服务失败不静默回退假数据。Analysis暂不接入本快照，避免将当天房态与多日入住率混用。
+
+### 订单指标计算约定
+
+v6→v7仅追加前缀history-/future-的虚构订单样本，保留现有记录与清洁状态，不新建用户功能入口。GET /v1/local/operation-metrics?days=7|28返回来源、起止日期、逐日已占用/可售间夜、期间汇总、上期差值、工作日/周末占用率、下周预订间夜。固定as_of=2026-09-17，完成日截止前一天。所有指标用同一个SQLite读事务，按房间+日期去重，入住排除confirmed/cancelled，未来预订排除cancelled/checked_out。没有历史预订快照，不推断历史booking pace。Home与Analysis共享前端数据契约与此接口；总结读取同一计算函数，缓存摘要包含完整指标以便订单变化自动失效。旧独立百分比序列只保留作公开静态原型的404回退，不参与本机指标；读取错误不回退。模型仍只解释计算结果，不计算数字或执行操作。

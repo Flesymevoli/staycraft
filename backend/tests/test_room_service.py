@@ -25,14 +25,14 @@ class RoomTests(unittest.TestCase):
                 room = next(item for item in board["items"] if item["number"] == "102")
                 self.assertEqual(room["status"], "cleaning")
                 self.assertEqual(room["next_arrival"], "2026-09-17")
-                self.assertEqual(db.execute("SELECT amount_cents,currency FROM demo_reservations WHERE room_number='102'").fetchone(), (104000, "CNY"))
+                self.assertEqual(db.execute("SELECT amount_cents,currency FROM demo_reservations WHERE id='demo-102'").fetchone(), (104000, "CNY"))
                 # Dirty but occupied remains occupied; never ready.
                 db.execute("UPDATE demo_rooms SET housekeeping='dirty' WHERE number='103'")
                 self.assertEqual(next(r for r in read_board(db)["items"] if r["number"] == "103")["status"], "occupied")
                 # Checkout boundary and cancelled orders cannot block an empty room.
-                db.execute("UPDATE demo_reservations SET check_out='2026-09-17' WHERE room_number='103'")
+                db.execute("UPDATE demo_reservations SET check_out='2026-09-17' WHERE id='demo-103'")
                 self.assertEqual(next(r for r in read_board(db)["items"] if r["number"] == "103")["status"], "cleaning")
-                db.execute("UPDATE demo_reservations SET status='cancelled' WHERE room_number='104'")
+                db.execute("UPDATE demo_reservations SET status='cancelled' WHERE id='demo-104'")
                 self.assertEqual(next(r for r in read_board(db)["items"] if r["number"] == "104")["status"], "ready")
 
     def test_cleaning_persists_is_idempotent_and_preserves_orders(self):

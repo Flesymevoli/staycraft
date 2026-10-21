@@ -54,13 +54,13 @@ class FactStore:
         connection = sqlite3.connect(self.path, timeout=10)
         try:
             version = connection.execute("PRAGMA user_version").fetchone()[0]
-            if version == 6:
+            if version == 7:
                 return connection
             # Lock and re-read: several page requests may open a new database
             # together. DDL, seeds and schema version must commit atomically.
             connection.execute("BEGIN IMMEDIATE")
             version = connection.execute("PRAGMA user_version").fetchone()[0]
-            if version not in range(7):
+            if version not in range(8):
                 raise RuntimeError("Unsupported local database version; restore matching code or migrate explicitly")
             if version < 1:
                 connection.execute("CREATE TABLE IF NOT EXISTS facts (key TEXT PRIMARY KEY, value TEXT NOT NULL, updated_at TEXT NOT NULL)")
@@ -93,7 +93,10 @@ class FactStore:
             if version < 6:
                 from .room_service import migrate_rooms
                 migrate_rooms(connection)
-            connection.execute("PRAGMA user_version = 6")
+            if version < 7:
+                from .operation_metrics import seed_metric_orders
+                seed_metric_orders(connection)
+            connection.execute("PRAGMA user_version = 7")
             connection.commit()
             return connection
         except Exception:

@@ -9,21 +9,10 @@ import "./native-home.css";
 import "./native-analysis.css";
 import { GuestFeedback } from "./guest-feedback";
 import { AnalysisSummary } from "./analysis-summary";
+import { useOperationMetrics } from "./operation-metrics";
 import { exploreDays } from "./explore-data";
 
 type Language = "en" | "zh";
-const weeks = [
-  [40, 50, 60, 60, 70, 80, 60],
-  [50, 50, 60, 60, 70, 90, 60],
-  [40, 60, 60, 60, 80, 90, 65],
-  [50, 60, 60, 70, 80, 100, 70],
-];
-const rates = weeks.flat().map((value, index) => ({
-  value,
-  date: new Date(2026, 7, 24 + index),
-  weekend: index % 7 > 4,
-}));
-const avg = (values: number[]) => Math.round(values.reduce((sum, value) => sum + value, 0) / values.length);
 const plotX = (index: number, count: number) => 34 + (302 * index) / (count - 1);
 const plotY = (value: number) => 192 - value * 1.5;
 function curvePath(values: number[]) {
@@ -62,8 +51,10 @@ export function AnalysisClient() {
   const plotRef = useRef<HTMLDivElement>(null);
   const zh = language === "zh";
   const t = (en: string, cn: string) => (zh ? cn : en);
-  const data = rates.slice(-range);
-  const mean = avg(data.map(d => d.value));
+  const { data: metrics, status: metricsStatus, retry: retryMetrics } = useOperationMetrics(range);
+  const data = metrics?.daily.map(item => ({ ...item, value: item.value ?? 0, date: new Date(item.date + "T00:00:00") })) ?? [];
+  const mean = metrics?.occupancy_pct;
+  const delta = metrics?.occupancy_change_pp;
   const dateLabel = (date: Date) => date.toLocaleDateString(zh ? "zh-CN" : "en-US", { month: "short", day: "numeric" });
   const choosePoint = (clientX: number) => {
     if (!plotRef.current) return;
@@ -82,8 +73,8 @@ export function AnalysisClient() {
         <p className="analysis-switch-hint">{t("Select a metric to view its details below", "点选指标，在下方查看详情")}</p>
         <span className="native-kicker">{t("YOUR BOOKINGS · SAMPLE", "自身预订 · 示例")}</span>
         <div className="analysis-overview-grid">
-          <button type="button" aria-pressed={metric === "occupancy"} onClick={() => setMetric("occupancy")}><BedDouble className="analysis-metric-icon" size={18} aria-hidden="true" /><small>{t("Occupancy", "入住率")}</small><strong>{selected === null ? mean : data[selected].value}%</strong><span>{t("Selected period", "所选期间")}</span>{metricHint("occupancy")}</button>
-          <button type="button" aria-pressed={metric === "booking"} onClick={() => setMetric("booking")}><CalendarDays className="analysis-metric-icon" size={18} aria-hidden="true" /><small>{t("Booking pace", "预订进度")}</small><strong>32 / 70</strong><span>{t("Next week · Room nights", "下周 · 已订 / 可售间夜")}</span>{metricHint("booking")}</button>
+          <button type="button" aria-pressed={metric === "occupancy"} onClick={() => setMetric("occupancy")}><BedDouble className="analysis-metric-icon" size={18} aria-hidden="true" /><small>{t("Occupancy", "入住率")}</small><strong>{mean === null || mean === undefined ? "—" : `${selected === null ? mean : data[selected]?.value ?? mean}%`}</strong><span>{t("Selected period", "所选期间")}</span>{metricHint("occupancy")}</button>
+          <button type="button" aria-pressed={metric === "booking"} onClick={() => setMetric("booking")}><CalendarDays className="analysis-metric-icon" size={18} aria-hidden="true" /><small>{t("Booking pace", "预订进度")}</small><strong>{metrics && metrics.next_week_capacity_nights ? `${metrics.next_week_booked_nights} / ${metrics.next_week_capacity_nights}` : "—"}</strong><span>{t("Next week · Room nights", "下周 · 已订 / 可售间夜")}</span>{metricHint("booking")}</button>
         </div>
         <span className="native-kicker">{t("MARKET & GUEST CONTEXT · SAMPLE", "市场与客人参考 · 示例")}</span>
         <div className="analysis-context-grid">
@@ -93,12 +84,13 @@ export function AnalysisClient() {
         </div>
       </section>
       <div id="analysis-metrics" className="analysis-selected-detail" aria-live="polite">
-      {metric === "occupancy" && <>
+      {["occupancy", "booking"].includes(metric) && (metricsStatus !== "ready" || !metrics?.capacity_room_nights) && <section className="analysis-main-card"><p role={metricsStatus === "error" ? "alert" : "status"}>{metricsStatus === "loading" ? t("Reading reservation data…", "正在读取订单数据…") : metricsStatus === "error" ? t("Could not load reservation data.", "订单数据读取失败。") : t("No room inventory available.", "暂无客房资料，暂不能计算指标。")}</p>{metricsStatus === "error" && <button type="button" className="analysis-summary-retry" onClick={retryMetrics}>{t("Retry", "重试")}</button>}</section>}
+      {metric === "occupancy" && metrics && metrics.capacity_room_nights > 0 && <>
       <section className="analysis-main-card">
         <span className="native-kicker">{t("YOUR STAY, IN PERSPECTIVE", "看懂你的民宿")}</span>
         <div className="analysis-metric-title"><h1>{t("Occupancy", "入住率")}</h1><small>{t("Demo data", "示例数据")}</small></div>
 
-        <div className="analysis-context"><p>{selected === null ? dateLabel(data[0].date) + " – " + dateLabel(data[data.length - 1].date) : dateLabel(data[selected].date)}</p><p>{selected === null ? range === 7 ? t("↑ 5 percentage points from last week", "↑ 较上周提升 5 个百分点") : t("Four-week average · Sample bookings", "四周平均 · 示例预订") : data[selected].weekend ? t("Weekend · Sample occupancy", "周末 · 示例入住率") : t("Weekday · Sample occupancy", "工作日 · 示例入住率")}</p></div>
+        <div className="analysis-context"><p>{selected === null ? dateLabel(data[0].date) + " – " + dateLabel(data[data.length - 1].date) : dateLabel(data[selected].date)}</p><p>{selected === null ? delta !== null && delta !== undefined ? t(`${delta >= 0 ? "+" : ""}${delta} percentage points vs previous period`, `较上一期间 ${delta >= 0 ? "+" : ""}${delta} 个百分点`) : t("Period average · Sample bookings", "期间平均 · 示例订单") : data[selected].weekend ? t("Weekend · Sample occupancy", "周末 · 示例入住率") : t("Weekday · Sample occupancy", "工作日 · 示例入住率")}</p></div>
         <div className="analysis-toolbar">
           <div role="group" aria-label={t("Chart time range", "图表时间范围")} className="analysis-range">
             <button type="button" aria-pressed={range === 7} onClick={() => changeRange(7)}>{t("7 days", "7 天")}</button>
@@ -122,7 +114,7 @@ export function AnalysisClient() {
         {showDaily && <table className="analysis-data-table"><thead><tr><th>{t("Date", "日期")}</th><th>{t("Occupancy", "入住率")}</th></tr></thead><tbody>{data.map(item => <tr key={item.date.toISOString()}><td>{dateLabel(item.date)}</td><td>{item.value}%</td></tr>)}</tbody></table>}
       </section>
       </>}
-      {metric === "booking" && <section className="analysis-main-card analysis-metric-panel" id="booking-detail"><div className="analysis-metric-title"><h2>{t("Booking pace", "预订进度")}</h2><small>{t("Your bookings · Sample", "自身预订 · 示例")}</small></div><p>{t("Sep 21–27 · As of Sep 18", "9 月 21–27 日 · 截至 9 月 18 日")}</p><div className="analysis-progress"><span style={{width:"45.7%"}} /></div><p>{t("32 room nights booked, 38 still available. Last week: 26 booked at the same lead time (+6).", "已订 32 间夜，剩余 38 间夜。上周同一提前期已订 26 间夜，本周增加 6。")}</p></section>}
+      {metric === "booking" && metrics && metrics.next_week_capacity_nights > 0 && <section className="analysis-main-card analysis-metric-panel" id="booking-detail"><div className="analysis-metric-title"><h2>{t("Booking pace", "预订进度")}</h2><small>{t("Your bookings · Sample", "自身预订 · 示例")}</small></div><p>{metrics.next_week_start} – {metrics.next_week_end} · {t("As of", "截至")} {metrics.as_of}</p><div className="analysis-progress"><span style={{width:`${metrics.next_week_booked_nights / metrics.next_week_capacity_nights * 100}%`}} /></div><p>{t(`${metrics.next_week_booked_nights} room nights booked, ${metrics.next_week_capacity_nights - metrics.next_week_booked_nights} still available.`, `已订 ${metrics.next_week_booked_nights} 间夜，剩余 ${metrics.next_week_capacity_nights - metrics.next_week_booked_nights} 间夜。`)}</p><p>{t("No historical booking snapshot is available for a pace comparison.", "暂无历史预订快照，暂不比较预订速度。")}</p></section>}
       {metric === "rate" && <section className="analysis-main-card analysis-metric-panel" id="rate-detail"><div className="analysis-metric-title"><h2>{t("Price position", "房价位置")}</h2><small>{t("Market comparison · Sample", "市场比较 · 示例")}</small></div><p>{t("Sep 26 · Per night", "9 月 26 日 · 每晚")}</p><div className="analysis-price-track"><span>{t("You", "你")}</span></div><div className="analysis-panel-labels"><span>¥460</span><span>{t("Sample market range", "示例市场范围")}</span><span>¥590</span></div><p>{t("Your rate sits within the illustrative comparable-stay range. No price change is made.", "当前房价位于示例同类住宿价格范围内，不会自动修改定价。")}</p><Link href="/native-explore">{t("Compare nearby stays", "对比周边住宿")} <ArrowRight size={15}/></Link></section>}
       {metric === "demand" && <section className="analysis-main-card analysis-metric-panel" id="demand-detail">
         <div className="analysis-metric-title"><h2>{t("Market demand", "市场需求")}</h2><small>{t("Sample data", "示例数据")}</small></div>

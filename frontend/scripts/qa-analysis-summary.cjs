@@ -12,7 +12,7 @@ const assert = require('node:assert/strict');
       const response = await page.request.get(base + '/api/local/analysis-summary?days=' + days + '&language=en');
       const data = await response.json();
       assert.equal(data.metrics.period_days, days);
-      assert.equal(data.metrics.occupancy_pct + '%', await page.locator('.analysis-overview-grid button').first().locator('strong').innerText());
+      await page.locator('.analysis-overview-grid button').first().getByText(data.metrics.occupancy_pct + '%', { exact: true }).waitFor();
     }
     const fixture = { paragraphs: ['Weekdays have more availability.', 'Review a focused promotion before changing rates.'], engine: 'model_v1', reason: 'ready', metrics: { period_days: 7 } };
     await page.route('**/api/local/analysis-summary?**', route => route.fulfill({ json: fixture }));

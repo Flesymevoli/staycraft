@@ -6,6 +6,7 @@ import Link from "next/link";
 import { ArrowRight, Check, X } from "lucide-react";
 import { useDemoStorage } from "./demo-storage";
 import { RoomBoard } from "./room-board";
+import { HomeOccupancy } from "./home-occupancy";
 import "./native-home.css";
 
 type Language = "en" | "zh";
@@ -168,14 +169,8 @@ export function HomeClient() {
         <RoomBoard zh={zh} />
 
         <section className="native-overview" aria-label={t("Your stay at a glance", "经营一览")}>
-          <div className="native-section-head native-overview-head"><h2>{t("Your stay at a glance", "经营一览")}</h2><small>{t("This week · Sample", "本周 · 示例")}</small></div>
-          <article className="native-card">
-            <span className="native-card-label">{t("Occupancy", "入住率")}</span>
-            <div className="native-metric">70<span>%</span></div>
-            <h3>{t("Fill your weekdays.", "填满工作日。")}</h3>
-            <p>{t("More weekday availability. Try a midweek stay offer.", "工作日仍有空房，可以考虑工作日住宿优惠。")}</p>
-            <Link className="native-primary" href="/native-analysis">{t("View suggestion", "查看建议")} <ArrowRight size={16} /></Link>
-          </article>
+          <div className="native-section-head native-overview-head"><h2>{t("Your stay at a glance", "经营一览")}</h2><small>{t("Last 7 days · Sample", "近 7 天 · 示例")}</small></div>
+          <HomeOccupancy zh={zh}/>
           <article className="native-card native-pending">
             <div className="native-pending-head"><span>{t("Needs you", "待你处理")}</span><span>{pending.length}</span></div>
             {pending.includes("arrival") && <div className="native-task">
