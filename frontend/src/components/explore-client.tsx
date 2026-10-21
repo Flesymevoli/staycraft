@@ -6,6 +6,7 @@ import Image from "next/image";
 import { ArrowRight, ChevronLeft, ChevronRight, X } from "lucide-react";
 import { exploreDays } from "./explore-data";
 import { useDemoStorage } from "./demo-storage";
+import { PromotionEditor } from "./promotion-editor";
 import "./native-home.css";
 import "./native-explore.css";
 
@@ -51,8 +52,6 @@ export function ExploreClient() {
   const [stay, setStay] = useState(0);
   const [dayExpanded, setDayExpanded] = useState(false);
   const [channel, setChannel] = useState("xiaohongshu");
-  const [promotionDraft, setPromotionDraft] = useDemoStorage<string>("explorePromotion", "");
-  const [promotionSaved, setPromotionSaved] = useState(false);
   const [promotionContext, setPromotionContext] = useState("market");
   const stayRef = useRef<HTMLDivElement>(null);
   const pulseRef = useRef<HTMLDivElement>(null);
@@ -119,9 +118,8 @@ export function ExploreClient() {
         <ul><li>{t("Market: sample weekend demand is rising.", "市场信号：示例周末需求升温。")}</li><li>{t("Your availability: weekday occupancy is 64%.", "自身经营：工作日入住率 64%，仍有空房。")}</li><li>{t("Guest feedback: location is mentioned in 26 sample reviews.", "客人反馈：26 条示例评价提到位置。")}</li></ul>
         <p className="explore-note">{t("Suggested angle: arrive early, explore locally and enjoy a quieter stay. Fictional inputs; no discount assumed.", "建议方向：提前抵达、探索周边、享受安静小住。依据虚构示例信息，未自动设定优惠。")}</p>
         <label htmlFor="promotion-channel">{t("Content channel", "内容渠道")}</label>
-        <select id="promotion-channel" value={channel} onChange={event => { setChannel(event.target.value); setPromotionSaved(false); }}><option value="xiaohongshu">{t("Xiaohongshu post", "小红书帖子")}</option><option value="wechat">{t("WeChat Moments", "朋友圈文案")}</option></select>
-        <button type="button" className="native-primary" onClick={() => { setPromotionSaved(false); setPromotionDraft((promotionContext === "market" ? t("Local idea: lakeside weekend market (sample). Verify event details before publishing.\n\n", "周边线索：湖畔周末市集（示例），发布前需确认活动信息。\n\n") : t("Local idea: a village morning walk (sample). Verify route details before publishing.\n\n", "周边线索：村落晨间漫步（示例），发布前需确认路线信息。\n\n")) + (zh ? (channel === "xiaohongshu" ? "标题：把周末旅行，提前一天开始\n\n不妨提前一天抵达花园民宿，把行程留得松一点。工作日的院子更安静，先放下行李，再慢慢探索周边。\n\n适合想避开拥挤、享受小住的你。具体可订日期和房价欢迎咨询。\n\n#民宿小住 #工作日旅行 #周边游\n\n配图建议：民宿实景、庭院细节、已确认的周边地点。" : "让周末旅行提前一天开始。在花园民宿享受安静的工作日小住，留点时间慢慢探索周边。欢迎咨询可订日期和房价。\n\n配图建议：庭院与客房实景。") : (channel === "xiaohongshu" ? "Title: Start your weekend escape a day early\n\nArrive at Garden House before the weekend rush. Settle in, enjoy a quieter courtyard and take time to explore the area at your own pace.\n\nAsk us about available weekday dates and rates.\n\n#GardenHouse #WeekdayEscape #LocalTravel\n\nPhoto ideas: property photos, courtyard details and verified nearby places." : "Start your weekend a little earlier. Enjoy a quieter weekday stay at Garden House and explore at your own pace. Ask about dates and rates.\n\nPhoto idea: your courtyard and guest rooms."))); }}>{t("Generate sample content", "生成示例文案")} <ArrowRight size={15} /></button>
-        {promotionDraft && <div className="explore-promotion-editor"><label htmlFor="promotion-copy">{t("Edit your content", "编辑推广文案")}</label><textarea id="promotion-copy" rows={9} value={promotionDraft} onChange={event => { setPromotionDraft(event.target.value); setPromotionSaved(false); }} /><button type="button" className="native-primary" disabled={!promotionDraft.trim()} onClick={() => setPromotionSaved(true)}>{t("Save draft", "保存草稿")}</button>{promotionSaved && <p role="status">{t("Draft saved in this browser session. Not published.", "草稿已保存在本次浏览器会话，未发布。")}</p>}</div>}
+        <select id="promotion-channel" value={channel} onChange={event => { setChannel(event.target.value); }}><option value="xiaohongshu">{t("Xiaohongshu post", "小红书帖子")}</option><option value="wechat">{t("WeChat Moments", "朋友圈文案")}</option></select>
+        <PromotionEditor key={`${language}-${channel}-${promotionContext}`} language={language} channel={channel} context={promotionContext} />
       </section>
 
       <section className="explore-price">
@@ -140,7 +138,7 @@ export function ExploreClient() {
           {id:"market",title:t("Lakeside weekend market", "湖畔周末市集"),meta:t("Sep 26 · 10:00–18:00 · 15 min walk", "9 月 26 日 · 10:00–18:00 · 步行 15 分钟"),note:t("A sample event linked to the demand peak. Suggest a stay before the weekend rush.", "与需求高峰关联的示例活动，可考虑提前入住的推广方向。")},
           {id:"walk",title:t("Village morning walk", "村落晨间漫步"),meta:t("Daily · Suggested route · 45 min", "每日 · 推荐路线 · 45 分钟"),note:t("A quieter weekday experience to include in guest recommendations.", "适合工作日客人的安静体验，可作为游玩推荐。")},
           {id:"transfer",title:t("Garden Transfer", "Garden Transfer 接送服务"),meta:t("Saved partner · Airport pickup", "已保存合作方 · 机场接送"),note:t("AI can recommend this sample service and ask for arrival details. Availability needs provider confirmation.", "AI 可推荐此示例服务并询问到达信息，可用时间需服务方确认。")},
-        ].map(item=><article key={item.id} className="native-card explore-local-card"><h3>{item.title}</h3><small>{item.meta}</small><p>{item.note}</p>{item.id === "transfer" ? <Link href="/native-work" className="work-text-action">{t("See guest messages", "查看客人消息")} <ArrowRight size={15}/></Link> : <button type="button" className="explore-local-action" onClick={()=>{setPromotionContext(item.id === "market" ? "market" : "walk");setPromotionDraft("");setPromotionSaved(false);document.getElementById("promotion")?.scrollIntoView({behavior:"smooth"});}}>{t("Use for promotion", "用于推广")} <ArrowRight size={15}/></button>}</article>)}
+        ].map(item=><article key={item.id} className="native-card explore-local-card"><h3>{item.title}</h3><small>{item.meta}</small><p>{item.note}</p>{item.id === "transfer" ? <Link href="/native-work" className="work-text-action">{t("See guest messages", "查看客人消息")} <ArrowRight size={15}/></Link> : <button type="button" className="explore-local-action" onClick={()=>{setPromotionContext(item.id === "market" ? "market" : "walk");document.getElementById("promotion")?.scrollIntoView({behavior:"smooth"});}}>{t("Use for promotion", "用于推广")} <ArrowRight size={15}/></button>}</article>)}
       </section>
 
       <section className="explore-nearby">

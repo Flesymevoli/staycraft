@@ -132,3 +132,4 @@
 .explore-day-detail p { margin: 8px 0 0; font-size: 13px; line-height: 1.6; color: var(--muted); }
 .explore-day-detail .explore-day-signal { color: var(--ink); font-size: 15px; }
 .explore-day-collapse { position: absolute; top: 8px; right: 8px; display: grid; place-items: center; width: 44px; height: 44px; border: 0; border-radius: 50%; background: transparent; color: var(--muted); }
+.explore-promotion button:disabled, .explore-promotion textarea:disabled { opacity: .6; cursor: default; }

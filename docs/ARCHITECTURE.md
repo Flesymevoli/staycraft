@@ -114,3 +114,7 @@ v2 → v3 新增 demo_threads、demo_messages、demo_drafts，本地迁移时插
 ### 本机 Analysis 摘要适配与缓存
 
 GET /v1/local/analysis-summary?days=7|28&language=en|zh；示例指标由 analysis_service 计算，市场信号与自身入住率分开。相同输入/语言/模型/地址复用SQLite v4 summary_cache，避免反复进页重复扣费；生成前事务占位，处理中返回标注的规则解释，失败结果缓存五分钟。无后台定时重试，学校兼容接口沿用模型配置。模型正文限制为两段、每段450字符内、不含数字；格式检查并非语义正确性的证明，页面仍为示例解读和建议，任何操作需人工确认。正式订单数据与外部信号未接入。
+
+### 已有推广生成与保存服务
+
+本机 POST /v1/local/promotion-generate 从受控示例context/channel/language与确认时间事实构造输入，复用模型地址/名称/密钥配置；不接受客户端伪造价格或优惠。模型结果要求短正文、无数字/URL，格式检查不代替人工审核。生成按输入缓存，失败缓存五分钟，不后台重试或切换模型。GET/PUT /v1/local/promotion-draft 使用SQLite v5 promotion_drafts保存人工编辑的最新稿，键为线索+渠道+语言。保存只写本机，published始终false。原页面编辑器读取保存结果，未保存的编辑仅留当前页面；未接实时活动、OTA或社交平台发布接口。

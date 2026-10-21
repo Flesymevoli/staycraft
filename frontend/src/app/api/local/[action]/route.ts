@@ -1,5 +1,5 @@
-const paths: Record<string, string> = { facts: "/v1/local/facts", "reply-decision": "/v1/local/reply-decision", conversations: "/v1/local/conversations", conversation: "/v1/local/conversation", "conversation-draft": "/v1/local/conversation-draft", "conversation-reply": "/v1/local/conversation-reply", "analysis-summary": "/v1/local/analysis-summary" };
-const methods: Record<string, string[]> = { facts: ["GET", "PUT"], "reply-decision": ["POST"], conversations: ["GET"], conversation: ["GET"], "conversation-draft": ["POST"], "conversation-reply": ["POST"], "analysis-summary": ["GET"] };
+const paths: Record<string, string> = { facts: "/v1/local/facts", "reply-decision": "/v1/local/reply-decision", conversations: "/v1/local/conversations", conversation: "/v1/local/conversation", "conversation-draft": "/v1/local/conversation-draft", "conversation-reply": "/v1/local/conversation-reply", "analysis-summary": "/v1/local/analysis-summary", "promotion-generate": "/v1/local/promotion-generate", "promotion-draft": "/v1/local/promotion-draft" };
+const methods: Record<string, string[]> = { facts: ["GET", "PUT"], "reply-decision": ["POST"], conversations: ["GET"], conversation: ["GET"], "conversation-draft": ["POST"], "conversation-reply": ["POST"], "analysis-summary": ["GET"], "promotion-generate": ["POST"], "promotion-draft": ["GET", "PUT"] };
 
 async function proxy(request: Request, context: { params: Promise<{ action: string }> }) {
   const { action } = await context.params;
@@ -29,9 +29,16 @@ async function proxy(request: Request, context: { params: Promise<{ action: stri
       url.searchParams.set("days", query.get("days") ?? "7");
       url.searchParams.set("language", query.get("language") ?? "en");
     }
+    if (action === "promotion-draft" && request.method === "GET") {
+      const query = new URL(request.url).searchParams;
+      for (const field of ["channel", "context", "language"]) {
+        const value = query.get(field);
+        if (value) url.searchParams.set(field, value);
+      }
+    }
     const upstream = await fetch(url, {
       method: request.method, headers: { "Content-Type": "application/json" }, body,
-      cache: "no-store", signal: AbortSignal.timeout(["reply-decision", "conversation-draft", "analysis-summary"].includes(action) ? 25000 : 5000),
+      cache: "no-store", signal: AbortSignal.timeout(["reply-decision", "conversation-draft", "analysis-summary", "promotion-generate"].includes(action) ? 25000 : 5000),
     });
     return new Response(await upstream.text(), { status: upstream.status, headers: { "Content-Type": "application/json", "Cache-Control": "no-store" } });
   } catch {
