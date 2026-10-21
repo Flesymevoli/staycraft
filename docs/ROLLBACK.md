@@ -72,3 +72,7 @@ Work经营洞察口径修正仅改原组件，schema仍v8；qa-work-booking-insi
 ## Supabase公开配置接入（2026-10-22）
 
 本轮未改SQLite schema v8或云端数据库。公开配置保存在Git忽略的frontend/.env.local和backend/.env，未保存Secret key/数据库密码。回滚此模块可revert对应提交；若要停用本机登录，移除环境文件中的Supabase URL/Publishable key后重新构建并重启前端。Git回滚不会清除忽略的配置文件。不要删除SQLite数据或回退业务模块。运行中的后端未重启；下次启动正式权限接口时须显式载入backend/.env的SUPABASE_URL和SUPABASE_PUBLISHABLE_KEY，不能假设Python会自动读取文件。
+
+## 新账号空工作台（2026-10-22）
+
+本轮仅改前端正式入口、登录当前用户核验和文档，不改SQLite或云端schema。revert本模块提交后重建并重启前端即可恢复/app占位页；不删除本机数据或账号，不执行SQL回滚。Supabase公开配置在Git忽略文件中，Git回退不会清除它。自动化QA预加载模块只由独立测试子进程显式加载，正式预览不可设置STAYCRAFT_QA_AUTH_FIXTURES或加载该fixture脚本。

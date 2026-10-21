@@ -11,8 +11,10 @@ export default async function LoginPage() {
   if (hasSupabaseConfig()) {
     try {
       const supabase = await createClient();
-      const { data } = await supabase.auth.getClaims();
-      authenticated = Boolean(data?.claims?.sub);
+      // Use the same current-user check as /app to avoid a redirect loop for a
+      // revoked/deleted account whose signed token has not expired yet.
+      const { data, error } = await supabase.auth.getUser();
+      authenticated = !error && Boolean(data.user);
     } catch {
       // A failed Auth request leaves the login form available for retry.
     }

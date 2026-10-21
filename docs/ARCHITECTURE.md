@@ -136,3 +136,9 @@ v7→v8增加operation_requests（请求、关联订单、虚构付款/规则样
 GET /v1/local/schedule读取同一订单表，在单一读事务中返回2026-09-14至30日的入住/离店事件，排除cancelled。事件携带订单ID、房号、类型和日期，confirmed未来入住的time可取确认事实，其余time=null，time_basis标注standard_policy或not_recorded。HomeSchedule沿用原日期条/展开样式；回环模式失败不回退假日程，只有404公开原型使用历史样本。不增加schema，不写订单，订单方案记录不会删除日程。
 
 Work原经营洞察复用useOperationMetrics(7)与相同接口，按真实weekday标记汇总房间夜，再组织规则解释。准备/审核入口仅改变原会话内analysisReady/confirmed状态，不创建后台AI任务。只在数据读取中显示进度条；失败/缺客房禁止准备和审核，正文与语言改变时同步，不使用旧缓存文本冒充本次结果。无schema变化。
+
+## 正式入口的五页空状态（2026-10-22）
+
+/app为Home，/app/work、analysis、explore、mine复用既有native样式令牌和图标，独立WorkspaceClient展示无业务来源时的占位状态。每个页面经renderWorkspace调用Auth getUser核验当前用户，再以该用户JWT读取property_memberships和properties名称；读不到成员关系才为unassigned，缺表/错误为unavailable。查询只读，不创建民宿或成员，不访问SQLite或/api/local，不加载原型的demo sessionStorage。正式页面无后台业务功能，不代表云端业务已接入。
+
+/login同样调用getUser，避免仍有效JWT但账号已失效时与/app相互跳转。/app/loading.tsx仅展示非敏感加载提示。原/nav原型与本机接口仍保留原有边界，不能将本轮当成完整云端隔离验收。后续业务读写须由FastAPI重新校验身份/民宿权限，不能信任客户端名称或状态。
