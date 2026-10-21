@@ -154,3 +154,6 @@ Work原经营洞察复用useOperationMetrics(7)与相同接口，按真实weekda
 property_details(property_id PK/FK, profile JSONB, revision UUID, updated_at)保存六个受约束字段。RLS限定成员角色owner/manager可读取、新建和更新本民宿，UPDATE同时USING/WITH CHECK；匿名无权限，客户端无删除权限。初次保存insert，已存在以原revision条件更新并更换revision，零行/重复创建返回409，避免覆盖其他页面的修改。服务端和SQL都校验字段形状/名称长度/客房数/时间。资料名称以profile.name为保存后的展示源，properties.name为尚无资料时的容器名称。
 
 /api/workspace/import只需已登录账号，可在尚未关联民宿时预览。校验同源、上传大小与格式；unpdf1.9.1抽取PDF文字（本地字节、40页上限），fflate0.8.3只读取DOCX的word/document.xml并限制解压声明总量6MB/1000项，拒绝DTD/实体声明；TXT/CSV只读UTF-8。文件整体2MB，解析文本10万字符，预览1万字符；不执行文档指令、不渲染HTML、不持久化原件、不调用外部模型。先返回候选值/原文，再由客户端选择填表，PUT必须confirmed=true。
+
+
+客人端申请数据（2026-10-22）：独立本机Order可带refund(result,requestedAt,deadline)，result为auto_cancelled或review_pending，订单增加cancelled状态。截止时间固定为入住日期T18:00:00+08:00，提交时重新计算，严格小于截止才自动取消；读取最新本机数组后去重写入，存储失败返回错误且不改UI状态。旧订单兼容。不是可信服务端决策，不接支付/AI/正式经营端，未来同步须由服务端重核。
