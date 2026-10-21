@@ -2,6 +2,8 @@
 
 这是自主开发代码版的进度，课程 Softr、看板和交付文件未改，也未发布。
 
+代码备份：GitHub私有仓库https://github.com/Flesymevoli/staycraft，保留模块提交历史。上传代码不等于应用已部署；本机数据库、环境密钥和课程deliverables不上传。
+
 ## 本轮完成
 
 - 房态：Ready绿色、To clean蓝色、Occupied黑色；原看板接本机虚构订单和客房表，清洁完成保存后刷新保留，在住房间不能被清洁操作变成可入住。不办理入住、不改订单。

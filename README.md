@@ -1,4 +1,6 @@
-# Homestay AI assistant
+# Staycraft
+
+面向民宿经营者的 AI 辅助经营应用：客人咨询草稿、订单事务建议、客房状态、经营分析与推广文案。当前可运行版本使用本机虚构数据，保留人工审核，不执行真实发送、退款或平台发布。
 
 当前原型入口是 [`frontend/`](frontend/README.md)：Home、Work、Analysis、Explore、Mine 五页的 Next.js 移动端交互原型。进入 `frontend` 后运行 `npm install`（首次）和 `npm run dev`，打开 http://localhost:3000 。
 
@@ -6,7 +8,7 @@
 
 早期单文件原型、设计试验与旧文档统一放在 [`archive/`](archive/README.md)。`deliverables/` 是课程交付资料，保留原位置。旧版网页可通过当前前端的 `/legacy` 预览。
 
-本地 Git 仓库记录通过验证的代码模块；逐模块测试、提交与回滚步骤见 [`docs/ROLLBACK.md`](docs/ROLLBACK.md)。课程交付件不纳入代码仓库，当前尚未配置远程仓库。
+Git 仓库记录通过验证的代码模块；逐模块测试、提交与回滚步骤见 [`docs/ROLLBACK.md`](docs/ROLLBACK.md)。远程仓库为 [Flesymevoli/staycraft](https://github.com/Flesymevoli/staycraft)（私有）。课程交付件、本机数据库和密钥不纳入代码仓库。
 
 
 当前进展与待确认事项见 [`docs/DEVELOPMENT_STATUS.md`](docs/DEVELOPMENT_STATUS.md)。本机完整演示须同时启动前端与后端并设置 `HOMESTAY_LOCAL_DATA=1`；默认关闭外部模型，启用配置见 backend/README.md。课程 Softr 交付与代码版开发保持独立，尚未发布。
