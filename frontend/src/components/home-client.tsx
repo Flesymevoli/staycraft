@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, Check, X } from "lucide-react";
 import { useDemoStorage } from "./demo-storage";
+import { RoomBoard } from "./room-board";
 import "./native-home.css";
 
 type Language = "en" | "zh";
@@ -134,6 +135,8 @@ export function HomeClient() {
             </div>
           )}
         </section>
+
+        <RoomBoard zh={zh} />
 
         <section className="native-overview" aria-label={t("Your stay at a glance", "经营一览")}>
           <div className="native-section-head native-overview-head"><h2>{t("Your stay at a glance", "经营一览")}</h2><small>{t("This week · Sample", "本周 · 示例")}</small></div>

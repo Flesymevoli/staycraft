@@ -98,3 +98,7 @@ API：GET/PUT `/v1/local/facts`；POST `/v1/local/reply-decision`。SQLite schem
 Work 本机新咨询增加可选模型润色层：先经过现有规则门禁，仅有已确认时间依据的普通问题才调用模型。退款、提前入住、资料不足和未支持的问题不调用。模型输入仅含当前问题、语言及相关引用事实。全部模型草稿为 needs_review / sent=false；格式和时间检查不等于语义正确证明，不能自动发送。
 
 后端环境变量：MODEL_ENABLED（默认关闭）、MODEL_API_KEY、MODEL_BASE_URL、MODEL_NAME。已用虚构咨询验证 DeepSeek 官方 deepseek-flash；通过 https Chat Completions 接口调用。学校接口若兼容，仅替换变量；若不兼容，在 model_service.py 增加适配，不改页面。DeepSeek 的 thinking=disabled 参数只用于其官方域名。单次最多 256 输出 tokens，20 秒超时，不自动重试、不换付费模型，错误详情与密钥不回传前端。失败明确显示规则备用回复与待审核状态。真实账号、自动发送、Analysis 模型接入仍未完成。
+
+### 首页房态前端评审
+
+RoomBoard 组件使用内置示例房间与 React 本地状态，展示固定 9 月 17 日快照；不跟随原日程日期选择变化，不接 API、不保存数据库、不改变 Work 或首页入住率数据。演示清洁仅更新当前组件状态，刷新重置。正式客房/订单联动须另行确认并设计状态约束。
