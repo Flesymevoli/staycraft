@@ -157,3 +157,10 @@ property_details(property_id PK/FK, profile JSONB, revision UUID, updated_at)保
 
 
 客人端申请数据（2026-10-22）：独立本机Order可带refund(result,requestedAt,deadline)，result为auto_cancelled或review_pending，订单增加cancelled状态。截止时间固定为入住日期T18:00:00+08:00，提交时重新计算，严格小于截止才自动取消；读取最新本机数组后去重写入，存储失败返回错误且不改UI状态。旧订单兼容。不是可信服务端决策，不接支付/AI/正式经营端，未来同步须由服务端重核。
+
+
+房型与房号配置（2026-10-22）：新增private property_inventory(property_id PK/FK, inventory JSONB, revision UUID, updated_at)，配置文档仅types/rooms，最多20房型/200房间。types含稳定UUID/name/beds/capacity/price/photo；rooms含稳定UUID/number/floor/typeId/housekeeping/active。JSONB仅用于有界配置，不作为后续订单/可售库存事务模型。应用与SQL检查结构、价格、引用、唯一房号等，更新以revision条件保护，触发器禁止移除已有房间ID；停用保留身份。
+
+/api/workspace/inventory经getUser、成员关系及用户JWT/RLS读取/保存，property_id始终服务端解析，同源和160KB限制。/api/workspace/room-photo仅成员可上传/读取：客户端压缩到960px WebP，服务端检查256KB/魔数；路径由服务端生成propertyUUID/photoUUID.webp。room-photos桶私有，用户JWT按民宿目录授权，文件不覆盖、不开放匿名读取，无AI调用。替换图片保留旧对象，暂未做孤立文件清理；未来公开客人展示需要单独设计发布边界，不能直接暴露私有图。
+
+本模块迁移20261021190759由CLI创建，云端尚未执行；独立QA模拟REST/Storage，未冒充数据库RLS验收。SQLite及示例native房态保持独立，正式/app从配置接口读取，尚无真实预订入住率。

@@ -33,7 +33,7 @@ const cookie = index => {
     page.on('request', req => { if (/\/api\/(local|demo)\//.test(req.url())) localRequests.push(req.url()); });
     await page.addInitScript(() => { sessionStorage.setItem('homestay-demo:property', JSON.stringify({ name: 'LEAKED SAMPLE PROPERTY' })); });
     await page.goto(base + '/app');
-    await page.getByRole('heading', { name: '让 AI 帮你经营民宿' }).waitFor();
+    await page.getByRole('heading', { name: '客房概览' }).waitFor();
     assert.equal(await page.getByRole('navigation').getByRole('link').count(), 5);
     for (const route of ['/app', '/app/work', '/app/analysis', '/app/explore', '/app/mine']) {
       await page.goto(base + route);
@@ -64,19 +64,19 @@ const cookie = index => {
     await context.addCookies([cookie(2)]);
     await page.goto(base + '/app');
     await page.getByRole('status').getByText('暂时无法读取民宿资料，请稍后重试。').waitFor();
-    await page.getByRole('button', { name: '重试', exact: true }).click();
-    await page.getByRole('button', { name: '重试', exact: true }).waitFor();
+    await page.locator('.workspace-notice').getByRole('button', { name: '重试', exact: true }).click();
+    await page.locator('.workspace-notice').getByRole('button', { name: '重试', exact: true }).waitFor();
     await page.screenshot({ path: 'qa-workspace-unavailable.png', fullPage: true });
     await context.addCookies([cookie(3)]);
     await page.goto(base + '/app', { waitUntil: 'commit' });
     await page.getByRole('status').getByText('正在打开工作台…', { exact: true }).waitFor();
-    await page.getByRole('heading', { name: '让 AI 帮你经营民宿' }).waitFor();
+    await page.getByRole('heading', { name: '客房概览' }).waitFor();
     await context.addCookies([cookie(0)]);
     await page.goto(base + '/app');
     await page.setViewportSize({ width: 390, height: 844 });
     await page.screenshot({ path: 'qa-workspace-home.png', fullPage: true });
-    await page.getByRole('link', { name: '上传民宿资料', exact: true }).click();
-    await page.waitForURL('**/app/mine');
+    await page.getByRole('link', { name: '管理', exact: true }).click();
+    await page.waitForURL('**/app/mine#rooms');
     await page.goto(base + '/app/analysis');
     await page.screenshot({ path: 'qa-workspace-analysis.png', fullPage: true });
     console.log('PASS: protected five-page empty workspace; no sample/local API leakage; per-account fixtures; missing-schema retry; sign-out; bilingual; 320/390/658px. Auth responses mocked only in isolated QA process; no live cloud writes.');

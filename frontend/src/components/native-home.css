@@ -45,10 +45,7 @@
 
 .native-home-page {
   padding-top: 4px;
-  background:
-    radial-gradient(ellipse 420px 270px at 0 0, #f3ded2bb, transparent),
-    radial-gradient(ellipse 400px 280px at 100% 0, #dfdaf1b0, transparent),
-    #f8f9fb;
+  background: #f8f9fb;
 }
 .native-header {
   height: 44px;

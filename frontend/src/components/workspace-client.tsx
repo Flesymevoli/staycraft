@@ -4,10 +4,11 @@ import { useState, useTransition } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { ArrowRight, Building2, ChartNoAxesCombined, Compass, MessageCircle, RefreshCw } from "lucide-react";
+import { ArrowRight, ChartNoAxesCombined, Compass, MessageCircle, RefreshCw } from "lucide-react";
 import "./native-home.css";
 import "./workspace.css";
 import { PropertyProfileEditor } from "./property-profile-editor";
+import { PropertyInventoryPanel } from "./property-inventory";
 
 export type WorkspaceSection = "home" | "work" | "analysis" | "explore" | "mine";
 export type WorkspaceConnection = { status: "unavailable" | "unassigned" } | { status: "linked"; propertyName: string };
@@ -24,13 +25,14 @@ export function WorkspaceClient({ section, email, connection, signOutAction }: {
 }) {
   // Account pages do not use the prototype's shared sessionStorage or local APIs.
   const [zh, setZh] = useState(true);
+  const [roomCount,setRoomCount] = useState<number|null>(null);
   const [refreshing, startRefresh] = useTransition();
   const router = useRouter();
   const t = (en: string, cn: string) => zh ? cn : en;
   const current = sections.find(item => item.id === section)!;
-  const toMine = <Link className="native-primary" href="/app/mine">{section === "home" ? t("Upload property details", "上传民宿资料") : t("View property details", "查看民宿资料")}<ArrowRight size={16} aria-hidden="true" /></Link>;
+  const toMine = <Link className="native-primary" href="/app/mine">{t("Set up property", "设置民宿资料")}<ArrowRight size={16} aria-hidden="true" /></Link>;
   const summaryLabels = section === "home" ? [t("Rooms", "客房"), t("Occupancy", "入住率")] : [t("Occupancy", "入住率"), t("Booking pace", "预订进度")];
-  const metrics = <div className="workspace-metrics">{summaryLabels.map(label => <div className="workspace-metric" key={label}><span>{label}</span><strong aria-label={t("No data available", "尚无数据")}>—</strong><small>{t("Not connected yet", "尚未接入")}</small></div>)}</div>;
+  const metrics = <div className="workspace-metrics">{summaryLabels.map((label,index) => <div className="workspace-metric" key={label}><span>{label}</span><strong>{section==="home" && index===0 && roomCount!==null?roomCount:"—"}</strong><small>{section==="home" && index===0 && roomCount!==null?t("Active configured rooms","已配置并启用的客房"):t("Not connected yet", "尚未接入")}</small></div>)}</div>;
 
   return <div className="native-shell workspace-shell">
     <main className={`native-page workspace-page${section === "home" ? " native-home-page" : ""}`}>
@@ -41,7 +43,7 @@ export function WorkspaceClient({ section, email, connection, signOutAction }: {
       {connection.status === "unavailable" && <div className="workspace-notice" role="status"><span>{t("Property details are unavailable. Please try again.", "暂时无法读取民宿资料，请稍后重试。")}</span><button type="button" disabled={refreshing} onClick={() => startRefresh(() => router.refresh())}><RefreshCw size={15} aria-hidden="true" />{refreshing ? t("Retrying…", "正在重试…") : t("Retry", "重试")}</button></div>}
 
       {section === "home" && <>
-        <section className="workspace-empty"><span className="workspace-symbol"><Building2 size={28} strokeWidth={1.4} aria-hidden="true" /></span><h2>{t("Let AI help run your homestay.", "让 AI 帮你经营民宿")}</h2><p>{t("Property details, rooms and bookings bring your day into view.", "接入民宿资料、客房和订单后，这里会呈现你的每日经营。")}</p>{toMine}</section>
+        <PropertyInventoryPanel zh={zh} mode="board" onCount={setRoomCount}/>
         <section className="workspace-section"><h2>{t("Your stay at a glance", "经营一览")}</h2>{metrics}</section>
       </>}
       {section === "work" && <section className="workspace-empty"><span className="workspace-symbol"><MessageCircle size={28} strokeWidth={1.4} aria-hidden="true" /></span><h2>{t("Ready for your first conversation.", "等待第一条客人消息。")}</h2><p>{t("Guest conversations and requests will appear here once connected. AI needs confirmed property information before it can help with replies.", "接入消息后，客人咨询和待办会出现在这里。AI 需要已确认的民宿资料，才能辅助回复。")}</p>{toMine}</section>}
@@ -49,6 +51,7 @@ export function WorkspaceClient({ section, email, connection, signOutAction }: {
       {section === "explore" && <section className="workspace-empty"><span className="workspace-symbol"><Compass size={28} strokeWidth={1.4} aria-hidden="true" /></span><h2>{t("Discover what is around you.", "从民宿所在的位置开始。")}</h2><p>{t("Local demand and opportunities need a property location and reliable sources. There are no connected signals yet.", "周边需求和推广机会需要民宿位置及可靠的信息来源，目前尚未接入相关数据。")}</p>{toMine}</section>}
       {section === "mine" && <>
         <PropertyProfileEditor zh={zh} />
+        <PropertyInventoryPanel zh={zh}/>
         <section className="workspace-account"><h2>{t("Account", "账号")}</h2><p>{email}</p><form action={signOutAction}><button className="workspace-signout" type="submit">{t("Sign out", "退出登录")}</button></form></section>
       </>}
     </main>

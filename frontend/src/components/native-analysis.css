@@ -44,7 +44,7 @@
   margin-top: 30px;
   padding: 23px 21px;
   border-radius: 28px;
-  background: linear-gradient(110deg, #f8f1ff 0%, #fdf5f2 100%);
+  background: var(--card-surface);
 }
 .analysis-insight h2 { max-width: 300px; margin: 15px 0 12px; font-weight: 400; font-size: 27px; line-height: 1.14; letter-spacing: -.035em; }
 .analysis-insight > p { margin: 0; color: var(--muted); font-size: 14px; line-height: 1.48; }
@@ -134,7 +134,7 @@
 .analysis-rating-disclosure summary:focus-visible { outline: 2px solid var(--blue); outline-offset: 3px; border-radius: 4px; }
 .analysis-rating-breakdown { padding: 0 0 8px; }
 .analysis-selected-detail { scroll-margin-top: 20px; }
-.analysis-summary-card { margin-top: 28px; padding: 20px; border-radius: var(--card-radius); background: linear-gradient(110deg,#f8f1ff,#fdf5f2); }
+.analysis-summary-card { margin-top: 28px; padding: 20px; border-radius: var(--card-radius); background: var(--card-surface); }
 .analysis-summary-heading { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; }
 .analysis-summary-heading h2, .analysis-decisions h2 { margin: 0; font-size: var(--section-title-size); font-weight: 500; }
 .analysis-summary-heading small { font-size: 10px; color: var(--muted); }

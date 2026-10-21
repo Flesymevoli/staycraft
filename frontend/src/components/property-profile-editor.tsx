@@ -84,6 +84,17 @@ export function PropertyProfileEditor({ zh }: { zh: boolean }) {
     t("Could not read the file. Your existing input has not changed.", "暂时无法解析文件，已有输入没有改变。请重试。");
 
   return <section className="workspace-profile" aria-label={t("Property details and upload", "民宿资料与上传")}>
+    <form onSubmit={save} className="profile-form">
+      <h2>{t("Property information", "民宿资料")}</h2>
+      {state === "loading" && <p role="status">{t("Loading saved information…", "正在读取已保存资料…")}</p>}
+      {(state === "unavailable" || state === "unassigned") && <div className="profile-connection" role="status"><p>{state === "unassigned" ? t("Link a property before saving. You can prepare and review details here first.", "关联民宿后才能保存，现在可以先填写、上传并核对资料。") : t("Saving is not available yet. You can prepare and review details here without losing them.", "资料保存暂未接通，你可以先填写、上传并核对，当前输入会保留在此页面。")}</p><button type="button" onClick={retry} className="profile-text-button" disabled={!!busy}>{t("Retry connection", "重试连接")}</button></div>}
+      {profileFields.filter(field=>field.key!=="roomCount").map(field => <label className="profile-field" key={field.key}><span>{field[zh ? "zh" : "en"]}{field.key === "name" ? " *" : ""}</span>{field.key === "notes" ? <textarea aria-label={field[zh ? "zh" : "en"]} value={profile[field.key]} maxLength={field.max} disabled={!!busy} onChange={event => edit(field.key, event.target.value)} rows={4} /> : <input value={profile[field.key]} required={field.key === "name"} maxLength={field.max} disabled={!!busy}  placeholder={field.key === "breakfast" ? "07:30–10:00" : field.key === "checkin" ? "15:00" : undefined} onChange={event => edit(field.key, event.target.value)} />}</label>)}
+      <label className="profile-confirm"><input type="checkbox" checked={confirmed} disabled={!!busy} onChange={event => setConfirmed(event.target.checked)} /><span>{t("I have reviewed these details and confirm they are accurate.", "我已核对以上资料，确认内容准确。")}</span></label>
+      {error && <p role="alert" className="profile-error">{errorText}</p>}
+      {saved && <p role="status" className="profile-saved"><Check size={16} aria-hidden="true" />{t("Confirmed details saved.", "已保存确认后的资料。")}</p>}
+      <button type="submit" className="native-primary" disabled={state !== "ready" || !!busy || !confirmed}>{busy === "save" ? t("Saving…", "正在保存…") : t("Confirm and save", "确认保存")}</button>
+    </form>
+    <details className="profile-document"><summary>{t("Fill from a document (optional)","从文档辅助填写（可选）")}</summary>
     <div className="profile-upload">
       <h2>{t("Start with your property details", "从民宿资料开始")}</h2>
       <p>{t("Upload a document, review the suggested fields, then confirm what to save. You can also type below.", "上传资料，核对识别出的字段，再确认保存。也可以直接在下方填写。")}</p>
@@ -99,15 +110,6 @@ export function PropertyProfileEditor({ zh }: { zh: boolean }) {
       <details><summary>{t("View extracted text", "查看提取的原文")}</summary><pre>{preview.excerpt}</pre></details>
       <div className="profile-actions"><button type="button" className="native-primary" disabled={!selected.length} onClick={applyPreview}>{t("Apply selected fields", "填入所选字段")}</button><button type="button" className="profile-text-button" onClick={() => setPreview(null)}>{t("Cancel", "取消")}</button></div>
     </div>}
-    <form onSubmit={save} className="profile-form">
-      <h2>{t("Property information", "民宿资料")}</h2>
-      {state === "loading" && <p role="status">{t("Loading saved information…", "正在读取已保存资料…")}</p>}
-      {(state === "unavailable" || state === "unassigned") && <div className="profile-connection" role="status"><p>{state === "unassigned" ? t("Link a property before saving. You can prepare and review details here first.", "关联民宿后才能保存，现在可以先填写、上传并核对资料。") : t("Saving is not available yet. You can prepare and review details here without losing them.", "资料保存暂未接通，你可以先填写、上传并核对，当前输入会保留在此页面。")}</p><button type="button" onClick={retry} className="profile-text-button" disabled={!!busy}>{t("Retry connection", "重试连接")}</button></div>}
-      {profileFields.map(field => <label className="profile-field" key={field.key}><span>{field[zh ? "zh" : "en"]}{field.key === "name" ? " *" : ""}</span>{field.key === "notes" ? <textarea aria-label={field[zh ? "zh" : "en"]} value={profile[field.key]} maxLength={field.max} disabled={!!busy} onChange={event => edit(field.key, event.target.value)} rows={4} /> : <input value={profile[field.key]} required={field.key === "name"} maxLength={field.max} disabled={!!busy} inputMode={field.key === "roomCount" ? "numeric" : undefined} placeholder={field.key === "breakfast" ? "07:30–10:00" : field.key === "checkin" ? "15:00" : undefined} onChange={event => edit(field.key, event.target.value)} />}</label>)}
-      <label className="profile-confirm"><input type="checkbox" checked={confirmed} disabled={!!busy} onChange={event => setConfirmed(event.target.checked)} /><span>{t("I have reviewed these details and confirm they are accurate.", "我已核对以上资料，确认内容准确。")}</span></label>
-      {error && <p role="alert" className="profile-error">{errorText}</p>}
-      {saved && <p role="status" className="profile-saved"><Check size={16} aria-hidden="true" />{t("Confirmed details saved.", "已保存确认后的资料。")}</p>}
-      <button type="submit" className="native-primary" disabled={state !== "ready" || !!busy || !confirmed}>{busy === "save" ? t("Saving…", "正在保存…") : t("Confirm and save", "确认保存")}</button>
-    </form>
+    </details>
   </section>;
 }

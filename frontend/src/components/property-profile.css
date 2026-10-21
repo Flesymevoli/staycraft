@@ -24,3 +24,5 @@
 .profile-text-button { min-height: 44px; border: 0; padding: 0; background: transparent; color: var(--blue); }
 .profile-error { margin: 0; color: #a22929; font-size: 13px; line-height: 1.6; }
 .profile-saved { display: flex; gap: 6px; align-items: center; margin: 0; font-size: 13px; }
+
+.profile-document{margin-top:22px;font-size:13px;color:var(--muted)}.profile-document>summary{min-height:44px;cursor:pointer;padding:12px 0}.profile-document .profile-upload{margin-top:8px}
