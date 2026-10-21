@@ -1,0 +1,50 @@
+const {chromium}=require('C:/Users/86299/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright');
+const assert=require('node:assert/strict');
+const base=process.env.GUEST_QA_URL || 'http://127.0.0.1:3105';
+(async()=>{
+ const browser=await chromium.launch();
+ try {
+  const context=await browser.newContext({viewport:{width:390,height:844}});
+  const page=await context.newPage();const errors=[];const businessRequests=[];
+  page.on('pageerror',e=>errors.push(e.message));page.on('request',r=>{if(r.url().includes('/api/') || /supabase|deepseek/.test(r.url())) businessRequests.push(r.url());});
+  await page.goto(base+'/guest/orders');await page.getByRole('heading',{name:'下一段旅程，从这里开始'}).waitFor();
+  await page.getByRole('link',{name:'去看看房型'}).click();
+  await page.getByLabel('入住日期').fill('2026-11-10');await page.getByLabel('离店日期').fill('2026-11-09');
+  await page.getByRole('button',{name:'查看房型',exact:true}).click();await page.getByRole('alert').filter({hasText:'离店须晚于入住'}).waitFor();
+  await page.getByLabel('离店日期').fill('2026-11-12');await page.getByLabel('入住人数').selectOption('1');
+  await page.getByRole('button',{name:'查看房型',exact:true}).click();await page.getByText('11月10日 — 11月12日 · 2 晚 · 1 位客人',{exact:true}).waitFor();
+  await page.getByRole('link',{name:'预订花园大床房',exact:true}).click();await page.getByRole('heading',{name:'确认这次小住'}).waitFor();
+  assert.equal(await page.getByLabel('入住日期').inputValue(),'2026-11-10');
+  await page.getByLabel('入住人姓名',{exact:true}).fill('虚构旅客');await page.getByLabel('联系电话',{exact:true}).fill('wrong-number');
+  await page.getByLabel('我已了解：此为交互原型，申请仅记录在本机，预订需民宿确认。',{exact:true}).check();
+  await page.getByRole('button',{name:'提交预订申请'}).click();await page.getByRole('alert').filter({hasText:'示例联系电话'}).waitFor();
+  await page.getByLabel('联系电话',{exact:true}).fill('13800000000');await page.getByLabel('特殊需求 选填',{exact:true}).fill('示例：安静一点的房间');
+  await page.getByRole('button',{name:'提交预订申请'}).click();await page.getByRole('heading',{name:'预订申请已记录'}).waitFor();
+  await page.getByRole('link',{name:'查看我的订单'}).click();await page.getByText('等待民宿确认',{exact:true}).waitFor();
+  await page.getByRole('button',{name:'订单详情'}).click();await page.getByText('虚构旅客',{exact:true}).waitFor();assert.match(await page.locator('.guest-order-summary').innerText(),/1040/);
+  await page.reload();await page.getByRole('button',{name:'订单详情'}).click();await page.getByText('虚构旅客',{exact:true}).waitFor();
+  await page.getByRole('button',{name:'已确认',exact:true}).click();await page.getByRole('heading',{name:'暂无这类订单'}).waitFor();
+  await page.getByRole('button',{name:'待确认',exact:true}).click();
+  await page.locator('.guest-order').getByRole('link',{name:'联系民宿',exact:true}).click();await page.getByText(/关联订单 SC-/).waitFor();
+  await page.getByRole('button',{name:'几点可以入住？'}).click();await page.locator('.guest-host').filter({hasText:'常规入住时间为 15:00 后。提前入住需要由民宿另行确认。'}).waitFor();
+  await page.getByLabel('咨询内容').fill('虚构咨询：可以带行李吗？');await page.getByRole('button',{name:'发送示例消息'}).click();await page.locator('.guest-guest').filter({hasText:'虚构咨询：可以带行李吗？'}).waitFor();
+  await page.reload();await page.locator('.guest-guest').filter({hasText:'虚构咨询：可以带行李吗？'}).waitFor();
+  await page.getByRole('navigation',{name:'客人导航'}).getByRole('link',{name:'联系民宿',exact:true}).click();await page.locator('.guest-guest').filter({hasText:'虚构咨询：可以带行李吗？'}).waitFor({state:'hidden'});
+  for(const width of [320,390,658,1280]){
+   await page.setViewportSize({width,height:900});
+   for(const route of ['/guest','/guest/orders','/guest/contact','/guest/book?room=courtyard&arrival=2026-11-10&departure=2026-11-12']){
+    await page.goto(base+route);await page.locator('.guest-nav').waitFor();
+    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false,`overflow ${route} ${width}`);
+    await page.locator('.guest-footer').scrollIntoViewIfNeeded();
+    const footer=await page.locator('.guest-footer').boundingBox();const nav=await page.locator('.guest-nav').boundingBox();assert.ok(footer.y+footer.height<=nav.y+1,`footer covered ${route} ${width}`);
+   }
+  }
+  await page.setViewportSize({width:390,height:844});await page.goto(base+'/guest');await page.getByLabel('入住日期').fill('2026-11-10');await page.getByLabel('离店日期').fill('2026-11-12');await page.screenshot({path:'qa-guest-home.png',fullPage:true});
+  const isolated=await browser.newContext();const other=await isolated.newPage();await other.goto(base+'/guest/orders');await other.getByRole('heading',{name:'下一段旅程，从这里开始'}).waitFor();
+  const blocked=await browser.newContext();await blocked.addInitScript(()=>{Storage.prototype.getItem=function(){throw new Error('blocked')};Storage.prototype.setItem=function(){throw new Error('blocked')};});const blockedPage=await blocked.newPage();await blockedPage.goto(base+'/guest/orders');await blockedPage.getByText(/本机记录暂时无法读取/).waitFor();await blockedPage.getByRole('link',{name:'去看看房型'}).waitFor();
+  assert.deepEqual(errors,[]);assert.deepEqual(businessRequests,[]);
+  console.log('PASS guest: booking validation, total, pending orders, refresh, filters, contextual chat, isolated storage, storage failure, 320/390/658/1280 layouts; no business API calls.');
+ } finally {await browser.close();}
+})().catch(e=>{console.error(e);process.exitCode=1;});
+
+

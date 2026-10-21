@@ -1,5 +1,9 @@
 # Homestay AI｜技术架构与开发约束
 
+## 客人端独立前端原型 · 2026-10-22
+
+/guest、/guest/book、/guest/orders、/guest/contact共用GuestClient，Next页面只传查询参数，不读取Auth、Supabase、SQLite或模型。仅使用staycraft-guest-prototype-orders-v1/messages-v1浏览器键；订单不保存联系电话，不混入正式工作台和原经营端本机演示。文本由React转义，存储读取做形状校验/数量限制，失败显示提示。所有业务状态都是虚构，未接订单库存、支付、消息发送或AI。后续真实接入须重新设计服务端校验和身份/房量边界，不能信任这些记录。
+
 版本：v1.2 · 2026-10-15  
 对应 [PRD.md](PRD.md) 与 [DESIGN.md](DESIGN.md)。本文件区分**已选技术方案**与**当前已实现内容**，避免把五页演示误写成可上线系统。
 
