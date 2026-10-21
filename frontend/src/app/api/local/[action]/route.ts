@@ -1,6 +1,11 @@
 const paths: Record<string, string> = { facts: "/v1/local/facts", "reply-decision": "/v1/local/reply-decision", conversations: "/v1/local/conversations", conversation: "/v1/local/conversation", "conversation-draft": "/v1/local/conversation-draft", "conversation-reply": "/v1/local/conversation-reply", "analysis-summary": "/v1/local/analysis-summary", "promotion-generate": "/v1/local/promotion-generate", "promotion-draft": "/v1/local/promotion-draft" };
 const methods: Record<string, string[]> = { facts: ["GET", "PUT"], "reply-decision": ["POST"], conversations: ["GET"], conversation: ["GET"], "conversation-draft": ["POST"], "conversation-reply": ["POST"], "analysis-summary": ["GET"], "promotion-generate": ["POST"], "promotion-draft": ["GET", "PUT"] };
 
+paths["room-board"] = "/v1/local/room-board";
+paths["room-clean"] = "/v1/local/room-clean";
+methods["room-board"] = ["GET"];
+methods["room-clean"] = ["POST"];
+
 async function proxy(request: Request, context: { params: Promise<{ action: string }> }) {
   const { action } = await context.params;
   // Next may normalize request.url to localhost while the browser uses 127.0.0.1.

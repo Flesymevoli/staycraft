@@ -28,3 +28,5 @@ backend/.env.example 提供变量示例；目前进程从环境变量读取，�
 虚构端到端测试：使用独立的 HOMESTAY_LOCAL_DB 文件、MODEL_ENABLED=1 及测试供应商配置启动后端，再让本机 Next BACKEND_API_URL 指向该测试后端。在 frontend 执行 `$env:RUN_PAID_MODEL_TEST='1'; node scripts/qa-model-live.cjs`（默认 QA_PORT=3101），会发一次有输出上限的付费请求；脚本无真实密钥，仅使用固定虚构资料，并恢复原事实。不要把此脚本加入默认批量测试。已有官方接口连通性和虚构客服草稿通过，不代表完整经营分析已完成。
 
 Work 会话回归脚本 `frontend/scripts/qa-work-inbox.cjs` 会写演示回复，须使用独立的全新虚构数据库。默认 QA_PORT=3101、QA_BACKEND=http://127.0.0.1:8013；建议 MODEL_ENABLED=0，避免浏览器回归重复消费API。当前仅迁移两条既有虚构消息，不连接OTA。旧 qa-work-decision/qa-local-facts/qa-model-live 脚本针对已移除的独立测试表单，保留作历史参考，当前界面回归使用 qa-work-inbox。
+
+本机房态：GET `/v1/local/room-board` 返回固定2026-09-17快照、客房和派生统计；POST `/v1/local/room-clean` 接收 `{"room_number":"102"}`，只更新空房清洁状态，在住返回409。schema v6增量插入10间虚构客房和9笔虚构订单，不覆盖旧资料。`frontend/scripts/qa-room-board.cjs` 默认QA_PORT=3102，必须连接独立新建虚构测试库；脚本会将102标记清洁，不可指向展示库或真实数据。

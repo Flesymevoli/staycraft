@@ -25,5 +25,6 @@
 .room-detail p { margin: 8px 0 12px; color: var(--muted); font-size: 12px; line-height: 1.5; }
 .room-clean-button { display: inline-flex; align-items: center; justify-content: center; gap: 5px; min-height: 44px; padding: 0 14px; border: 0; border-radius: 22px; background: #eef5fb; color: #1765ae; font-size: 12px; }
 .room-detail .room-demo-feedback { color: var(--room-ready); }
+.room-clean-button:disabled { opacity: .6; cursor: wait; }
 .room-board-hint { margin: 12px 0 0; text-align: center; color: var(--muted); font-size: 10px; }
 @media (max-width: 359px) { .room-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }

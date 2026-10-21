@@ -10,3 +10,5 @@
 
 
 当前进展与待确认事项见 [`docs/DEVELOPMENT_STATUS.md`](docs/DEVELOPMENT_STATUS.md)。本机完整演示须同时启动前端与后端并设置 `HOMESTAY_LOCAL_DATA=1`；默认关闭外部模型，启用配置见 backend/README.md。课程 Softr 交付与代码版开发保持独立，尚未发布。
+
+首页客房概览已读取本机虚构订单与客房表，标记清洁完成后刷新保留；房态固定为9月17日演示快照，不会办理入住。Analysis多日指标仍使用单独的示例序列，下一步才统一订单口径。

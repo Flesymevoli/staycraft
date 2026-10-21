@@ -118,3 +118,7 @@ GET /v1/local/analysis-summary?days=7|28&language=en|zh；示例指标由 analys
 ### 已有推广生成与保存服务
 
 本机 POST /v1/local/promotion-generate 从受控示例context/channel/language与确认时间事实构造输入，复用模型地址/名称/密钥配置；不接受客户端伪造价格或优惠。模型结果要求短正文、无数字/URL，格式检查不代替人工审核。生成按输入缓存，失败缓存五分钟，不后台重试或切换模型。GET/PUT /v1/local/promotion-draft 使用SQLite v5 promotion_drafts保存人工编辑的最新稿，键为线索+渠道+语言。保存只写本机，published始终false。原页面编辑器读取保存结果，未保存的编辑仅留当前页面；未接实时活动、OTA或社交平台发布接口。
+
+### 本机客房与订单快照
+
+下一次增量迁移v5→v6增加demo_rooms和demo_reservations，仅首次迁移插入虚构快照，不覆盖既有事实、消息、草稿。房态由固定演示时点2026-09-17的在住订单与独立清洁状态计算；到店日包含、离店日不包含，confirmed/cancelled/checked_out不算在住。GET /v1/local/room-board读取派生房态、统计与简短订单提示；POST /v1/local/room-clean接收房号，在同一写事务内重新检查在住订单后才设置clean，同一清洁操作重复提交结果一致，在住返回409。没有订单编辑或入住/退房接口。仍受本机模式/回环限制，托管鉴权未完成。公开原型在本机接口明确404时保留前端样本；服务失败不静默回退假数据。Analysis暂不接入本快照，避免将当天房态与多日入住率混用。
