@@ -2,6 +2,7 @@ import asyncio
 import os
 import sqlite3
 from contextlib import closing
+from concurrent.futures import ThreadPoolExecutor
 import tempfile
 import unittest
 from pathlib import Path
@@ -14,6 +15,17 @@ from app.contracts import ReplyDecisionRequest
 from app.reply_service import decide_reply
 
 class LocalFactTests(unittest.TestCase):
+    def test_concurrent_database_initialization_is_atomic(self):
+        with tempfile.TemporaryDirectory() as folder:
+            path=Path(folder)/'concurrent.sqlite3'
+            def open_database(_):
+                with closing(FactStore(path).connect()) as connection:
+                    return connection.execute('SELECT COUNT(*) FROM demo_messages').fetchone()[0]
+            with ThreadPoolExecutor(max_workers=8) as pool:
+                self.assertEqual(list(pool.map(open_database,range(8))),[2]*8)
+            with closing(sqlite3.connect(path)) as connection:
+                self.assertEqual(connection.execute('PRAGMA user_version').fetchone()[0],5)
+
     def test_schema_upgrade_preserves_old_facts_and_history_survives_fact_changes(self):
         with tempfile.TemporaryDirectory() as folder:
             path = Path(folder) / 'facts.sqlite3'

@@ -51,26 +51,26 @@ class FactStore:
 
     def connect(self):
         self.path.parent.mkdir(parents=True, exist_ok=True)
-        connection = sqlite3.connect(self.path)
-        version = connection.execute("PRAGMA user_version").fetchone()[0]
-        if version not in (0, 1, 2, 3, 4, 5):
-            connection.close()
-            raise RuntimeError("Unsupported local database version; restore matching code or migrate explicitly")
-        if version == 0:
-            with connection:
+        connection = sqlite3.connect(self.path, timeout=10)
+        try:
+            version = connection.execute("PRAGMA user_version").fetchone()[0]
+            if version == 5:
+                return connection
+            # Lock and re-read: several page requests may open a new database
+            # together. DDL, seeds and schema version must commit atomically.
+            connection.execute("BEGIN IMMEDIATE")
+            version = connection.execute("PRAGMA user_version").fetchone()[0]
+            if version not in range(6):
+                raise RuntimeError("Unsupported local database version; restore matching code or migrate explicitly")
+            if version < 1:
                 connection.execute("CREATE TABLE IF NOT EXISTS facts (key TEXT PRIMARY KEY, value TEXT NOT NULL, updated_at TEXT NOT NULL)")
-                connection.execute("PRAGMA user_version = 1")
-        if version < 2:
-            with connection:
+            if version < 2:
                 connection.execute("""CREATE TABLE IF NOT EXISTS reply_runs (
                     id TEXT PRIMARY KEY, created_at TEXT NOT NULL,
                     question TEXT NOT NULL, language TEXT NOT NULL,
                     result_json TEXT NOT NULL
                 )""")
-                connection.execute("PRAGMA user_version = 2")
-        if version < 3:
-            with connection:
-                connection.execute("BEGIN IMMEDIATE")
+            if version < 3:
                 connection.execute("CREATE TABLE IF NOT EXISTS demo_threads (id TEXT PRIMARY KEY, guest TEXT NOT NULL, room TEXT NOT NULL)")
                 connection.execute("""CREATE TABLE IF NOT EXISTS demo_messages (
                     id TEXT PRIMARY KEY, thread_id TEXT NOT NULL, sender TEXT NOT NULL,
@@ -86,16 +86,17 @@ class FactStore:
                 connection.executemany("INSERT OR IGNORE INTO demo_messages VALUES (?,?,?,?,?,?,?)", [
                     ("guest-breakfast", "breakfast", "guest", "What time is breakfast tomorrow?", "明天早餐几点开始？", "2026-09-17T14:32:00+08:00", None),
                     ("guest-transfer", "transfer", "guest", "Can you recommend a driver from the airport? There are two of us.", "可以推荐机场接送司机吗？我们有两个人。", "2026-09-17T14:18:00+08:00", None)])
-                connection.execute("PRAGMA user_version = 3")
-        if version < 4:
-            with connection:
+            if version < 4:
                 connection.execute("CREATE TABLE IF NOT EXISTS summary_cache (fingerprint TEXT PRIMARY KEY, result_json TEXT, created_at TEXT NOT NULL)")
-                connection.execute("PRAGMA user_version = 4")
-        if version < 5:
-            with connection:
+            if version < 5:
                 connection.execute("CREATE TABLE IF NOT EXISTS promotion_drafts (id TEXT PRIMARY KEY, content TEXT NOT NULL, updated_at TEXT NOT NULL)")
-                connection.execute("PRAGMA user_version = 5")
-        return connection
+            connection.execute("PRAGMA user_version = 5")
+            connection.commit()
+            return connection
+        except Exception:
+            connection.rollback()
+            connection.close()
+            raise
 
     def read(self) -> list[PropertyFact]:
         connection = self.connect()
