@@ -110,3 +110,7 @@ SQLite schema v2 增加 reply_runs：记录内部 ID、UTC 时间、问题、语
 ### SQLite v3 会话适配
 
 v2 → v3 新增 demo_threads、demo_messages、demo_drafts，本地迁移时插入 Jamie/Morgan 两条虚构客人问题。问题与回复独立成行，不修改历史消息；AI 结果存于草稿表和 reply_runs 审计。草稿处理先事务占位，同一会话处理中请求返回已有状态，不重复调用。结果按确认事实快照、语言和自动回复开关摘要复用；已有人回复后不会再自动起草。经营者回复带 request_id UUID，重试同一请求只保存一次，ID 与内容不符返回409。处理超时35秒标记失败，不自动重试付费请求，可人工回复。主界面不显示供应商密钥或原始异常。新增本机接口 conversations/conversation/conversation-draft/conversation-reply 均受既有回环开关约束；正式多用户入口仍待鉴权联调。
+
+### 本机 Analysis 摘要适配与缓存
+
+GET /v1/local/analysis-summary?days=7|28&language=en|zh；示例指标由 analysis_service 计算，市场信号与自身入住率分开。相同输入/语言/模型/地址复用SQLite v4 summary_cache，避免反复进页重复扣费；生成前事务占位，处理中返回标注的规则解释，失败结果缓存五分钟。无后台定时重试，学校兼容接口沿用模型配置。模型正文限制为两段、每段450字符内、不含数字；格式检查并非语义正确性的证明，页面仍为示例解读和建议，任何操作需人工确认。正式订单数据与外部信号未接入。

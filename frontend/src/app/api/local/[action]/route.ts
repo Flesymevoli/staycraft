@@ -1,5 +1,5 @@
-const paths: Record<string, string> = { facts: "/v1/local/facts", "reply-decision": "/v1/local/reply-decision", conversations: "/v1/local/conversations", conversation: "/v1/local/conversation", "conversation-draft": "/v1/local/conversation-draft", "conversation-reply": "/v1/local/conversation-reply" };
-const methods: Record<string, string[]> = { facts: ["GET", "PUT"], "reply-decision": ["POST"], conversations: ["GET"], conversation: ["GET"], "conversation-draft": ["POST"], "conversation-reply": ["POST"] };
+const paths: Record<string, string> = { facts: "/v1/local/facts", "reply-decision": "/v1/local/reply-decision", conversations: "/v1/local/conversations", conversation: "/v1/local/conversation", "conversation-draft": "/v1/local/conversation-draft", "conversation-reply": "/v1/local/conversation-reply", "analysis-summary": "/v1/local/analysis-summary" };
+const methods: Record<string, string[]> = { facts: ["GET", "PUT"], "reply-decision": ["POST"], conversations: ["GET"], conversation: ["GET"], "conversation-draft": ["POST"], "conversation-reply": ["POST"], "analysis-summary": ["GET"] };
 
 async function proxy(request: Request, context: { params: Promise<{ action: string }> }) {
   const { action } = await context.params;
@@ -24,9 +24,14 @@ async function proxy(request: Request, context: { params: Promise<{ action: stri
     if (body && body.length > 16000) return new Response(null, { status: 413 });
     const url = new URL(paths[action], process.env.BACKEND_API_URL ?? "http://127.0.0.1:8000");
     if (action === "conversation") url.searchParams.set("thread_id", new URL(request.url).searchParams.get("thread_id") ?? "");
+    if (action === "analysis-summary") {
+      const query = new URL(request.url).searchParams;
+      url.searchParams.set("days", query.get("days") ?? "7");
+      url.searchParams.set("language", query.get("language") ?? "en");
+    }
     const upstream = await fetch(url, {
       method: request.method, headers: { "Content-Type": "application/json" }, body,
-      cache: "no-store", signal: AbortSignal.timeout(action === "reply-decision" || action === "conversation-draft" ? 25000 : 5000),
+      cache: "no-store", signal: AbortSignal.timeout(["reply-decision", "conversation-draft", "analysis-summary"].includes(action) ? 25000 : 5000),
     });
     return new Response(await upstream.text(), { status: upstream.status, headers: { "Content-Type": "application/json", "Cache-Control": "no-store" } });
   } catch {

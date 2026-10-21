@@ -53,7 +53,7 @@ class FactStore:
         self.path.parent.mkdir(parents=True, exist_ok=True)
         connection = sqlite3.connect(self.path)
         version = connection.execute("PRAGMA user_version").fetchone()[0]
-        if version not in (0, 1, 2, 3):
+        if version not in (0, 1, 2, 3, 4):
             connection.close()
             raise RuntimeError("Unsupported local database version; restore matching code or migrate explicitly")
         if version == 0:
@@ -87,6 +87,10 @@ class FactStore:
                     ("guest-breakfast", "breakfast", "guest", "What time is breakfast tomorrow?", "明天早餐几点开始？", "2026-09-17T14:32:00+08:00", None),
                     ("guest-transfer", "transfer", "guest", "Can you recommend a driver from the airport? There are two of us.", "可以推荐机场接送司机吗？我们有两个人。", "2026-09-17T14:18:00+08:00", None)])
                 connection.execute("PRAGMA user_version = 3")
+        if version < 4:
+            with connection:
+                connection.execute("CREATE TABLE IF NOT EXISTS summary_cache (fingerprint TEXT PRIMARY KEY, result_json TEXT, created_at TEXT NOT NULL)")
+                connection.execute("PRAGMA user_version = 4")
         return connection
 
     def read(self) -> list[PropertyFact]:

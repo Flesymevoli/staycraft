@@ -37,11 +37,11 @@ class LocalFactTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as folder:
             path = Path(folder) / 'facts.sqlite3'
             with closing(sqlite3.connect(path)) as db:
-                db.execute('PRAGMA user_version = 4')
+                db.execute('PRAGMA user_version = 5')
             with self.assertRaises(RuntimeError):
                 FactStore(path).read()
             with closing(sqlite3.connect(path)) as db:
-                self.assertEqual(db.execute('PRAGMA user_version').fetchone()[0], 4)
+                self.assertEqual(db.execute('PRAGMA user_version').fetchone()[0], 5)
 
     def test_persist_update_and_clear(self):
         with tempfile.TemporaryDirectory() as folder:

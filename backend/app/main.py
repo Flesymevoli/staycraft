@@ -16,11 +16,13 @@ from .operation_service import advise_operation
 from .reply_service import decide_reply
 from .local_facts import router as local_router
 from .conversations import router as conversations_router
+from .analysis_service import router as analysis_router
 
 app = FastAPI(title="Homestay AI Assistant API", version="0.1.0")
 
 app.include_router(local_router)
 app.include_router(conversations_router)
+app.include_router(analysis_router)
 
 from .local_facts import router as local_router
 app.include_router(local_router)

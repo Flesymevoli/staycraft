@@ -8,6 +8,7 @@ import { useDemoStorage } from "./demo-storage";
 import "./native-home.css";
 import "./native-analysis.css";
 import { GuestFeedback } from "./guest-feedback";
+import { AnalysisSummary } from "./analysis-summary";
 import { exploreDays } from "./explore-data";
 
 type Language = "en" | "zh";
@@ -149,11 +150,7 @@ export function AnalysisClient() {
         <GuestFeedback language={language} />
       </section>}
       </div>
-      <section className="analysis-summary-card">
-        <div className="analysis-summary-heading"><h2>{t("Your business summary", "经营总结")}</h2><small>{t("AI summary · Sample", "AI 总结 · 示例")}</small></div>
-        <p><strong>{t("Bookings are improving. Weekdays still need attention.", "预订在好转，接下来重点补工作日的空房。")}</strong>{t(" Weekends are busier, and next week's bookings are arriving faster than before. Local activities could give guests another reason to stay a little longer.", "周末比较热闹，下周的预订也比之前更快。可以借周边活动，吸引客人提前入住或多住一晚。")}</p>
-        <p>{t("Your rate is within the range of comparable stays, so try a focused promotion before deciding whether to lower it. Guests are generally happy; a few breakfast comments suggest checking whether more variety would help.", "目前房价处在周边同类住宿的参考范围内，可以先试推广，再看是否需要降价。客人整体评价不错，早餐种类方面还有改善空间，值得看看具体反馈。")}</p>
-      </section>
+      <AnalysisSummary key={`${language}-${range}`} language={language} days={range} />
       <section className="analysis-decisions">
         <h2>{t("Suggested next steps", "建议决策")}</h2>
         <Link href="/native-explore#promotion" className="analysis-decision-link analysis-decision-priority"><span className="analysis-decision-copy"><span className="analysis-priority-label">{t("Start here", "优先建议")}</span><strong>{t("Promote weekday stays", "推广工作日住宿")}</strong><small>{t("Give guests a reason to arrive early or stay longer", "借周边活动，吸引客人提前来、多住一晚")}</small></span><span className="analysis-decision-cta">{t("Create draft", "生成文案")}<ArrowRight size={16}/></span></Link>
