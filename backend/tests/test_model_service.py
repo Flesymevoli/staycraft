@@ -69,6 +69,11 @@ class ModelTests(unittest.TestCase):
             result=asyncio.run(generate_reply(self.request(),httpx.MockTransport(lambda request:self.fail('External call'))))
             self.assertEqual(result.reason_code,'ready')
 
+    def test_paused_automatic_reply_never_calls_provider(self):
+        request=self.request().model_copy(update={'auto_reply_enabled':False})
+        result=self.run_model(lambda request:self.fail('Unexpected paid call while paused'),request)
+        self.assertEqual(result.reason_code,'auto_reply_off')
+
     def test_school_compatible_endpoint_without_deepseek_extension(self):
         def handler(request):
             self.assertEqual(str(request.url),'https://school.example/v1/chat/completions')

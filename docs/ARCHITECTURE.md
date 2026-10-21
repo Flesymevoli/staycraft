@@ -106,3 +106,7 @@ RoomBoard 组件使用内置示例房间与 React 本地状态，展示固定 9 
 ## 本机草稿处理记录
 
 SQLite schema v2 增加 reply_runs：记录内部 ID、UTC 时间、问题、语言以及完整判断结果（草稿、引文快照、engine、reason_code、sent=false）。v1 → v2 为增量建表，不重置 facts。更新民宿资料后，历史引用仍保留生成时版本。记录不包含 API 密钥、供应商原始错误或认证头。GET /v1/local/reply-history 只供回环开发服务读取最近 50 条，本轮不增加用户界面入口。正式账号及数据保留策略仍须在上线前完善。
+
+### SQLite v3 会话适配
+
+v2 → v3 新增 demo_threads、demo_messages、demo_drafts，本地迁移时插入 Jamie/Morgan 两条虚构客人问题。问题与回复独立成行，不修改历史消息；AI 结果存于草稿表和 reply_runs 审计。草稿处理先事务占位，同一会话处理中请求返回已有状态，不重复调用。结果按确认事实快照、语言和自动回复开关摘要复用；已有人回复后不会再自动起草。经营者回复带 request_id UUID，重试同一请求只保存一次，ID 与内容不符返回409。处理超时35秒标记失败，不自动重试付费请求，可人工回复。主界面不显示供应商密钥或原始异常。新增本机接口 conversations/conversation/conversation-draft/conversation-reply 均受既有回环开关约束；正式多用户入口仍待鉴权联调。

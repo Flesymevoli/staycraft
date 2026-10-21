@@ -14,7 +14,7 @@ async def generate_reply(request: ReplyDecisionRequest, transport=None) -> Reply
     baseline = decide_reply(request)
     # Only supported, grounded time questions go to the model. No external call
     # for refunds, availability promises, unsupported questions or missing facts.
-    if not baseline.citations:
+    if not baseline.citations or not request.auto_reply_enabled:
         return baseline
     key = os.getenv("MODEL_API_KEY", "")
     model = os.getenv("MODEL_NAME", "")

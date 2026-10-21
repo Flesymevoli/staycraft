@@ -53,7 +53,7 @@ class FactStore:
         self.path.parent.mkdir(parents=True, exist_ok=True)
         connection = sqlite3.connect(self.path)
         version = connection.execute("PRAGMA user_version").fetchone()[0]
-        if version not in (0, 1, 2):
+        if version not in (0, 1, 2, 3):
             connection.close()
             raise RuntimeError("Unsupported local database version; restore matching code or migrate explicitly")
         if version == 0:
@@ -68,6 +68,25 @@ class FactStore:
                     result_json TEXT NOT NULL
                 )""")
                 connection.execute("PRAGMA user_version = 2")
+        if version < 3:
+            with connection:
+                connection.execute("BEGIN IMMEDIATE")
+                connection.execute("CREATE TABLE IF NOT EXISTS demo_threads (id TEXT PRIMARY KEY, guest TEXT NOT NULL, room TEXT NOT NULL)")
+                connection.execute("""CREATE TABLE IF NOT EXISTS demo_messages (
+                    id TEXT PRIMARY KEY, thread_id TEXT NOT NULL, sender TEXT NOT NULL,
+                    body_en TEXT NOT NULL, body_zh TEXT NOT NULL, created_at TEXT NOT NULL,
+                    request_id TEXT UNIQUE
+                )""")
+                connection.execute("""CREATE TABLE IF NOT EXISTS demo_drafts (
+                    thread_id TEXT PRIMARY KEY, state TEXT NOT NULL, result_json TEXT,
+                    fingerprint TEXT NOT NULL, updated_at TEXT NOT NULL
+                )""")
+                connection.executemany("INSERT OR IGNORE INTO demo_threads VALUES (?,?,?)", [
+                    ("breakfast", "Jamie", "201"), ("transfer", "Morgan", "103")])
+                connection.executemany("INSERT OR IGNORE INTO demo_messages VALUES (?,?,?,?,?,?,?)", [
+                    ("guest-breakfast", "breakfast", "guest", "What time is breakfast tomorrow?", "明天早餐几点开始？", "2026-09-17T14:32:00+08:00", None),
+                    ("guest-transfer", "transfer", "guest", "Can you recommend a driver from the airport? There are two of us.", "可以推荐机场接送司机吗？我们有两个人。", "2026-09-17T14:18:00+08:00", None)])
+                connection.execute("PRAGMA user_version = 3")
         return connection
 
     def read(self) -> list[PropertyFact]:

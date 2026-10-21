@@ -26,3 +26,5 @@ backend/.env.example 提供变量示例；目前进程从环境变量读取，�
 换学校服务：若支持 Chat Completions，替换 MODEL_BASE_URL（包含所需 /v1）、MODEL_API_KEY、MODEL_NAME 并重启；否则需调整适配器。任何错误都不会自动切换模型或重试消费。MODEL_ENABLED=0 时可运行全部本地回归；模型测试使用 httpx.MockTransport，不消费额度。
 
 虚构端到端测试：使用独立的 HOMESTAY_LOCAL_DB 文件、MODEL_ENABLED=1 及测试供应商配置启动后端，再让本机 Next BACKEND_API_URL 指向该测试后端。在 frontend 执行 `$env:RUN_PAID_MODEL_TEST='1'; node scripts/qa-model-live.cjs`（默认 QA_PORT=3101），会发一次有输出上限的付费请求；脚本无真实密钥，仅使用固定虚构资料，并恢复原事实。不要把此脚本加入默认批量测试。已有官方接口连通性和虚构客服草稿通过，不代表完整经营分析已完成。
+
+Work 会话回归脚本 `frontend/scripts/qa-work-inbox.cjs` 会写演示回复，须使用独立的全新虚构数据库。默认 QA_PORT=3101、QA_BACKEND=http://127.0.0.1:8013；建议 MODEL_ENABLED=0，避免浏览器回归重复消费API。当前仅迁移两条既有虚构消息，不连接OTA。旧 qa-work-decision/qa-local-facts/qa-model-live 脚本针对已移除的独立测试表单，保留作历史参考，当前界面回归使用 qa-work-inbox。

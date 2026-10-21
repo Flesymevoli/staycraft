@@ -3,8 +3,9 @@
 import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { ArrowLeft, ArrowRight, Check, ClipboardList, ChartNoAxesCombined, RotateCcw, Sparkles } from "lucide-react";
+import { ArrowRight, Check, ClipboardList, ChartNoAxesCombined, RotateCcw, Sparkles } from "lucide-react";
 import { useDemoStorage } from "./demo-storage";
+import { WorkInbox } from "./work-inbox";
 import { WorkOperationDemo, type OperationId } from "./work-operation-demo";
 import "./native-home.css";
 import "./native-work.css";
@@ -87,9 +88,6 @@ function TabBar({ language }: { language: Language }) {
 
 export function WorkClient({ initialTask = null }: { initialTask?: TaskId | null }) {
   const [autoReply, setAutoReply] = useDemoStorage<boolean>("autoReply", true);
-  const [conversation, setConversation] = useState<string | null>(null);
-  const [followup, setFollowup] = useState("");
-  const [messages, setMessages] = useDemoStorage<Record<string, string[]>>("ownerReplies", {});
   const [language, setLanguage] = useDemoStorage<Language>("language", "en");
   const [confirmed, setConfirmed] = useDemoStorage<TaskId[]>("confirmed", []);
   const [analysisReady, setAnalysisReady] = useDemoStorage<boolean>("analysisReady", false);
@@ -119,11 +117,8 @@ export function WorkClient({ initialTask = null }: { initialTask?: TaskId | null
     setAnalysisReady(false);
     setExpanded(null);
     setDrafts({});
-    setNotice(t("Demo reset.", "演示已重置。"));
-    setMessages({});
+    setNotice(t("Demo controls reset. Saved conversations stay on this computer.", "演示设置已重置，已保存的会话记录仍保留在本机。"));
     setAutoReply(true);
-    setConversation(null);
-    setFollowup("");
     setDecisions({});
   };
 
@@ -140,34 +135,7 @@ export function WorkClient({ initialTask = null }: { initialTask?: TaskId | null
         <div><strong>{t("Always-on AI replies", "AI 随时回复")}</strong><p>{autoReply ? t("On · Uses your property information", "已开启 · 依据你的民宿资料") : t("Paused · New enquiries go to you", "已暂停 · 新咨询由你处理")}</p></div>
         <button type="button" role="switch" aria-checked={autoReply} aria-label={t("Always-on AI replies", "AI 随时回复")} className="work-auto-switch" onClick={() => { setAutoReply(!autoReply); setNotice(t("Demo setting updated. Existing conversations stay available.", "演示设置已更新，已有对话仍可查看。")); }}><span /></button>
       </section>
-      <section className="work-conversations">
-        <div className="work-section-head"><h2>{t("Guest messages", "客人消息")}</h2><span>{t("2 conversations", "2 条对话")}</span></div>
-        <div className="native-card work-inbox">
-        {[
-          { id: "breakfast", title: t("Breakfast time", "早餐时间"), guest: "Jamie · 201", question: t("What time is breakfast tomorrow?", "明天早餐几点开始？"), reply: t("Breakfast is served from 07:30 to 10:00 in the ground-floor dining room. Let us know if you have any dietary requirements.", "早餐时间是 07:30–10:00，地点在一楼餐厅。如果有饮食需求，欢迎告诉我们。"), basis: t("Property guide · Breakfast hours", "民宿指南 · 早餐时间"), preview: t("Answered using your breakfast information.", "已根据早餐信息回复。") },
-          { id: "transfer", title: t("Airport transfer recommendation", "机场接送推荐"), guest: "Morgan · 103", question: t("Can you recommend a driver from the airport? There are two of us.", "可以推荐机场接送司机吗？我们有两个人。"), reply: t("Our sample partner, Garden Transfer, offers airport pickup for two guests. Please share your arrival time and luggage needs so we can check a suitable option. A booking is only confirmed after the service provider accepts it.", "示例合作服务 Garden Transfer 可提供双人机场接送。请告知到达时间和行李情况，方便核对合适的安排；接送需服务方确认后才算预约成功。"), basis: t("Saved services · Sample airport transfer partner", "已保存服务 · 示例接送合作方"), preview: t("Recommended a saved service and asked for arrival details.", "已推荐合作服务，并询问到达信息。") },
-        ].filter(item => conversation === null || conversation === item.id).map(item => <article key={item.id} className="work-conversation-card">
-          {conversation === null ? <button className="work-inbox-row" type="button" aria-label={t("Open conversation with ", "打开与客人的对话：") + item.guest.split(" · ")[0]} onClick={() => { setConversation(item.id); setFollowup(""); }}>
-            <span className={"work-avatar work-avatar-" + item.id} aria-hidden="true">{item.guest.charAt(0)}</span>
-            <span className="work-inbox-copy"><span className="work-inbox-name"><strong>{item.guest.split(" · ")[0]}</strong><time>{item.id === "breakfast" ? "14:32" : "14:18"}</time></span>
-              <span className="work-inbox-preview">{(messages[item.id] ?? []).length ? t("You: ", "你：") + messages[item.id].at(-1) : t("AI: ", "AI：") + item.reply}</span>
-              <span className="work-inbox-meta"><span>{t("Room ", "房间 ") + item.guest.split(" · ")[1]} · {item.title}</span><span className="work-replied-badge">{(messages[item.id] ?? []).length ? t("You replied", "你已回复") : t("AI replied", "AI 已回复")}</span></span>
-            </span>
-          </button> : <header className="work-chat-header"><button type="button" className="work-chat-back" aria-label={t("Back to messages", "返回消息列表")} onClick={() => { setConversation(null); setFollowup(""); }}><ArrowLeft size={19} /></button><span className="work-avatar" aria-hidden="true">{item.guest.charAt(0)}</span><div><strong>{item.guest}</strong><small>{item.title}</small></div></header>}
-          {conversation === item.id && <div className="work-thread">
-            <div className="work-message"><small>{t("Guest", "客人")}</small><p>{item.question}</p></div>
-            <div className="work-message work-message-ai"><small>{t("AI · Replied", "AI · 已回复")}</small><p>{item.reply}</p></div>
-            <p className="work-basis">{t("Based on: ", "回复依据：")}{item.basis}</p>
-            {(messages[item.id] ?? []).map((message, index) => <div className="work-message work-message-owner" key={index}><small>{t("You · Follow-up", "你 · 补充回复")}</small><p>{message}</p></div>)}
-            <form onSubmit={event => { event.preventDefault(); if (!followup.trim()) return; setMessages(current => ({ ...current, [item.id]: [...(current[item.id] ?? []), followup.trim()] })); setFollowup(""); setNotice(t("Your follow-up was added to the demo conversation.", "补充回复已加入演示对话。")); }}>
-              <label htmlFor={"followup-" + item.id}>{t("Add your reply", "补充你的回复")}</label>
-              <textarea id={"followup-" + item.id} value={followup} rows={3} onChange={event => setFollowup(event.target.value)} placeholder={t("Add a personal note or clarify an arrangement…", "补充说明或确认具体安排…")} />
-              <button className="native-primary" type="submit" disabled={!followup.trim()}>{t("Reply in demo", "演示回复")} <ArrowRight size={15} /></button>
-            </form>
-          </div>}
-        </article>)}
-        </div>
-      </section>
+      <WorkInbox language={language} autoReply={autoReply} />
       <section className="work-needs">
         <div className="work-section-head"><h2>{t("Your decisions", "待你决策")}</h2><span>{String(pending.length + ["arrival", "refund"].filter(id => !decisions[id]).length).padStart(2, "0")}</span></div>
         {(["arrival", "refund"] as OperationId[]).filter(id => !decisions[id]).map(id => <WorkOperationDemo key={id} id={id} language={language} onDecision={decision => {

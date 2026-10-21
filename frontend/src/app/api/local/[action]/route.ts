@@ -1,4 +1,5 @@
-const paths: Record<string, string> = { facts: "/v1/local/facts", "reply-decision": "/v1/local/reply-decision" };
+const paths: Record<string, string> = { facts: "/v1/local/facts", "reply-decision": "/v1/local/reply-decision", conversations: "/v1/local/conversations", conversation: "/v1/local/conversation", "conversation-draft": "/v1/local/conversation-draft", "conversation-reply": "/v1/local/conversation-reply" };
+const methods: Record<string, string[]> = { facts: ["GET", "PUT"], "reply-decision": ["POST"], conversations: ["GET"], conversation: ["GET"], "conversation-draft": ["POST"], "conversation-reply": ["POST"] };
 
 async function proxy(request: Request, context: { params: Promise<{ action: string }> }) {
   const { action } = await context.params;
@@ -11,7 +12,7 @@ async function proxy(request: Request, context: { params: Promise<{ action: stri
   if (process.env.HOMESTAY_LOCAL_DATA !== "1" || !["localhost", "127.0.0.1", "[::1]"].includes(host) || !paths[action]) {
     return Response.json({ error: "local_data_disabled" }, { status: 404 });
   }
-  if ((action === "facts" && !["GET", "PUT"].includes(request.method)) || (action === "reply-decision" && request.method !== "POST")) {
+  if (!methods[action]?.includes(request.method)) {
     return new Response(null, { status: 405 });
   }
   const origin = request.headers.get("origin");
@@ -21,9 +22,11 @@ async function proxy(request: Request, context: { params: Promise<{ action: stri
   try {
     const body = request.method === "GET" ? undefined : await request.text();
     if (body && body.length > 16000) return new Response(null, { status: 413 });
-    const upstream = await fetch(new URL(paths[action], process.env.BACKEND_API_URL ?? "http://127.0.0.1:8000"), {
+    const url = new URL(paths[action], process.env.BACKEND_API_URL ?? "http://127.0.0.1:8000");
+    if (action === "conversation") url.searchParams.set("thread_id", new URL(request.url).searchParams.get("thread_id") ?? "");
+    const upstream = await fetch(url, {
       method: request.method, headers: { "Content-Type": "application/json" }, body,
-      cache: "no-store", signal: AbortSignal.timeout(action === "reply-decision" ? 25000 : 5000),
+      cache: "no-store", signal: AbortSignal.timeout(action === "reply-decision" || action === "conversation-draft" ? 25000 : 5000),
     });
     return new Response(await upstream.text(), { status: upstream.status, headers: { "Content-Type": "application/json", "Cache-Control": "no-store" } });
   } catch {

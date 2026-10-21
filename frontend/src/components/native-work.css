@@ -126,3 +126,5 @@
 .work-task-type { letter-spacing: .04em; }
 .work-task-card h3 { font-size: 18px; }
 .work-inbox-row { padding: 18px; }
+.work-inbox-feedback { margin: 0; padding: 18px; color: var(--muted); font-size: 13px; line-height: 1.6; }
+.work-inbox-feedback button { display: inline-flex; align-items: center; justify-content: center; min-width: 44px; min-height: 44px; margin-left: 8px; border: 0; border-radius: 12px; background: #eef5fb; color: #1765ae; }
