@@ -40,7 +40,7 @@ export function WorkspaceClient({ section, email, connection, signOutAction }: {
       {connection.status === "unavailable" && <div className="workspace-notice" role="status"><span>{t("Property details are unavailable. Please try again.", "暂时无法读取民宿资料，请稍后重试。")}</span><button type="button" disabled={refreshing} onClick={() => startRefresh(() => router.refresh())}><RefreshCw size={15} aria-hidden="true" />{refreshing ? t("Retrying…", "正在重试…") : t("Retry", "重试")}</button></div>}
 
       {section === "home" && <>
-        <section className="workspace-empty"><span className="workspace-symbol"><Building2 size={28} strokeWidth={1.4} aria-hidden="true" /></span><h2>{t("A home for your property.", "让工作台了解你的民宿。")}</h2><p>{t("Property details, rooms and bookings bring your day into view.", "接入民宿资料、客房和订单后，这里会呈现你的每日经营。")}</p>{toMine}</section>
+        <section className="workspace-empty"><span className="workspace-symbol"><Building2 size={28} strokeWidth={1.4} aria-hidden="true" /></span><h2>{t("Let AI help run your homestay.", "让 AI 帮你经营民宿")}</h2><p>{t("Property details, rooms and bookings bring your day into view.", "接入民宿资料、客房和订单后，这里会呈现你的每日经营。")}</p>{toMine}</section>
         <section className="workspace-section"><h2>{t("Your stay at a glance", "经营一览")}</h2>{metrics}</section>
       </>}
       {section === "work" && <section className="workspace-empty"><span className="workspace-symbol"><MessageCircle size={28} strokeWidth={1.4} aria-hidden="true" /></span><h2>{t("Ready for your first conversation.", "等待第一条客人消息。")}</h2><p>{t("Guest conversations and requests will appear here once connected. AI needs confirmed property information before it can help with replies.", "接入消息后，客人咨询和待办会出现在这里。AI 需要已确认的民宿资料，才能辅助回复。")}</p>{toMine}</section>}
