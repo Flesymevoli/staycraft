@@ -168,3 +168,9 @@
 .analysis-metric-icon { color: #7b8794; margin-bottom: 9px; stroke-width: 1.7; }
 .analysis-overview [aria-pressed=true] .analysis-metric-icon { color: var(--blue); }
 .analysis-summary-retry { min-width: 44px; min-height: 44px; margin-left: 8px; border: 0; border-radius: 12px; background: #eef5fb; color: #1765ae; font: inherit; }
+.analysis-context-grid button { display: grid; grid-template-columns: 18px minmax(0, 1fr); align-content: start; align-items: center; column-gap: 6px; row-gap: 7px; padding: 14px 12px; }
+.analysis-context-grid .analysis-metric-icon { margin-bottom: 0; }
+.analysis-context-grid button > strong, .analysis-context-grid button > span { grid-column: 1 / -1; }
+.analysis-context-grid button > strong { margin: 2px 0 0; }
+.analysis-context-grid button > span:not(.analysis-metric-hint) { margin-bottom: 0; }
+.analysis-context-grid .analysis-metric-hint { padding-top: 2px; }
