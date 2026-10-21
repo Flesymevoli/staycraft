@@ -66,7 +66,11 @@ export function WorkDecisionDemo({ language, autoReply }: { language: Language; 
       {pending && <p className="work-try-feedback" role="status">{t("Checking saved facts and preparing a draft…", "正在核对已保存资料并准备草稿…")}</p>}
       {error && <p className="work-try-feedback work-try-error" role="alert">{t("The local decision service is unavailable. Start the backend and try again.", "本地判断服务暂时不可用，请启动后端后重试。")}</p>}
       {decision && <div className="work-try-result" role="status">
-        <strong>{decision.disposition === "auto_reply_ready" ? t("Draft available", "已有回复草稿") : t("Needs your review", "需要你处理")}</strong>
+        <strong>{decision.draft && decision.citations.length > 0
+          ? decision.reason_code === "model_unavailable"
+            ? t("Fallback reply · Review required", "备用回复 · 待审核")
+            : t("Reply draft · Review required", "回复草稿 · 待审核")
+          : t("Needs your review", "需要你处理")}</strong>
         <p>{reasons[decision.reason_code][zh ? 1 : 0]}</p>
         {decision.draft && <blockquote>{decision.draft}</blockquote>}
         {decision.citations.length > 0 && <small>{t("Based on saved fact: ", "依据已保存资料：")}{decision.citations.map(item => item.value).join(" · ")}</small>}

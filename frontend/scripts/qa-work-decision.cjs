@@ -29,13 +29,13 @@ const { chromium } = require('C:/Users/86299/.cache/codex-runtimes/codex-primary
   await question.fill('What time is breakfast?');
   await page.waitForFunction(() => !document.querySelector('.work-try-actions button')?.disabled);
   await button.click();
-  await page.locator('.work-try-result').getByText('Draft available').waitFor();
+  await page.locator('.work-try-result').getByText('Reply draft · Review required').waitFor();
   if (!await page.locator('.work-try-result').getByText('07:30–10:00').count()) throw Error('Breakfast fact missing');
   if (!await page.locator('.work-try-result').getByText('Not sent').count()) throw Error('Unsent status missing');
 
   await page.getByRole('switch', { name: 'Always-on AI replies' }).click();
   await button.click();
-  await page.locator('.work-try-result').getByText('Needs your review').waitFor();
+  await page.locator('.work-try-result').getByText('Reply draft · Review required').waitFor();
   if (!await page.locator('.work-try-result').getByText('Automatic replies are paused.').count()) throw Error('Paused reason missing');
 
   await question.fill('Can I get a refund?');
