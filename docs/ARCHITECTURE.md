@@ -142,3 +142,11 @@ Work原经营洞察复用useOperationMetrics(7)与相同接口，按真实weekda
 /app为Home，/app/work、analysis、explore、mine复用既有native样式令牌和图标，独立WorkspaceClient展示无业务来源时的占位状态。每个页面经renderWorkspace调用Auth getUser核验当前用户，再以该用户JWT读取property_memberships和properties名称；读不到成员关系才为unassigned，缺表/错误为unavailable。查询只读，不创建民宿或成员，不访问SQLite或/api/local，不加载原型的demo sessionStorage。正式页面无后台业务功能，不代表云端业务已接入。
 
 /login同样调用getUser，避免仍有效JWT但账号已失效时与/app相互跳转。/app/loading.tsx仅展示非敏感加载提示。原/nav原型与本机接口仍保留原有边界，不能将本轮当成完整云端隔离验收。后续业务读写须由FastAPI重新校验身份/民宿权限，不能信任客户端名称或状态。
+
+## 资料接入服务端适配层（2026-10-22）
+
+正式账号资料的首次落库使用Next服务端DAL（workspace-access.ts）与Supabase用户JWT/RLS，经/api/workspace/profile GET/PUT读取和确认保存；选择的民宿在服务端由成员表解析，不接受客户端property_id。该薄适配层仅负责资料CRUD/文件提取，无AI或订单决策；FastAPI仍负责业务规则/模型，正式AI接入时须以同一property_id读取已确认资料，不改回SQLite或客户端事实。此为当前过渡实现，尚未声称FastAPI正式资料闭环完成。
+
+property_details(property_id PK/FK, profile JSONB, revision UUID, updated_at)保存六个受约束字段。RLS限定成员角色owner/manager可读取、新建和更新本民宿，UPDATE同时USING/WITH CHECK；匿名无权限，客户端无删除权限。初次保存insert，已存在以原revision条件更新并更换revision，零行/重复创建返回409，避免覆盖其他页面的修改。服务端和SQL都校验字段形状/名称长度/客房数/时间。资料名称以profile.name为保存后的展示源，properties.name为尚无资料时的容器名称。
+
+/api/workspace/import只需已登录账号，可在尚未关联民宿时预览。校验同源、上传大小与格式；unpdf1.9.1抽取PDF文字（本地字节、40页上限），fflate0.8.3只读取DOCX的word/document.xml并限制解压声明总量6MB/1000项，拒绝DTD/实体声明；TXT/CSV只读UTF-8。文件整体2MB，解析文本10万字符，预览1万字符；不执行文档指令、不渲染HTML、不持久化原件、不调用外部模型。先返回候选值/原文，再由客户端选择填表，PUT必须confirmed=true。

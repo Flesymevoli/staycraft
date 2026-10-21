@@ -47,9 +47,9 @@ const cookie = index => {
       }
     }
     assert.equal(localRequests.length, 0);
-    await page.getByText('账号尚未关联民宿。关联后即可开始维护资料。', { exact: true }).waitFor();
+    await page.getByText('关联民宿后才能保存，现在可以先填写、上传并核对资料。', { exact: true }).waitFor();
     await page.getByRole('button', { name: 'EN', exact: true }).click();
-    await page.getByText('Your account has not been linked to a property yet.', { exact: true }).waitFor();
+    await page.getByText('Link a property before saving. You can prepare and review details here first.', { exact: true }).waitFor();
     await page.getByRole('button', { name: 'Sign out', exact: true }).click();
     await page.waitForURL('**/login');
     await page.goto(base + '/app/mine'); await page.waitForURL('**/login');
@@ -75,7 +75,7 @@ const cookie = index => {
     await page.goto(base + '/app');
     await page.setViewportSize({ width: 390, height: 844 });
     await page.screenshot({ path: 'qa-workspace-home.png', fullPage: true });
-    await page.getByRole('link', { name: '查看民宿资料', exact: true }).click();
+    await page.getByRole('link', { name: '上传民宿资料', exact: true }).click();
     await page.waitForURL('**/app/mine');
     await page.goto(base + '/app/analysis');
     await page.screenshot({ path: 'qa-workspace-analysis.png', fullPage: true });

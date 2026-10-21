@@ -18,3 +18,4 @@ Thumbs.db
 *.log
 /backend/data/
 /supabase/local/
+/supabase/.temp/

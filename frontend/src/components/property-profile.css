@@ -1,0 +1,26 @@
+.workspace-profile { margin-top: 24px; }
+.workspace-profile h2 { margin: 0 0 12px; font-size: 20px; font-weight: 400; line-height: 1.4; }
+.profile-upload, .profile-preview, .profile-form { margin-top: 20px; padding: 22px 20px; border: 1px solid white; border-radius: var(--card-radius); background: var(--card-surface); box-shadow: var(--card-shadow); }
+.profile-upload p, .profile-preview p, .profile-connection { color: var(--muted); font-size: 13px; line-height: 1.7; }
+.profile-upload small { display: block; margin-top: 14px; color: var(--muted); font-size: 12px; line-height: 1.6; }
+.profile-upload label { position: relative; cursor: pointer; }
+.profile-upload input[type=file] { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.profile-upload label:focus-within { outline: 3px solid var(--blue); outline-offset: 3px; }
+.workspace-profile :is(button:disabled,.is-disabled) { opacity: .55; cursor: not-allowed; }
+.profile-form { display: grid; gap: 16px; }
+.profile-field { display: grid; gap: 8px; font-size: 13px; }
+.profile-field input, .profile-field textarea { width: 100%; min-height: 46px; padding: 11px 12px; border: 1px solid var(--hairline); border-radius: 12px; background: white; color: var(--ink); font: inherit; font-size: 16px; resize: vertical; }
+.profile-field textarea:focus-visible { outline: 3px solid var(--blue); outline-offset: 3px; }
+.profile-confirm, .profile-candidate { display: flex; align-items: flex-start; gap: 10px; font-size: 13px; line-height: 1.6; }
+.profile-confirm input, .profile-candidate input { flex-shrink: 0; width: 20px; height: 20px; margin: 1px 0 0; accent-color: var(--blue); }
+.profile-confirm { min-height: 44px; align-items: center; }
+.profile-candidate { padding: 14px 0; border-bottom: 1px solid var(--hairline); cursor: pointer; }
+.profile-candidate > span { display: grid; gap: 5px; min-width: 0; overflow-wrap: anywhere; }
+.profile-candidate small { color: var(--muted); font-size: 12px; }
+.profile-preview details { margin-top: 16px; font-size: 13px; }
+.profile-preview summary { cursor: pointer; min-height: 44px; }
+.profile-preview pre { white-space: pre-wrap; overflow-wrap: anywhere; max-height: 240px; overflow: auto; font: inherit; line-height: 1.6; }
+.profile-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 18px; }
+.profile-text-button { min-height: 44px; border: 0; padding: 0; background: transparent; color: var(--blue); }
+.profile-error { margin: 0; color: #a22929; font-size: 13px; line-height: 1.6; }
+.profile-saved { display: flex; gap: 6px; align-items: center; margin: 0; font-size: 13px; }

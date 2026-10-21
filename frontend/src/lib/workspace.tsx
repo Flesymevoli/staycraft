@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { hasSupabaseConfig } from "@/lib/supabase/config";
 import { WorkspaceClient, type WorkspaceSection, type WorkspaceConnection } from "@/components/workspace-client";
 import { signOut } from "@/app/login/actions";
+import { validateProfile } from "@/lib/property-profile";
 
 export async function renderWorkspace(section: WorkspaceSection) {
   if (!hasSupabaseConfig()) redirect("/login");
@@ -29,6 +30,9 @@ export async function renderWorkspace(section: WorkspaceSection) {
       const property = Array.isArray(row.properties) ? row.properties[0] : row.properties;
       if ((row.role === "owner" || row.role === "manager") && property && typeof property.name === "string") {
         connection = { status: "linked", propertyName: property.name };
+        const details = await supabase.from("property_details").select("profile").eq("property_id", row.property_id).maybeSingle();
+        const profile = !details.error && details.data ? validateProfile(details.data.profile) : null;
+        if (profile) connection.propertyName = profile.name;
       }
     }
   } catch { /* Missing schema or a service failure is not an empty successful read. */ }

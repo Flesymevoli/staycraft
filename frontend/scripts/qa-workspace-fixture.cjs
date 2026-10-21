@@ -1,6 +1,7 @@
 // Loaded only by the isolated QA server; no production imports and no cloud writes.
 if (process.env.STAYCRAFT_QA_AUTH_FIXTURES === '1') {
   const originalFetch = globalThis.fetch;
+  const profiles = new Map();
   const ids = ['aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb', 'cccccccc-cccc-4ccc-8ccc-cccccccccccc', 'dddddddd-dddd-4ddd-8ddd-dddddddddddd'];
   const tokens = new Map(ids.map((id, index) => {
     const encode = value => Buffer.from(JSON.stringify(value)).toString('base64url');
@@ -16,6 +17,19 @@ if (process.env.STAYCRAFT_QA_AUTH_FIXTURES === '1') {
     if (!identity) return json({ message: 'Invalid session' }, 401);
     if (url.pathname === '/auth/v1/user') return json({ id: identity.id, email: `account-${identity.index}@example.invalid`, aud: 'authenticated', role: 'authenticated', app_metadata: {}, user_metadata: {}, identities: [], created_at: '2026-01-01T00:00:00Z' });
     if (url.pathname === '/auth/v1/logout') return json({});
+    if (url.pathname === '/rest/v1/property_details') {
+      if (identity.index !== 1) return json({ code: '42501' }, 403);
+      const propertyId = 'dddddddd-dddd-4ddd-8ddd-dddddddddddd';
+      const method = init?.method || 'GET';
+      if (method === 'GET') return json(profiles.has(propertyId) ? [profiles.get(propertyId)] : []);
+      const body = JSON.parse(init.body);
+      if (body.property_id !== propertyId) return json({ code: '42501' }, 403);
+      if (body.profile?.notes === 'QA_SAVE_FAILURE') return json({ code: 'internal_error' }, 500);
+      const previous = profiles.get(propertyId);
+      if (method === 'POST' && previous) return json({ code: '23505' }, 409);
+      if (method === 'PATCH' && (!previous || url.searchParams.get('revision') !== `eq.${previous.revision}`)) return json([]);
+      profiles.set(propertyId, body); return json([body], method === 'POST' ? 201 : 200);
+    }
     if (url.pathname === '/rest/v1/property_memberships') {
       if (url.searchParams.get('user_id') !== `eq.${identity.id}`) return json({ message: 'Incorrect user filter' }, 403);
       if (identity.index === 2) return json({ code: 'PGRST205', message: 'Missing schema' }, 404);
