@@ -12,7 +12,9 @@ type Order = { id: string; room: string; arrival: string; departure: string; gue
 type Message = { id: string; text: string; side: "guest" | "host"; order?: string };
 const ORDER_KEY = "staycraft-guest-prototype-orders-v1";
 const MESSAGE_KEY = "staycraft-guest-prototype-messages-v1";
-const arrivalTimes = ["15:00 前（需民宿确认）", ...Array.from({length:9},(_,i)=>`${i+15}:00–${i+16}:00`), "次日 00:00 后（需民宿确认）"];
+const arrivalTimes = ["14:00 前", "18:00 前", "22:00 前", "次日 02:00 前"];
+// Retain older prototype orders without offering their previous time slots in the form.
+const storedArrivalTimes = [...arrivalTimes, "15:00 前（需民宿确认）", ...Array.from({length:9},(_,i)=>`${i+15}:00–${i+16}:00`), "次日 00:00 后（需民宿确认）"];
 const rooms = [
   { id: "garden", name: "花园大床房", subtitle: "推开窗，就是满眼绿意。", size: "28 m²", bed: "1 张 1.8 米大床", capacity: 2, price: 520, image: "/images/garden-stay-sample.webp", tag: "花园景观" },
   { id: "courtyard", name: "庭院双床房", subtitle: "留一点时间，在庭院里慢下来。", size: "32 m²", bed: "2 张 1.2 米单人床", capacity: 2, price: 580, image: "/images/courtyard-stay-sample.webp", tag: "独立庭院" },
@@ -24,7 +26,7 @@ function readable(value: string) { return `${Number(value.slice(5,7))}月${Numbe
 function isOrder(value: unknown): value is Order {
   if (!value || typeof value !== "object") return false;
   const o = value as Order;
-  return typeof o.id === "string" && /^SC-[A-Z0-9-]+$/.test(o.id) && rooms.some(r=>r.id === o.room) && typeof o.name === "string" && (o.note === undefined || typeof o.note === "string") && (o.expectedArrival === undefined || o.expectedArrival === "" || arrivalTimes.includes(o.expectedArrival)) && typeof o.arrival === "string" && typeof o.departure === "string" && validDate(o.arrival) && validDate(o.departure) && nights(o.arrival,o.departure)>0 && Number.isFinite(o.total) && (o.guests === undefined || (Number.isInteger(o.guests) && o.guests>0 && o.guests<=2)) && ["pending","confirmed"].includes(o.status);
+  return typeof o.id === "string" && /^SC-[A-Z0-9-]+$/.test(o.id) && rooms.some(r=>r.id === o.room) && typeof o.name === "string" && (o.note === undefined || typeof o.note === "string") && (o.expectedArrival === undefined || o.expectedArrival === "" || storedArrivalTimes.includes(o.expectedArrival)) && typeof o.arrival === "string" && typeof o.departure === "string" && validDate(o.arrival) && validDate(o.departure) && nights(o.arrival,o.departure)>0 && Number.isFinite(o.total) && (o.guests === undefined || (Number.isInteger(o.guests) && o.guests>0 && o.guests<=2)) && ["pending","confirmed"].includes(o.status);
 }
 function readArray<T>(key: string, validator: (v: unknown)=>v is T): T[] { const parsed: unknown = JSON.parse(localStorage.getItem(key) || "[]"); if (!Array.isArray(parsed)) throw new Error("Invalid demo data"); return parsed.filter(validator).slice(-50); }
 function isMessage(value: unknown): value is Message { if(!value || typeof value !== "object") return false; const m=value as Message; return typeof m.id === "string" && typeof m.text === "string" && ["guest","host"].includes(m.side) && (m.order===undefined || typeof m.order === "string"); }
