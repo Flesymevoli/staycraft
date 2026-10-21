@@ -7,6 +7,8 @@ methods["room-board"] = ["GET"];
 methods["room-clean"] = ["POST"];
 paths["operation-metrics"] = "/v1/local/operation-metrics";
 methods["operation-metrics"] = ["GET"];
+paths.schedule = "/v1/local/schedule";
+methods.schedule = ["GET"];
 for (const action of ["operations", "operation-advice", "operation-decision"]) {
   paths[action] = `/v1/local/${action}`;
   methods[action] = action === "operations" ? ["GET"] : ["POST"];

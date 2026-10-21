@@ -8,20 +8,11 @@ import { useDemoStorage } from "./demo-storage";
 import { RoomBoard } from "./room-board";
 import { HomeOccupancy } from "./home-occupancy";
 import { useLocalOperations } from "./local-operations";
+import { HomeSchedule } from "./home-schedule";
 import "./native-home.css";
 
 type Language = "en" | "zh";
 type Question = "week" | "attention" | "unsupported";
-
-const events: Record<number, { time: string; title: [string, string]; room: string }[]> = {
-  16: [{ time: "14:00", title: ["Guest check-in", "客人入住"], room: "102" }],
-  17: [{ time: "11:00", title: ["Guest check-out", "客人退房"], room: "201" }],
-  18: [
-    { time: "11:00", title: ["Guest check-out", "客人退房"], room: "201" },
-    { time: "14:00", title: ["Guest check-in", "客人入住"], room: "102" },
-  ],
-  21: [{ time: "14:00", title: ["Guest check-in", "客人入住"], room: "102" }],
-};
 
 const tabs = [
   { label: ["Home", "首页"], icon: "home", href: "/native-home" },
@@ -35,8 +26,6 @@ export function HomeClient() {
   const [language, setLanguage] = useDemoStorage<Language>("language", "en");
   const operations = useLocalOperations();
   const pending = operations.pending.map(item => item.id);
-  const [selectedDay, setSelectedDay] = useState(17);
-  const [scheduleOpen, setScheduleOpen] = useState(false);
   const [assistantOpen, setAssistantOpen] = useState(false);
   const [question, setQuestion] = useState<Question | null>(null);
   const [draft, setDraft] = useState("");
@@ -133,41 +122,7 @@ export function HomeClient() {
           </section>
         )}
 
-        <section className="native-calendar-section" aria-label={t("September 2026 schedule", "2026 年 9 月日程")}>
-          <div className="native-section-head">
-            <h2>{t("September 2026", "2026 年 9 月")}</h2>
-          </div>
-          <div className="native-dates">
-            {Array.from({ length: 17 }, (_, index) => index + 14).map((day) => {
-              const selected = day === selectedDay;
-              const weekday = new Date(2026, 8, day).toLocaleDateString(zh ? "zh-CN" : "en-US", { weekday: "short" });
-              return (
-                <div className="native-date" key={day}>
-                  <span>{weekday}</span>
-                  <button type="button" className={selected ? "is-selected" : ""} aria-pressed={selected} aria-expanded={selected && scheduleOpen} aria-controls="native-schedule" aria-label={new Date(2026, 8, day).toLocaleDateString(zh ? "zh-CN" : "en-US")} onClick={() => {
-                    if (selected) setScheduleOpen(!scheduleOpen);
-                    else { setSelectedDay(day); setScheduleOpen(true); }
-                  }}>{day}</button>
-                  <i className={events[day] ? "has-event" : ""} aria-hidden="true" />
-                </div>
-              );
-            })}
-          </div>
-          {scheduleOpen && (
-            <div id="native-schedule" className="native-schedule">
-              <div className="native-schedule-title">
-                <strong>{new Date(2026, 8, selectedDay).toLocaleDateString(zh ? "zh-CN" : "en-US", { month: "short", day: "numeric", weekday: "short" })}</strong>
-                <span>{(events[selectedDay] || []).length} {t("events", "项日程")}</span>
-              </div>
-              {(events[selectedDay] || []).length ? events[selectedDay].map((event, index) => (
-                <div className="native-event" key={event.time + index}>
-                  <time>{event.time}</time>
-                  <div><strong>{event.title[zh ? 1 : 0]}</strong><small>{t("Room", "房间")} {event.room} · {t("Sample reservation", "示例预订")}</small></div>
-                </div>
-              )) : <p className="native-muted">{t("No events for this date.", "这一天没有日程。")}</p>}
-            </div>
-          )}
-        </section>
+        <HomeSchedule zh={zh} />
 
         <RoomBoard zh={zh} />
 

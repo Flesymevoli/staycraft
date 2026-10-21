@@ -130,3 +130,7 @@ v6→v7仅追加前缀history-/future-的虚构订单样本，保留现有记录
 ### 本机订单事务契约
 
 v7→v8增加operation_requests（请求、关联订单、虚构付款/规则样本）和operation_decisions（operation_id PK、decision、request_id UNIQUE、fingerprint、advice_json、created_at）。GET /v1/local/operations读取列表与历史方案；POST /operation-advice仅接受id，服务端装配规则依据；POST /operation-decision接受id/decision/fingerprint/request_id，BEGIN IMMEDIATE中重新计算依据并限制可选动作，409拒绝过期或冲突操作，同一request_id相同内容返回原结果。方案与依据快照、UTC保存时间一起记录，external_status恒为not_started。今日空房且已清洁才能建议考虑提前入住；常规时间必须来自确认事实；将来日期的房态未知。不开放订单编辑、退款执行或删除方案接口。Home/Work读取同一列表，sessionStorage仅用于公开原型404回退和非持久化控件。
+
+### 原首页日程适配
+
+GET /v1/local/schedule读取同一订单表，在单一读事务中返回2026-09-14至30日的入住/离店事件，排除cancelled。事件携带订单ID、房号、类型和日期，confirmed未来入住的time可取确认事实，其余time=null，time_basis标注standard_policy或not_recorded。HomeSchedule沿用原日期条/展开样式；回环模式失败不回退假日程，只有404公开原型使用历史样本。不增加schema，不写订单，订单方案记录不会删除日程。
