@@ -29,8 +29,7 @@ export function RoomBoard({ zh }: { zh: boolean }) {
   const statusOf = (room: Room): Status => cleaned.includes(room.number) ? "ready" : room.status;
   const room = rooms.find(item => item.number === selected);
   const status = room ? statusOf(room) : null;
-  return <section className="room-board" aria-labelledby="room-board-title">
-    <div className="native-section-head"><h2 id="room-board-title">{t("Room overview", "客房概览")}</h2><small>{t("Sep 17 · Sample", "9 月 17 日 · 示例")}</small></div>
+  return <section className="room-board" aria-label={t("Room overview · Sep 17 sample", "客房概览 · 9 月 17 日示例")}>
     <div className="room-board-surface">
       <div className="room-board-legend" aria-label={t("Room status counts", "房态数量")}>
         {(["ready", "cleaning", "occupied"] as Status[]).map(item => <span key={item} className={`room-state-${item}`}><i aria-hidden="true"/>{labels[item][zh ? 1 : 0]}<b>{rooms.filter(r => statusOf(r) === item).length}</b></span>)}
