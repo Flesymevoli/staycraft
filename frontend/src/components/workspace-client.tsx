@@ -8,7 +8,7 @@ import { ArrowRight, ChartNoAxesCombined, Compass, MessageCircle, RefreshCw } fr
 import "./native-home.css";
 import "./workspace.css";
 import { PropertyProfileEditor } from "./property-profile-editor";
-import { RoomPreviewBoard, RoomPreviewDetail, RoomTypesPreview } from "./room-preview";
+import { HomeSchedulePreview, RoomPreviewBoard, RoomPreviewDetail, RoomTypesPreview } from "./room-preview";
 import { useRoomPreview } from "./room-preview-store";
 
 export type WorkspaceSection = "home" | "work" | "analysis" | "explore" | "mine";
@@ -46,10 +46,10 @@ export function WorkspaceClient({ section, userId, roomId, email, connection, si
 
       {roomId && <RoomPreviewDetail scope={userId} roomId={roomId} zh={zh}/>}
       {section === "home" && !roomId && <>
-        <RoomPreviewBoard scope={userId} zh={zh}/>
+        <HomeSchedulePreview zh={zh}/>
         <section className="workspace-section"><h2>{t("Your stay at a glance", "经营一览")}</h2>{metrics}</section>
       </>}
-      {section === "work" && <section className="workspace-empty"><span className="workspace-symbol"><MessageCircle size={28} strokeWidth={1.4} aria-hidden="true" /></span><h2>{t("Ready for your first conversation.", "等待第一条客人消息。")}</h2><p>{t("Guest conversations and requests will appear here once connected. AI needs confirmed property information before it can help with replies.", "接入消息后，客人咨询和待办会出现在这里。AI 需要已确认的民宿资料，才能辅助回复。")}</p>{toMine}</section>}
+      {section === "work" && !roomId && <><RoomPreviewBoard scope={userId} zh={zh}/><section className="workspace-empty"><span className="workspace-symbol"><MessageCircle size={28} strokeWidth={1.4} aria-hidden="true" /></span><h2>{t("Ready for your first conversation.", "等待第一条客人消息。")}</h2><p>{t("Guest conversations and requests will appear here once connected. AI needs confirmed property information before it can help with replies.", "接入消息后，客人咨询和待办会出现在这里。AI 需要已确认的民宿资料，才能辅助回复。")}</p>{toMine}</section></>}
       {section === "analysis" && <>{metrics}<section className="workspace-empty"><span className="workspace-symbol"><ChartNoAxesCombined size={28} strokeWidth={1.4} aria-hidden="true" /></span><h2>{t("Your story starts with data.", "有了数据，才能看清经营。")}</h2><p>{t("Connect bookings to see trends, a plain-language summary and suggestions grounded in your property.", "接入订单后，这里会展示经营趋势、文字总结和有依据的建议。")}</p></section></>}
       {section === "explore" && <section className="workspace-empty"><span className="workspace-symbol"><Compass size={28} strokeWidth={1.4} aria-hidden="true" /></span><h2>{t("Discover what is around you.", "从民宿所在的位置开始。")}</h2><p>{t("Local demand and opportunities need a property location and reliable sources. There are no connected signals yet.", "周边需求和推广机会需要民宿位置及可靠的信息来源，目前尚未接入相关数据。")}</p>{toMine}</section>}
       {section === "mine" && <>

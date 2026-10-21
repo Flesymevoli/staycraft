@@ -100,3 +100,8 @@ Work经营洞察口径修正仅改原组件，schema仍v8；qa-work-booking-insi
 
 
 客房独立前端预览（2026-10-22）：本模块无API/数据库/后端服务变更。revert对应提交并重建可恢复旧首页云端房间组件和Mine房间表单；不运行SQL回退，不清除原资料。sessionStorage中staycraft-room-preview-v1:{userId}是独立预览，旧界面忽略该键；本轮不影响之前的客人订单键、SQLite或云端资料。
+
+
+## 首页日程与工作台客房（2026-10-22）
+
+本轮客房入口迁移与日程常驻可单独revert对应提交后重建前端恢复；无存储结构、API或数据库修改。保留sessionStorage预览和业务数据，不执行数据库回退。
