@@ -68,3 +68,7 @@ v6→v7追加history-/future-虚构订单，保留原订单、房态、已保存
 日程适配不改变schema v8、不写订单，可独立revert日程提交，保留v8数据层。63项后端测试、lint/build及qa-home-schedule/qa-home-assistant-data在独立schedule-qa-20261021.sqlite3通过；涵盖日期、未知时间、规则时间标签、加载/空/错误恢复、中英文与320–430px。不能用日程回滚替换或删除方案记录。
 
 Work经营洞察口径修正仅改原组件，schema仍v8；qa-work-booking-insight及日程/经营指标/首页助手浏览器回归通过。回滚此提交不需恢复数据库，但会恢复旧独立样本正文，应避免将其展示为同源经营结论。
+
+## Supabase公开配置接入（2026-10-22）
+
+本轮未改SQLite schema v8或云端数据库。公开配置保存在Git忽略的frontend/.env.local和backend/.env，未保存Secret key/数据库密码。回滚此模块可revert对应提交；若要停用本机登录，移除环境文件中的Supabase URL/Publishable key后重新构建并重启前端。Git回滚不会清除忽略的配置文件。不要删除SQLite数据或回退业务模块。运行中的后端未重启；下次启动正式权限接口时须显式载入backend/.env的SUPABASE_URL和SUPABASE_PUBLISHABLE_KEY，不能假设Python会自动读取文件。
