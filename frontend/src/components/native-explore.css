@@ -19,10 +19,11 @@
 .explore-date-arrows button:disabled { opacity: .3; cursor: default; }
 .explore-pulse-chart:focus-visible { outline: 2px solid var(--blue); outline-offset: 4px; border-radius: 10px; }
 .explore-pulse-axis { display: flex; justify-content: space-between; gap: 10px; margin-top: 3px; color: var(--muted); font-size: 9px; letter-spacing: .03em; }
-.explore-demand { padding: 31px 0 34px; border-bottom: 1px solid #e0e4e8; }
+.explore-demand { padding: 12px 0 16px; border-bottom: 1px solid #e0e4e8; }
 .explore-weekdays, .explore-heat-grid { display: grid; grid-template-columns: repeat(7, minmax(0,1fr)); gap: 7px; }
-.explore-weekdays { margin: 0 0 10px; text-align: center; color: var(--muted); font-size: 11px; }
-.explore-heat-day { position: relative; display: grid; place-items: center; aspect-ratio: 1; min-height: 48px; padding: 0; border: 0; border-radius: 12px; background: transparent; color: var(--ink); font-size: 14px; }
+.explore-weekdays { margin: 0 0 6px; text-align: center; color: var(--muted); font-size: 11px; }
+.explore-heat-grid { row-gap: 4px; }
+.explore-heat-day { position: relative; display: grid; place-items: center; height: 44px; padding: 0; border: 0; border-radius: 12px; background: transparent; color: var(--ink); font-size: 14px; }
 .explore-date-number { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; }
 .explore-heat-day.level-2 .explore-date-number { background: #e6eff9; }
 .explore-heat-day.level-3 .explore-date-number { background: #cbdff4; }
@@ -30,7 +31,7 @@
 .explore-heat-day:hover:not([aria-pressed="true"]) .explore-date-number { box-shadow: inset 0 0 0 1px #9bb9d8; }
 .explore-heat-day:focus-visible { outline: 2px solid #0a67c2; outline-offset: 2px; }
 .explore-heat-day i { position: absolute; top: 3px; right: 3px; width: 3px; height: 3px; border-radius: 50%; background: #61656d; }
-.explore-heat-legend { display: flex; align-items: center; gap: 5px; margin-top: 16px; color: var(--muted); font-size: 10px; }
+.explore-heat-legend { display: flex; align-items: center; gap: 5px; margin-top: 10px; color: var(--muted); font-size: 10px; }
 .explore-heat-legend i { width: 9px; height: 9px; border-radius: 50%; border: 1px solid #d4dce5; background: transparent; }
 .explore-heat-legend i:nth-of-type(2) { border-color: #e6eff9; background: #e6eff9; }
 .explore-heat-legend i:nth-of-type(3) { border-color: #cbdff4; background: #cbdff4; }
@@ -93,7 +94,7 @@
 .explore-sheet blockquote { margin: 12px 0; padding: 15px; border-radius: 16px; background: #f7f8f9; }
 .explore-sheet blockquote p { margin: 0 0 8px; font-size: 14px; line-height: 1.5; }
 .explore-sheet cite { color: var(--muted); font-size: 11px; font-style: normal; }
-@media (max-width: 365px) { .explore-topic.topic-2 { left: 30%; } .explore-heat-grid { gap: 5px; } .explore-heat-day { min-height: 48px; border-radius: 10px; } }
+@media (max-width: 365px) { .explore-topic.topic-2 { left: 30%; } .explore-heat-grid { column-gap: 5px; } .explore-heat-day { border-radius: 10px; } }
 
 
 
@@ -124,8 +125,8 @@
 .explore-local-card h3 { font-size: 18px; font-weight: 400; }
 .explore-local-card p { color: var(--muted); }
 .explore-local, .explore-nearby { margin-top: var(--section-gap); }
-.explore-demand, .explore-price { padding-top: 28px; padding-bottom: 28px; border-color: var(--hairline); }
-.explore-pulse + .explore-demand { padding-top: 24px; }
+.explore-demand, .explore-price { border-color: var(--hairline); }
+.explore-price { padding-top: 28px; padding-bottom: 28px; }
 
 .explore-day-detail { position: relative; margin-top: 18px; padding: 20px; border: 1px solid #fff; border-radius: var(--card-radius); background: var(--card-surface); box-shadow: var(--card-shadow); }
 .explore-day-detail h2 { margin: 0 44px 12px 0; font-size: 18px; font-weight: 500; }
