@@ -228,3 +228,5 @@ lint/build、qa-ui-parity、qa-workspace-bookings、qa-conversation-drafts、qa-
 2026-10-23客房卡片增加房型：读取关联typeId对应名称，房号下浅色单行展示，过长省略并保留title。lint/build与五页双语宽度回归通过。
 
 2026-10-23：间夜进度条统一为蓝色圆角浅灰槽，消除浏览器默认绿/灰方条；lint/build、五页UI回归及进度条截图检查通过。
+
+2026-10-23房型位置纠正：文字居中，客房卡片恢复114px固定高度，在原空间内安排房号/房型/状态。lint/build与双语四宽度回归通过并查看截图。

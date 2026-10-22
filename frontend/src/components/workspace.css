@@ -112,3 +112,10 @@
 .booking-page-card .booking-summary-copy { display:flex; flex-direction:column; gap:8px; }
 
 .workspace-work .inventory-room .room-type-label { display:block; width:100%; min-width:0; color:var(--muted); font-size:10px; line-height:1.5; font-weight:400; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; margin-top:-3px; }
+
+/* Room type occupies existing card space rather than increasing its height. */
+.workspace-work .inventory-room { height:114px; min-height:114px; display:grid; grid-template-columns:minmax(0,1fr); grid-template-rows:28px 15px 16px 16px; justify-items:center; align-content:center; gap:3px; padding:10px 6px; text-align:center; }
+.workspace-work .inventory-room strong { line-height:28px; }
+.workspace-work .inventory-room .room-type-label { text-align:center; margin:0; line-height:15px; }
+.workspace-work .inventory-room > span { margin:0; line-height:16px; }
+.workspace-work .inventory-room > small:not(.room-type-label) { margin:0; line-height:16px; }
