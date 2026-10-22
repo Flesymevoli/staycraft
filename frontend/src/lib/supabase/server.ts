@@ -3,12 +3,14 @@ import "server-only";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { supabaseConfig } from "./config";
+import {sampleCookieOptions} from "../operator-sample";
 
 export async function createClient() {
   const { url, publishableKey } = supabaseConfig();
   const cookieStore = await cookies();
 
   return createServerClient(url, publishableKey, {
+    cookieOptions:sampleCookieOptions(),
     cookies: {
       getAll() {
         return cookieStore.getAll();

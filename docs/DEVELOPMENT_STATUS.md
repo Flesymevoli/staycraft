@@ -150,3 +150,10 @@ lint/build、qa-room-preview、qa-workspace及qa-property-profile通过。覆盖
 lint/build及qa-room-cloud、qa-room-import、qa-workspace-bookings、qa-account-property、qa-property-profile、qa-hosted通过。订单夹具以旧房号OLD301和当前房号QA301验证显示联动。安全顾问无新增数据库告警，仅原Auth泄漏密码保护提示。云端本次虚构数据清理结果另见本节末尾；真实民宿保持保留。下一模块是独立整理可重复示例样本，正式消息/AI、逾期取消审核动作、入住/退房和自身经营指标仍未完成。
 
 收尾查询确认：本次临时Auth用户、民宿、旧库存、房型、客房和订单均为0；原有民宿仍保留1行，无主民宿0行。没有上传云端测试图片。临时数据已清理，不作为后续演示样本。
+
+
+## 本机经营端样本完成（2026-10-22）
+
+独立sample进程提供3房型、6客房（5启用/1停用）、5虚构订单，按启动日计算今日/明日到店、离店、已取消及取消待审核。页面明确标记样本；修改仅在内存，重启恢复。演示使用独立Cookie，正式凭据Cookie不被覆盖；guest云端链接在样本中隐藏。没有数据库写入或迁移、模型调用、真实账号创建、实际付款或公开发布。
+
+lint/build、qa-operator-sample通过：错误凭据拒绝、正确登录、日程取消过滤、当前房号关联、清洁编辑、保存冲突、重启恢复、退出、外部fetch拒绝、托管启动拒绝和320/390/658/1280宽度；截图已查看。正式qa-workspace、qa-room-cloud、qa-workspace-bookings、qa-hosted回归通过。测试运行真实Next页面和隔离内存适配器，不声称云端RLS或真实双账号端到端测试。使用与场景见OPERATOR_SAMPLE.md。

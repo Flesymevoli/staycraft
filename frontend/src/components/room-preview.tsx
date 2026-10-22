@@ -10,6 +10,7 @@ import "./property-inventory.css";
 import "./room-board.css";
 import "./room-preview.css";
 import {WorkspaceBookings} from "./workspace-bookings";
+import {useOperatorSample} from "./operator-sample-context";
 
 function today(){return new Intl.DateTimeFormat("sv-SE",{timeZone:"Asia/Shanghai",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());}
 function template(id:string,zh:boolean):RoomType{return {id:crypto.randomUUID(),name:id==="twin"?(zh?"双床房":"Twin room"):id==="family"?(zh?"家庭房":"Family room"):(zh?"大床房":"Double room"),beds:id==="twin"?(zh?"2 张单人床":"2 single beds"):id==="family"?(zh?"1 张大床 + 1 张单人床":"1 double + 1 single bed"):(zh?"1 张大床":"1 double bed"),capacity:id==="family"?3:2,price:0,photo:""};}
@@ -18,7 +19,7 @@ async function localPhoto(file:File){
   const bitmap=await createImageBitmap(file);
   try{const canvas=document.createElement("canvas");const scale=Math.min(1,800/Math.max(bitmap.width,bitmap.height));canvas.width=Math.max(1,Math.round(bitmap.width*scale));canvas.height=Math.max(1,Math.round(bitmap.height*scale));canvas.getContext("2d")!.drawImage(bitmap,0,0,canvas.width,canvas.height);const result=canvas.toDataURL("image/webp",.75);if(!result.startsWith("data:image/webp;") || result.length>349000)throw new Error();return result;}finally{bitmap.close();}
 }
-function PreviewNote({zh}:{zh:boolean}){return <p className="room-preview-note">{zh?"房型与客房资料已连接云端":"Room settings connected to cloud"}</p>;}
+function PreviewNote({zh}:{zh:boolean}){const sample=useOperatorSample();return <p className="room-preview-note">{sample?(zh?"虚构资料 · 仅保存在本机演示内存":"Fictional data · local sample memory only"):(zh?"房型与客房资料已连接云端":"Room settings connected to cloud")}</p>;}
 
 export function HomeSchedulePreview({zh}:{zh:boolean}){
   const [date,setDate]=useState(today);const t=(en:string,cn:string)=>zh?cn:en;
@@ -49,6 +50,7 @@ function TypeFields({type,onChange,zh}:{type:RoomType;onChange:(type:RoomType)=>
 }
 
 export function RoomTypesPreview({scope,zh}:{scope:string;zh:boolean}){
+  const sample=useOperatorSample();
   const {data,ready,save,writing,unavailable,reload}=useRoomPreview(scope);const base=useRef(data.inventory);const [preset,setPreset]=useState("double");const [draft,setDraft]=useState<RoomType|null>(null);const [photo,setPhoto]=useState("");const [busy,setBusy]=useState(false);const [error,setError]=useState("");const [saved,setSaved]=useState(false);
   const t=(en:string,cn:string)=>zh?cn:en;
   function open(type:RoomType){base.current=data.inventory;setDraft({...type});setPhoto(data.photos[type.id]||"");setError("");setSaved(false);}
@@ -56,7 +58,7 @@ export function RoomTypesPreview({scope,zh}:{scope:string;zh:boolean}){
   return <section className="inventory-editor" id="room-types" aria-label={t("Room type setup","房型设置")}><div className="native-section-head"><h2>{t("Room types","房型设置")}</h2><span>{t("Templates","模板设置")}</span></div><p className="inventory-help">{t("Keep room types here. Add individual rooms from Work.","在这里维护房型，具体客房从工作台添加。")}</p>{!unavailable&&<PreviewNote zh={zh}/>} {unavailable&&<div className="inventory-status" role="alert"><p>{t("Room types could not be loaded. Retry before saving.","暂时无法读取房型资料，请先重试连接。")}</p><button type="button" className="inventory-soft" onClick={()=>void reload()}>{t("Retry","重试")}</button></div>}<div className="inventory-add"><label>{t("Room type template","房型模板")}<select aria-label={t("Room type template","房型模板")} value={preset} onChange={e=>setPreset(e.target.value)}><option value="double">{t("Double room","大床房")}</option><option value="twin">{t("Twin room","双床房")}</option><option value="family">{t("Family room","家庭房")}</option></select></label><button className="inventory-soft" type="button" disabled={!ready||unavailable||busy||writing||data.inventory.types.length>=20} onClick={()=>open(template(preset,zh))}><Plus size={16}/>{t("Add room type","添加房型")}</button></div>
       {data.inventory.types.map(type=><article className="room-type-summary" key={type.id}>{data.photos[type.id]?<Image unoptimized src={data.photos[type.id]} alt={type.name} width={72} height={72}/>:<BedDouble size={24}/>}<div><strong>{type.name}</strong><small>{type.beds} · ¥{type.price}{t(" / night"," / 晚")}</small></div><button type="button" className="inventory-text" onClick={()=>open(type)} disabled={busy||writing}>{t("Edit","编辑")}</button></article>)}
       {draft&&<form className="inventory-type" onSubmit={commit} inert={writing}><h3>{t("Edit room type","编辑房型")}</h3><label className="inventory-photo">{photo?<Image unoptimized src={photo} alt={draft.name} width={320} height={180}/>:<span><ImagePlus size={25}/>{t("Room photo","房型图片")}</span>}<input disabled={busy||writing} type="file" accept="image/jpeg,image/png,image/webp" aria-label={t("Room type photo","房型图片")} onChange={async e=>{const file=e.target.files?.[0];e.target.value="";if(!file)return;setBusy(true);try{setPhoto(await localPhoto(file));setError("");}catch{setError(t("Use a smaller JPG, PNG or WebP.","请使用较小的 JPG、PNG 或 WebP 图片。"));}finally{setBusy(false);}}}/><small>{busy?t("Reading…","正在读取…"):t("Choose / replace photo","选择或更换图片")}</small></label><TypeFields type={draft} onChange={setDraft} zh={zh}/><div className="inventory-save"><button type="submit" className="native-primary" disabled={busy||writing}>{t("Save room type","保存房型")}</button><button type="button" className="inventory-text" disabled={busy||writing} onClick={()=>setDraft(null)}>{t("Cancel","取消")}</button></div></form>}
-      {error&&<p className="profile-error" role="alert">{error}</p>}{saved&&<p className="profile-saved" role="status"><Check size={16}/>{t("Room type saved to cloud.","房型已保存到云端。")}</p>}<Link className="room-settings-link" href="/app/work">{t("Open Work to manage rooms","去工作台添加和管理客房")}<ArrowRight size={15}/></Link>
+      {error&&<p className="profile-error" role="alert">{error}</p>}{saved&&<p className="profile-saved" role="status"><Check size={16}/>{sample?t("Room type saved in sample memory.","房型已保存到演示内存。"):t("Room type saved to cloud.","房型已保存到云端。")}</p>}<Link className="room-settings-link" href="/app/work">{t("Open Work to manage rooms","去工作台添加和管理客房")}<ArrowRight size={15}/></Link>
   </section>;
 }
 
@@ -67,6 +69,7 @@ export function RoomPreviewDetail({scope,roomId,zh}:{scope:string;roomId:string;
   return <RoomForm key={roomId} room={room} data={store.data} save={store.save} writing={store.writing} zh={zh}/>;
 }
 function RoomForm({room,data,save,writing,zh}:{room?:PropertyRoom;data:RoomPreviewData;save:(data:RoomPreviewData,expected?:PropertyInventory)=>Promise<boolean>;writing:boolean;zh:boolean}){
+  const sample=useOperatorSample();
   const router=useRouter();const t=(en:string,cn:string)=>zh?cn:en;
   const [editing,setEditing]=useState(!room);const [base,setBase]=useState(data.inventory);const [draft,setDraft]=useState<PropertyRoom>(()=>room?{...room}:{id:crypto.randomUUID(),number:"",floor:t("Floor 1","1 楼"),typeId:data.inventory.types[0]?.id||"",housekeeping:"clean",active:true});
   const [addingType,setAddingType]=useState(!data.inventory.types.length);const [preset,setPreset]=useState("double");const [firstType,setFirstType]=useState<RoomType>(()=>template("double",zh));const [photo,setPhoto]=useState("");const [busy,setBusy]=useState(false);const [error,setError]=useState("");const [saved,setSaved]=useState(false);
@@ -81,6 +84,6 @@ function RoomForm({room,data,save,writing,zh}:{room?:PropertyRoom;data:RoomPrevi
       <TypeFields type={firstType} onChange={setFirstType} zh={zh}/><p className="inventory-help">{t("Saving this room also saves its room type and photo for future rooms.","保存客房时会一并保存房型和图片，以后添加房间可直接选用。")}</p></div>:selectedType&&<article className="room-type-summary">{data.photos[selectedType.id]?<Image unoptimized src={data.photos[selectedType.id]} alt={selectedType.name} width={72} height={72}/>:<BedDouble size={24}/>}<div><strong>{selectedType.name}</strong><small>{selectedType.beds} · ¥{selectedType.price}{t(" / night"," / 晚")}</small></div></article>}
       {room&&<><label>{t("Housekeeping","清洁状态")}<select aria-label={t("Housekeeping","清洁状态")} value={draft.housekeeping} onChange={e=>setDraft({...draft,housekeeping:e.target.value as "clean"|"dirty"})}><option value="clean">{t("Cleaned","已清洁")}</option><option value="dirty">{t("To clean","待清洁")}</option></select></label><label className="room-enable"><input type="checkbox" checked={draft.active} onChange={e=>setDraft({...draft,active:e.target.checked})}/>{t("Room enabled","启用客房")}</label></>}
       <div className="inventory-save"><button disabled={busy||writing} type="submit" className="native-primary">{writing?t("Saving…","正在保存…"):busy?t("Reading photo…","正在读取图片…"):t("Save room","保存客房")}</button>{room?<button disabled={busy||writing} type="button" className="inventory-text" onClick={()=>{setEditing(false);setError("");}}>{t("Cancel","取消")}</button>:<Link href="/app/work" className="inventory-text">{t("Cancel","取消")}</Link>}</div></form>}
-    {error&&<p className="profile-error" role="alert">{error}</p>}{saved&&<p className="profile-saved" role="status"><Check size={16}/>{t("Saved to cloud.","已保存到云端。")}</p>}
+    {error&&<p className="profile-error" role="alert">{error}</p>}{saved&&<p className="profile-saved" role="status"><Check size={16}/>{sample?t("Saved in sample memory.","已保存到演示内存。"):t("Saved to cloud.","已保存到云端。")}</p>}
   </section>;
 }

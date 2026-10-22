@@ -6,6 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
+    "sample": "node scripts/start-operator-sample.cjs",
     "lint": "eslint src",
     "sync:prototype": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/sync-prototype.ps1",
     "check": "npm run lint && npm run build"

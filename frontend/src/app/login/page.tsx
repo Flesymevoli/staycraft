@@ -4,6 +4,7 @@ import { hasSupabaseConfig } from "@/lib/supabase/config";
 import { createClient } from "@/lib/supabase/server";
 import { LoginForm } from "./login-form";
 import "./auth.css";
+import {operatorSample} from "@/lib/operator-sample";
 
 export const dynamic = "force-dynamic";
 
@@ -22,5 +23,5 @@ export default async function LoginPage() {
   }
   if (authenticated) redirect("/app");
 
-  return <div className="auth-shell"><LoginForm configured={hasSupabaseConfig()} prototypeAvailable={!isHosted()} /></div>;
+  return <div className="auth-shell"><LoginForm configured={hasSupabaseConfig()} sample={operatorSample()} prototypeAvailable={!isHosted()&&!operatorSample()} /></div>;
 }

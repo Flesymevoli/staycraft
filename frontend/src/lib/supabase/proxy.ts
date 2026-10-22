@@ -1,6 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { hasSupabaseConfig, supabaseConfig } from "./config";
+import {sampleCookieOptions} from "../operator-sample";
 
 export async function updateSession(request: NextRequest) {
   if (!hasSupabaseConfig()) return NextResponse.next({ request });
@@ -8,6 +9,7 @@ export async function updateSession(request: NextRequest) {
   const { url, publishableKey } = supabaseConfig();
   let response = NextResponse.next({ request });
   const supabase = createServerClient(url, publishableKey, {
+    cookieOptions:sampleCookieOptions(),
     cookies: {
       getAll() {
         return request.cookies.getAll();

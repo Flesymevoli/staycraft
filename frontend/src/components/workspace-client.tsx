@@ -11,6 +11,7 @@ import { PropertyProfileEditor } from "./property-profile-editor";
 import { HomeSchedulePreview, RoomPreviewBoard, RoomPreviewDetail, RoomTypesPreview } from "./room-preview";
 import {WorkspaceBookings} from "./workspace-bookings";
 import { useRoomPreview } from "./room-preview-store";
+import {OperatorSampleContext} from "./operator-sample-context";
 
 export type WorkspaceSection = "home" | "work" | "analysis" | "explore" | "mine";
 export type WorkspaceConnection = { status: "unavailable" | "unassigned" } | { status: "linked"; propertyName: string;propertyId:string };
@@ -22,8 +23,8 @@ const sections = [
   { id: "mine", en: "Mine", zh: "我的", href: "/app/mine", icon: "mine", active: "mine-active" },
 ] as const;
 
-export function WorkspaceClient({ section, userId, roomId, email, connection, signOutAction }: {
-  section: WorkspaceSection; userId: string; roomId?: string; email: string; connection: WorkspaceConnection; signOutAction: () => Promise<void>;
+export function WorkspaceClient({ section, userId, roomId, email, connection, sample=false, signOutAction }: {
+  section: WorkspaceSection; userId: string; roomId?: string; email: string; connection: WorkspaceConnection; sample?:boolean; signOutAction: () => Promise<void>;
 }) {
   // Account pages do not use the prototype's shared sessionStorage or local APIs.
   const [zh, setZh] = useState(true);
@@ -37,9 +38,10 @@ export function WorkspaceClient({ section, userId, roomId, email, connection, si
   const summaryLabels = section === "home" ? [t("Rooms", "客房"), t("Occupancy", "入住率")] : [t("Occupancy", "入住率"), t("Booking pace", "预订进度")];
   const metrics = <div className="workspace-metrics">{summaryLabels.map((label,index) => <div className="workspace-metric" key={label}><span>{label}</span><strong>{section==="home" && index===0 && roomCount!==null?roomCount:"—"}</strong><small>{section==="home" && index===0 && roomCount!==null?t("Saved active rooms","已保存 · 已启用客房"):t("Not connected yet", "尚未接入")}</small></div>)}</div>;
 
-  return <div className="native-shell workspace-shell">
+  return <OperatorSampleContext value={sample}><div className="native-shell workspace-shell">
     <main className={`native-page workspace-page${section === "home" ? " native-home-page" : ""}`}>
       <header className="native-header"><span className="native-kicker">{t(current.en.toUpperCase(), current.zh)}</span><button className="native-language" type="button" onClick={() => setZh(!zh)}>{zh ? "EN" : "中文"}</button></header>
+      {sample&&<aside className="workspace-notice" aria-label={t("Fictional sample environment","虚构演示环境")}>{t("Fictional local sample · edits reset on restart · no cloud or AI requests","本机虚构演示 · 修改重启即还原 · 不连接云端或 AI")}</aside>}
       <h1>{roomId ? roomId==="new"?t("Add room","添加客房"):t("Room details","客房详情") : section === "home" ? t("Welcome.", "你好。") : section === "mine" && connection.status === "linked" ? connection.propertyName : t(current.en, current.zh)}</h1>
       <p className="workspace-intro">{roomId?t("Your room, at a glance.","查看和维护这间客房的信息。"):section === "home" ? t("A little clarity for your day.", "让经营的每一天，更清晰。") : section === "mine" ? t("The information your workspace works from.", "从你的民宿资料开始。") : t("Your property, in focus.", "关注你的民宿经营。")}</p>
 
@@ -50,7 +52,7 @@ export function WorkspaceClient({ section, userId, roomId, email, connection, si
         <HomeSchedulePreview zh={zh}/>
         <section className="workspace-section"><h2>{t("Your stay at a glance", "经营一览")}</h2>{metrics}</section>
       </>}
-      {section === "work" && !roomId && <><RoomPreviewBoard scope={userId} zh={zh}/><WorkspaceBookings zh={zh} propertyId={connection.status==="linked"?connection.propertyId:undefined}/><section className="workspace-empty"><span className="workspace-symbol"><MessageCircle size={28} strokeWidth={1.4} aria-hidden="true" /></span><h2>{t("Ready for your first conversation.", "等待第一条客人消息。")}</h2><p>{t("Guest conversations and requests will appear here once connected. AI needs confirmed property information before it can help with replies.", "接入消息后，客人咨询和待办会出现在这里。AI 需要已确认的民宿资料，才能辅助回复。")}</p>{toMine}</section></>}
+      {section === "work" && !roomId && <><RoomPreviewBoard scope={userId} zh={zh}/><WorkspaceBookings zh={zh} propertyId={!sample&&connection.status==="linked"?connection.propertyId:undefined}/><section className="workspace-empty"><span className="workspace-symbol"><MessageCircle size={28} strokeWidth={1.4} aria-hidden="true" /></span><h2>{t("Ready for your first conversation.", "等待第一条客人消息。")}</h2><p>{t("Guest conversations and requests will appear here once connected. AI needs confirmed property information before it can help with replies.", "接入消息后，客人咨询和待办会出现在这里。AI 需要已确认的民宿资料，才能辅助回复。")}</p>{toMine}</section></>}
       {section === "analysis" && <>{metrics}<section className="workspace-empty"><span className="workspace-symbol"><ChartNoAxesCombined size={28} strokeWidth={1.4} aria-hidden="true" /></span><h2>{t("Your story starts with data.", "有了数据，才能看清经营。")}</h2><p>{t("Connect bookings to see trends, a plain-language summary and suggestions grounded in your property.", "接入订单后，这里会展示经营趋势、文字总结和有依据的建议。")}</p></section></>}
       {section === "explore" && <section className="workspace-empty"><span className="workspace-symbol"><Compass size={28} strokeWidth={1.4} aria-hidden="true" /></span><h2>{t("Discover what is around you.", "从民宿所在的位置开始。")}</h2><p>{t("Local demand and opportunities need a property location and reliable sources. There are no connected signals yet.", "周边需求和推广机会需要民宿位置及可靠的信息来源，目前尚未接入相关数据。")}</p>{toMine}</section>}
       {section === "mine" && <>
@@ -60,5 +62,5 @@ export function WorkspaceClient({ section, userId, roomId, email, connection, si
       </>}
     </main>
     <nav className="native-tabbar" aria-label={t("Main navigation", "主导航")}>{sections.map(item => <Link key={item.id} href={item.href} className={item.id === section ? "is-active" : ""} aria-current={item.id === section ? "page" : undefined}><Image src={`/figma-icons/${item.id === section ? item.active : item.icon}.svg`} width={24} height={24} alt="" /><span>{t(item.en, item.zh)}</span></Link>)}</nav>
-  </div>;
+  </div></OperatorSampleContext>;
 }

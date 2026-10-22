@@ -220,3 +220,10 @@ single_account_property迁移已应用。properties.owner_user_id为非空、唯
 本节替代前文关于property_inventory作为当前库存来源的说明。20261022012450与20261022013032迁移已应用：room_types与rooms使用(property_id,id)复合主键；rooms引用同民宿房型，direct_bookings引用同民宿房间和房型，关联列均有索引。properties.inventory_revision保存并发版本，旧JSON只留只读快照。
 
 get_room_inventory按owner RLS组合兼容文档；save_room_inventory通过鉴权、版本校验及同一事务更新两表。配置修改、预订分房和取消统一锁properties行；前端输入/图片协议不变，不维护第二套可写库存。已有房型与房间不硬删除，房间使用active停用。经营端订单API关联rooms返回当前房号，数据库中的成交房号/价格快照不改写。正式入住与清洁、预订仍分别处理，未新增办理入住能力。
+
+
+## 可重复的本机经营端样本（2026-10-22）
+
+新增npm run sample启动独立127.0.0.1:3106进程，以测试夹具适配现有资料/库存/订单接口；源数据由operator-sample-data.cjs按北京时间启动日生成。数据和图片仅保存在该进程内存，未建立云端演示账号或新增迁移。正式Next入口不导入夹具，生产构建默认不加载数据。
+
+operatorSample服务端开关仅在独立样本与夹具标志同时启用且非托管时生效。server/proxy使用独立Cookie名staycraft-operator-sample-auth；实际页面和API仍走原getUser/账号归属校验，只有独立进程的网络适配器返回虚构身份。样本拒绝托管与非loopback启动，拦截全部云端目标并拒绝外部fetch；公开部署不得启用该加载器。页面显式标记本机虚构演示，客人端云端入口隐藏。未接通功能保持原提示，未新增经营能力。

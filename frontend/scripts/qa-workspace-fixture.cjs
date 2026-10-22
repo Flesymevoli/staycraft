@@ -1,5 +1,8 @@
 // Loaded only by the isolated QA server; no production imports and no cloud writes.
 if (process.env.STAYCRAFT_QA_AUTH_FIXTURES === '1') {
+  const sampleMode=process.env.STAYCRAFT_OPERATOR_SAMPLE==='1';
+  if(sampleMode&&(process.env.VERCEL==='1'||process.env.STAYCRAFT_HOSTED==='1'||!process.argv.includes('127.0.0.1')))throw new Error('Samples require a separate loopback-only server');
+  const sample=sampleMode?require('./operator-sample-data.cjs').createSample(process.env.STAYCRAFT_SAMPLE_DATE||undefined):null;
   const originalFetch = globalThis.fetch;
   const profiles = new Map();
   const inventories = new Map();
@@ -12,12 +15,26 @@ if (process.env.STAYCRAFT_QA_AUTH_FIXTURES === '1') {
     const token = `${encode({ alg: 'HS256', typ: 'JWT' })}.${encode({ sub: id, exp: 4102444800, iat: 1700000000, aud: 'authenticated', role: 'authenticated' })}.qa-signature`;
     return [token, { id, index }];
   }));
+  if(sample){
+    properties.set(sample.ownerId,{id:sample.propertyId,name:sample.profile.name});
+    profiles.set(sample.propertyId,{property_id:sample.propertyId,profile:sample.profile,revision:'20000000-0000-4000-8000-000000000001'});
+    inventories.set(sample.propertyId,{inventory:sample.inventory,revision:'20000000-0000-4000-8000-000000000002'});
+  }
   globalThis.fetch = async (input, init) => {
     const url = new URL(typeof input === 'string' ? input : input instanceof URL ? input.href : input.url);
-    if (url.hostname !== 'husrpqalpjjswpvrkxet.supabase.co') return originalFetch(input, init);
+    if (url.hostname !== 'husrpqalpjjswpvrkxet.supabase.co') {
+      if(sampleMode&&!['127.0.0.1','localhost','[::1]'].includes(url.hostname))throw new Error('External network disabled in sample');
+      return originalFetch(input, init);
+    }
     const headers = new Headers(init?.headers || (input instanceof Request ? input.headers : undefined));
     const identity = tokens.get((headers.get('authorization') || '').replace(/^Bearer /, ''));
     const json = (body, status = 200) => new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
+    if(sample&&url.pathname==='/auth/v1/token'){
+      const body=JSON.parse(init.body||'{}');
+      if(body.email!=='demo@example.invalid'||body.password!=='staycraft-demo')return json({message:'Invalid demo credentials',code:'invalid_credentials'},400);
+      const token=[...tokens].find(([,value])=>value.id===sample.ownerId)[0];
+      return json({access_token:token,refresh_token:'sample-only',token_type:'bearer',expires_in:3600,expires_at:4102444800,user:{id:sample.ownerId,email:'demo@example.invalid',aud:'authenticated',role:'authenticated',app_metadata:{},user_metadata:{},identities:[],created_at:'2026-01-01T00:00:00Z'}});
+    }
     if (!identity) return json({ message: 'Invalid session' }, 401);
     if (url.pathname === '/auth/v1/user') return json({ id: identity.id, email: `account-${identity.index}@example.invalid`, aud: 'authenticated', role: 'authenticated', app_metadata: {}, user_metadata: {}, identities: [], created_at: '2026-01-01T00:00:00Z' });
     if (url.pathname === '/auth/v1/logout') return json({});
@@ -40,6 +57,17 @@ if (process.env.STAYCRAFT_QA_AUTH_FIXTURES === '1') {
     }
     if (url.pathname === '/rest/v1/direct_bookings') {
       if(identity.index===2)return json({code:'42501'},403);
+      if(sample){
+        if(identity.id!==sample.ownerId)return json([]);
+        let rows=sample.bookings.map(item=>({...item,rooms:{number:inventories.get(sample.propertyId).inventory.rooms.find(room=>room.id===item.room_id)?.number||item.room_number}}));
+        const or=url.searchParams.get('or'),room=url.searchParams.get('room_id'),status=url.searchParams.get('status'),arrival=url.searchParams.get('arrival'),departure=url.searchParams.get('departure');
+        if(or){const date=or.match(/\d{4}-\d{2}-\d{2}/)?.[0];rows=rows.filter(item=>item.arrival===date||item.departure===date)}
+        if(room)rows=rows.filter(item=>'eq.'+item.room_id===room);
+        if(status)rows=rows.filter(item=>'eq.'+item.status===status);
+        if(arrival?.startsWith('lte.'))rows=rows.filter(item=>item.arrival<=arrival.slice(4));
+        if(departure?.startsWith('gt.'))rows=rows.filter(item=>item.departure>departure.slice(3));
+        return json(rows.sort((a,b)=>b.arrival.localeCompare(a.arrival)));
+      }
       if(process.env.STAYCRAFT_QA_BOOKINGS!=='1'||identity.index!==1)return json([]);
       const item={id:'11111111-1111-4111-8111-111111111111',room_id:'22222222-2222-4222-8222-222222222222',room_number:'OLD301',rooms:{number:'QA301'},type_name:'QA 房型',arrival:'2026-11-10',departure:'2026-11-12',guest_name:'QA 日程客人',expected_arrival:'18:00 前',total:760,status:'confirmed'};
       const filter=url.searchParams.get('or');return json(filter&&!filter.includes('2026-11-10')&&!filter.includes('2026-11-12')?[]:[item]);

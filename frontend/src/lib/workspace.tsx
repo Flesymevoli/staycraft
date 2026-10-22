@@ -6,6 +6,7 @@ import { hasSupabaseConfig } from "@/lib/supabase/config";
 import { WorkspaceClient, type WorkspaceSection, type WorkspaceConnection } from "@/components/workspace-client";
 import { signOut } from "@/app/login/actions";
 import { validateProfile } from "@/lib/property-profile";
+import {operatorSample} from "./operator-sample";
 
 export async function renderWorkspace(section: WorkspaceSection, roomId?: string) {
   if (!hasSupabaseConfig()) redirect("/login");
@@ -28,5 +29,5 @@ export async function renderWorkspace(section: WorkspaceSection, roomId?: string
     if(profile)connection.propertyName=profile.name;
   } catch { /* Missing schema or a service failure is not an empty successful read. */ }
 
-  return <WorkspaceClient section={section} userId={userId} roomId={roomId} email={email ?? ""} connection={connection} signOutAction={signOut} />;
+  return <WorkspaceClient section={section} userId={userId} roomId={roomId} email={email ?? ""} connection={connection} sample={operatorSample()} signOutAction={signOut} />;
 }

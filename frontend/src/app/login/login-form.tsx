@@ -30,7 +30,7 @@ const messages = {
   },
 } as const;
 
-export function LoginForm({ configured,prototypeAvailable=true }: { configured: boolean;prototypeAvailable?:boolean }) {
+export function LoginForm({ configured,prototypeAvailable=true,sample=false }: { configured: boolean;prototypeAvailable?:boolean;sample?:boolean }) {
   const [language, setLanguage] = useState<"en" | "zh">("zh");
   const [state, action, pending] = useActionState<LoginState, FormData>(signIn, undefined);
   const t = messages[language];
@@ -43,6 +43,7 @@ export function LoginForm({ configured,prototypeAvailable=true }: { configured: 
     <main className="auth-main">
       <h1>{t.title}</h1>
       <p className="auth-subtitle">{t.subtitle}</p>
+      {sample&&<p className="auth-subtitle">本机虚构演示<br/>demo@example.invalid / staycraft-demo<br/>修改重启即还原，不连接云端。</p>}
       <form action={action} className="auth-card">
         <label htmlFor="email">{t.email}</label>
         <input id="email" name="email" type="email" autoComplete="email" required />
