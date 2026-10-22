@@ -68,4 +68,4 @@
 
 ## 去哪里看实际表
 
-Supabase项目控制台的Table Editor可查看真实表和已保存记录。当前云端有properties、property_memberships、property_details、property_inventory、direct_bookings；房型和客房目前还在property_inventory的JSON中，以上独立房型/客房表是计划结构。示例数据之后单独维护，不与正式资料混合。
+Supabase项目控制台的Table Editor可查看真实表和已保存记录。当前云端有properties、property_memberships、property_details、property_inventory、direct_bookings；账号归属已改为properties.owner_user_id；property_memberships只保留旧记录，不再参与鉴权。房型和客房目前还在property_inventory的JSON中，以上独立房型/客房表是计划结构。示例数据之后单独维护，不与正式资料混合。

@@ -208,3 +208,8 @@ GuestClient.reserve验证输入后重读并保存原localStorage订单键，再�
 ## 账号为最高层（2026-10-22确认）
 
 一个账号默认拥有一家民宿，登录直接进入自己的工作台；MVP不设置加入民宿、成员归属选择或多民宿切换。建议properties.owner_user_id唯一引用Auth账号。当前membership鉴权尚未迁移，先保留现有数据与权限，按DATABASE.md确认后再增量调整。示例表见DATABASE_EXAMPLES.md，全部为结构讨论用虚构资料。
+
+
+## 一账号一民宿实施（2026-10-22）
+
+single_account_property迁移已应用。properties.owner_user_id为非空、唯一且引用Auth用户；从唯一旧owner关联回填，存在无主、多主、多民宿或manager歧义时迁移会拒绝执行。properties只授权本人SELECT和指定列INSERT，不开放改owner或删除。资料、库存、订单及图片RLS改按owner校验；旧membership行保留、authenticated权限撤销。accountProperty由验证过的userId查找/初始化自己的唯一民宿；23505时重读处理双标签页竞态。FastAPI权限网关同步查properties(id,owner_user_id)，不再查membership。

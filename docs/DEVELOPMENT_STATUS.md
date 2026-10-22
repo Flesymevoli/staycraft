@@ -134,3 +134,8 @@ lint/build、qa-room-preview、qa-workspace及qa-property-profile通过。覆盖
 ## 总体检查与部署准备（2026-10-22）
 
 经营端总体检查已完成，结果见OPERATOR_AUDIT.md。修复房型/客房旧表单覆盖风险、保存期间继续编辑、订单请求乱序及预订状态隐藏清洁状态。lint/build、五组经营端QA与hosted smoke通过，旧示例服务66测试通过。本轮没有云端业务写入或结构迁移。可部署技术配置和说明已准备，但未部署，也未声称完整示例经营端上线。下一步确认DATABASE.md中的物理表现状与目标结构。
+
+
+## 一账号一民宿实施（2026-10-22）
+
+已完成一账号一民宿：原民宿1行保留，owner空值0；旧关联保留但不参与鉴权。真实数据库事务用两位虚构Auth用户验证本人创建、唯一约束、禁止代别人创建、跨账号不可见/不可写，所有测试对象随事务回滚。lint/build、66项后端单测、qa-account-property、qa-workspace、qa-property-profile、qa-room-cloud、qa-workspace-bookings、qa-room-import、qa-hosted通过；前端使用隔离夹具，未声称真实双账号浏览器验收。安全顾问仅保留原泄漏密码保护提示，无新增RLS告警。没有公开发布，也未执行房型/客房拆表。

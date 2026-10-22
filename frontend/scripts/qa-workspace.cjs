@@ -47,9 +47,9 @@ const cookie = index => {
       }
     }
     assert.equal(localRequests.length, 0);
-    await page.getByText('关联民宿后才能保存，现在可以先填写、上传并核对资料。', { exact: true }).waitFor();
+    await page.getByRole('heading',{name:'民宿资料',exact:true}).waitFor();assert.equal(await page.getByText('关联民宿后才能保存，现在可以先填写、上传并核对资料。',{exact:true}).count(),0);
     await page.getByRole('button', { name: 'EN', exact: true }).click();
-    await page.getByText('Link a property before saving. You can prepare and review details here first.', { exact: true }).waitFor();
+    await page.getByRole('heading',{name:'Property information',exact:true}).waitFor();
     await page.getByRole('button', { name: 'Sign out', exact: true }).click();
     await page.waitForURL('**/login');
     await page.goto(base + '/app/mine'); await page.waitForURL('**/login');

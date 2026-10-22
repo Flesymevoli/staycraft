@@ -72,8 +72,8 @@ function pdfFixture() {
     await page.unroute('**/api/workspace/profile');
     for(const width of [320,390,658]){await page.setViewportSize({width,height:844});assert.equal(await page.locator('body').evaluate(el=>el.scrollWidth>innerWidth),false);}
     await page.setViewportSize({width:390,height:844});await page.screenshot({path:'qa-property-upload.png',fullPage:true});
-    await context.addCookies([cookie(0)]);assert.equal((await context.request.get(base+'/api/workspace/profile')).status(),403);
-    assert.equal((await context.request.put(base+'/api/workspace/profile',{headers:{origin:base},data:{profile:initial.profile,revision:null,confirmed:true}})).status(),403);
+    const preservedB=(await (await context.request.get(base+'/api/workspace/profile')).json()).profile;await context.addCookies([cookie(0)]);const newAccount=await context.request.get(base+'/api/workspace/profile');assert.equal(newAccount.status(),200);assert.equal((await newAccount.json()).profile,null);
+    assert.equal((await context.request.put(base+'/api/workspace/profile',{headers:{origin:base},data:{profile:initial.profile,revision:null,confirmed:true}})).status(),200);await context.addCookies([cookie(1)]);assert.deepEqual((await (await context.request.get(base+'/api/workspace/profile')).json()).profile,preservedB);
     console.log('PASS: TXT/CSV/PDF/DOCX parsing; explicit preview selection; confirmation; save/reload; validation; stale revision; failure preserves edits; denied cross-origin/unassigned/anonymous; oversized/invalid files; narrow screens. Cloud responses are mocked; no live writes.');
   } finally{if(browser)await browser.close();child.kill();}
 })().catch(e=>{console.error(e);process.exitCode=1;});

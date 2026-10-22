@@ -6,7 +6,7 @@
 
 账号是最高层。每个登录账号默认拥有一家民宿，登录后直接进入自己的工作台，不选择加入哪家民宿，也不需要多民宿切换。建议在民宿表保存唯一的owner_user_id，关联Supabase Auth账号；房型、客房、订单等沿民宿归属隔离。
 
-这是一项已确认的产品方向；下面的membership表仍是当前实现，尚未迁移，不会现在直接删表或改权限。迁移时保留现有民宿/房间/订单ID及图片引用，之后取消对成员关联表的业务依赖。
+已完成single_account_property迁移：properties.owner_user_id非空且唯一，页面/API按账号所有权鉴权；首次访问自动建立空民宿。原membership表保留为历史记录，客户端权限已撤销，不再作为业务鉴权来源。原民宿、房间、订单ID及图片引用保持不变。
 
 可阅读的虚构示例见[DATABASE_EXAMPLES.md](DATABASE_EXAMPLES.md)，它是结构讨论用的表格，不是云端真实数据或可直接导入的迁移。
 
@@ -14,8 +14,8 @@
 
 | 表 | 对应业务 | 当前内容 |
 | --- | --- | --- |
-| properties | 民宿 | 民宿ID、名称、建立时间 |
-| property_memberships | 旧版账号与民宿关联（待调整） | 民宿ID、Supabase用户ID、owner/manager角色 |
+| properties | 账号拥有的唯一民宿 | 民宿ID、唯一owner_user_id、名称、建立时间 |
+| property_memberships | 旧版关联历史，不再参与业务 | 保留旧行供追溯，客户端已无访问权限 |
 | property_details | 民宿基本资料 | 名称、地址、早餐和入住时间、须知等JSON，以及防覆盖的revision |
 | property_inventory | 房型与具体客房配置 | 一个民宿一行；types数组保存名称、床型、容量、价格、图片路径，rooms数组保存房号、楼层、房型ID、清洁和启停状态 |
 | direct_bookings | 直接预订订单 | 民宿、房间/房型ID、当时名称/房号/价格快照、日期、客人姓名和电话、预计到店、订单状态、取消申请和请求去重信息 |

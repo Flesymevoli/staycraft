@@ -21,9 +21,9 @@ def gateway_for(*, identity_status=200, membership_status=200, rows=None, unreac
             raise httpx.ConnectError("offline")
         if request.url.path == "/auth/v1/user":
             return httpx.Response(identity_status, json={"id": USER_ID})
-        if request.url.path == "/rest/v1/property_memberships":
+        if request.url.path == "/rest/v1/properties":
             return httpx.Response(membership_status, json=rows if rows is not None else [
-                {"property_id": PROPERTY_ID, "role": "owner"}
+                {"id": PROPERTY_ID, "owner_user_id": USER_ID}
             ])
         raise AssertionError(f"Unexpected URL: {request.url}")
 
@@ -40,7 +40,7 @@ class AccessTests(unittest.TestCase):
     def tearDown(self):
         app.dependency_overrides.clear()
 
-    def test_member_gets_access_after_token_and_membership_are_checked(self):
+    def test_owner_gets_access_after_identity_and_ownership_are_checked(self):
         gateway, calls = gateway_for()
         app.dependency_overrides[get_gateway] = lambda: gateway
         response = asyncio.run(request_access())
@@ -48,8 +48,8 @@ class AccessTests(unittest.TestCase):
         self.assertEqual(response.json(), {"property_id": PROPERTY_ID, "role": "owner"})
         self.assertEqual(len(calls), 2)
         self.assertEqual(calls[0].headers["authorization"], "Bearer valid-token")
-        self.assertEqual(calls[1].url.params["user_id"], f"eq.{USER_ID}")
-        self.assertEqual(calls[1].url.params["property_id"], f"eq.{PROPERTY_ID}")
+        self.assertEqual(calls[1].url.params["owner_user_id"], f"eq.{USER_ID}")
+        self.assertEqual(calls[1].url.params["id"], f"eq.{PROPERTY_ID}")
 
     def test_missing_token_is_rejected_without_calling_supabase(self):
         gateway, calls = gateway_for()
@@ -84,13 +84,13 @@ class AccessTests(unittest.TestCase):
         self.assertEqual(response.status_code, 503)
         self.assertEqual(len(calls), 2)
 
-    def test_unrecognized_role_cannot_gain_property_access(self):
-        gateway, _ = gateway_for(rows=[{"property_id": PROPERTY_ID, "role": "admin"}])
+    def test_wrong_owner_cannot_gain_property_access(self):
+        gateway, _ = gateway_for(rows=[{"id": PROPERTY_ID, "owner_user_id": "cccccccc-cccc-4ccc-8ccc-cccccccccccc"}])
         app.dependency_overrides[get_gateway] = lambda: gateway
         response = asyncio.run(request_access())
         self.assertEqual(response.status_code, 503)
 
-    def test_expired_session_is_rejected_before_membership_lookup(self):
+    def test_expired_session_is_rejected_before_property_lookup(self):
         gateway, calls = gateway_for(identity_status=403)
         app.dependency_overrides[get_gateway] = lambda: gateway
         response = asyncio.run(request_access(token="expired-token"))
@@ -98,7 +98,7 @@ class AccessTests(unittest.TestCase):
         self.assertEqual(len(calls), 1)
 
     def test_access_never_trusts_a_mismatched_record(self):
-        gateway, _ = gateway_for(rows=[{"property_id": str(UUID(USER_ID)), "role": "owner"}])
+        gateway, _ = gateway_for(rows=[{"id": str(UUID(USER_ID)), "owner_user_id": USER_ID}])
         app.dependency_overrides[get_gateway] = lambda: gateway
         response = asyncio.run(request_access())
         self.assertEqual(response.status_code, 503)

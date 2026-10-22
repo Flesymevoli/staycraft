@@ -1,4 +1,4 @@
-"""Verify Supabase identity and property membership for formal API routes."""
+"""Verify Supabase identity and single-account property ownership for formal API routes."""
 
 import os
 from dataclasses import dataclass
@@ -39,12 +39,12 @@ class SupabaseGateway:
                 user_id = UUID(identity.json()["id"])
 
                 membership = await client.get(
-                    f"{self.url}/rest/v1/property_memberships",
+                    f"{self.url}/rest/v1/properties",
                     headers=headers,
                     params={
-                        "select": "property_id,role",
-                        "property_id": f"eq.{property_id}",
-                        "user_id": f"eq.{user_id}",
+                        "select": "id,owner_user_id",
+                        "id": f"eq.{property_id}",
+                        "owner_user_id": f"eq.{user_id}",
                         "limit": "1",
                     },
                 )
@@ -54,11 +54,11 @@ class SupabaseGateway:
                 rows = membership.json()
                 if not rows:
                     raise HTTPException(status_code=403, detail="Property access denied")
-                if (not isinstance(rows, list) or not isinstance(rows[0], dict)
-                        or rows[0].get("property_id") != str(property_id)
-                        or rows[0].get("role") not in ("owner", "manager")):
-                    raise ValueError("Unexpected membership response")
-                return PropertyAccess(user_id=user_id, property_id=property_id, role=rows[0]["role"])
+                if (not isinstance(rows, list) or len(rows)!=1 or not isinstance(rows[0], dict)
+                        or rows[0].get("id") != str(property_id)
+                        or rows[0].get("owner_user_id") != str(user_id)):
+                    raise ValueError("Unexpected ownership response")
+                return PropertyAccess(user_id=user_id, property_id=property_id, role="owner")
         except HTTPException:
             raise
         except (httpx.HTTPError, ValueError, KeyError, TypeError) as exc:

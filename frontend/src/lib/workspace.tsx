@@ -1,4 +1,5 @@
 import "server-only";
+import {accountProperty} from "./account-property";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { hasSupabaseConfig } from "@/lib/supabase/config";
@@ -20,21 +21,11 @@ export async function renderWorkspace(section: WorkspaceSection, roomId?: string
 
   let connection: WorkspaceConnection = { status: "unavailable" };
   try {
-    // Read with the user's JWT and RLS; never use a privileged key or demo data.
-    const { data, error } = await supabase.from("property_memberships")
-      .select("property_id,role,properties(name)")
-      .eq("user_id", userId).order("created_at", { ascending: true }).limit(1);
-    if (!error && data?.length === 0) connection = { status: "unassigned" };
-    else if (!error && data?.length === 1) {
-      const row = data[0];
-      const property = Array.isArray(row.properties) ? row.properties[0] : row.properties;
-      if ((row.role === "owner" || row.role === "manager") && property && typeof property.name === "string") {
-        connection = { status: "linked", propertyName: property.name,propertyId:row.property_id };
-        const details = await supabase.from("property_details").select("profile").eq("property_id", row.property_id).maybeSingle();
-        const profile = !details.error && details.data ? validateProfile(details.data.profile) : null;
-        if (profile) connection.propertyName = profile.name;
-      }
-    }
+    const property=await accountProperty(supabase,userId);
+    connection={status:"linked",propertyName:property.name,propertyId:property.id};
+    const details=await supabase.from("property_details").select("profile").eq("property_id",property.id).maybeSingle();
+    const profile=!details.error&&details.data?validateProfile(details.data.profile):null;
+    if(profile)connection.propertyName=profile.name;
   } catch { /* Missing schema or a service failure is not an empty successful read. */ }
 
   return <WorkspaceClient section={section} userId={userId} roomId={roomId} email={email ?? ""} connection={connection} signOutAction={signOut} />;

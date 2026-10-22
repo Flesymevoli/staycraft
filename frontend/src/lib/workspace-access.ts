@@ -1,4 +1,5 @@
 import "server-only";
+import {accountProperty} from "./account-property";
 import { createClient } from "@/lib/supabase/server";
 
 export class WorkspaceError extends Error {
@@ -19,11 +20,8 @@ export async function verifiedAccount() {
 
 export async function verifiedProperty() {
   const { supabase, user } = await verifiedAccount();
-  const { data, error } = await supabase.from("property_memberships").select("property_id,role")
-    .eq("user_id", user.id).order("created_at", { ascending: true }).limit(1);
-  if (error) throw new WorkspaceError("property_unavailable", 503);
-  if (!data?.length || !["owner", "manager"].includes(data[0].role)) throw new WorkspaceError("property_not_linked", 403);
-  return { supabase, propertyId: data[0].property_id as string };
+  try{const property=await accountProperty(supabase,user.id);return {supabase,propertyId:property.id as string};}
+  catch{throw new WorkspaceError("property_unavailable",503);}
 }
 
 export function requireSameOrigin(request: Request) {
