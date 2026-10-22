@@ -33,7 +33,7 @@ const cookie = index => {
     page.on('request', req => { if (/\/api\/(local|demo)\//.test(req.url())) localRequests.push(req.url()); });
     await page.addInitScript(() => { sessionStorage.setItem('homestay-demo:property', JSON.stringify({ name: 'LEAKED SAMPLE PROPERTY' })); });
     await page.goto(base + '/app');
-    await page.getByRole('heading', { name: '当日日程' }).waitFor();
+    await page.getByRole('heading', { name: '当日待办' }).waitFor();
     assert.equal(await page.getByRole('navigation').getByRole('link').count(), 5);
     for (const route of ['/app', '/app/work', '/app/analysis', '/app/explore', '/app/mine']) {
       await page.goto(base + route);
@@ -70,7 +70,7 @@ const cookie = index => {
     await context.addCookies([cookie(3)]);
     await page.goto(base + '/app', { waitUntil: 'commit' });
     await page.getByRole('status').getByText('正在打开工作台…', { exact: true }).waitFor();
-    await page.getByRole('heading', { name: '当日日程' }).waitFor();
+    await page.getByRole('heading', { name: '当日待办' }).waitFor();
     await context.addCookies([cookie(0)]);
     await page.goto(base + '/app');
     await page.setViewportSize({ width: 390, height: 844 });

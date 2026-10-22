@@ -42,6 +42,12 @@ if (process.env.STAYCRAFT_QA_AUTH_FIXTURES === '1') {
     if (!identity) return json({ message: 'Invalid session' }, 401);
     if (url.pathname === '/auth/v1/user') return json({ id: identity.id, email: `account-${identity.index}@example.invalid`, aud: 'authenticated', role: 'authenticated', app_metadata: {}, user_metadata: {}, identities: [], created_at: '2026-01-01T00:00:00Z' });
     if (url.pathname === '/auth/v1/logout') return json({});
+    if(url.pathname==='/rest/v1/rpc/get_booking_metrics'){
+      const body=JSON.parse(init.body),propertyId=propertyFor(identity.index);
+      if(identity.index===2||body.p_property!==propertyId)return json({message:'property_not_owned'},403);
+      const inventory=inventories.get(propertyId)?.inventory||{types:[],rooms:[]};
+      return json(require('./booking-metrics-fixture.cjs')(inventory,sample?.bookings||[],body.p_days,sample?.anchor||new Intl.DateTimeFormat('sv-SE',{timeZone:'Asia/Shanghai',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date())));
+    }
     if (url.pathname.includes('/storage/v1/object/') && url.pathname.includes('/room-photos/')) {
       if(identity.index===2)return json({message:'Forbidden'},403);
       const path=url.pathname.split('/room-photos/')[1];

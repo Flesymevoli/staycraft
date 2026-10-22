@@ -159,3 +159,5 @@ Work经营洞察口径修正仅改原组件，schema仍v8；qa-work-booking-insi
 
 
 回复草稿模块（2026-10-22）：可停用8014或移除WORKSPACE_BACKEND_URL，人工回复不依赖草稿服务。回退界面/代理代码时保留reply_drafts及RLS，不删除处理记录，也不回退会话/订单迁移。正式模型调用可将FORMAL_MODEL_ENABLED=0后重启FastAPI关闭；不要移植密钥到Next公开环境。数据库出现问题优先前向修复，禁止将草稿批量迁入messages或标成已发送。
+
+正式预订指标（2026-10-22）：可revert该模块应用提交并重建，恢复原分析空态；保留get_booking_metrics只读RPC与原RLS不会修改数据。无需删除表、订单、房间或历史迁移。优先前向修复计算口径，数据库函数若需变更用新迁移替换，不关RLS、不重置数据库。样本重启仅重置本机内存。
