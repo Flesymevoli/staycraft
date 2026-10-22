@@ -61,6 +61,8 @@ const cookie = index => {
     await page.goto(base + '/app/mine');
     assert.doesNotMatch(await page.locator('main').innerText(), /Account B private property|account-1@/);
 
+    // Language now persists across routes/accounts in this browser; explicitly switch back for Chinese assertions.
+    await page.getByRole('button', { name: '中文', exact: true }).click();
     await context.addCookies([cookie(2)]);
     await page.goto(base + '/app');
     await page.getByRole('status').getByText('暂时无法读取民宿资料，请稍后重试。').waitFor();

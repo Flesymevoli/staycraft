@@ -1,6 +1,7 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState } from "react";
+import { useOperatorLanguage } from "@/components/operator-language";
 import { signIn, type LoginState } from "./actions";
 
 const messages = {
@@ -31,7 +32,7 @@ const messages = {
 } as const;
 
 export function LoginForm({ configured,prototypeAvailable=true,sample=false }: { configured: boolean;prototypeAvailable?:boolean;sample?:boolean }) {
-  const [language, setLanguage] = useState<"en" | "zh">("zh");
+  const {language, setLanguage} = useOperatorLanguage();
   const [state, action, pending] = useActionState<LoginState, FormData>(signIn, undefined);
   const t = messages[language];
 
