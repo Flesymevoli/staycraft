@@ -200,3 +200,5 @@ npm run check与qa-booking-metrics、qa-workspace、qa-operator-sample、qa-conv
 满意度范围调整与计划重整（2026-10-22）：按用户确认隐藏正式Analysis客人评分占位卡，参考区改两列；历史native原型保留。入住后评分留言暂缓，无数据库变更。旧TODO归档，CURRENT_BASELINE统一现行范围，UI_PARITY_AUDIT记录五页视觉差异；根AGENTS指向当前清单，避免模型切换后继续执行过期任务。
 
 本轮验证：lint/build、qa-booking-metrics与qa-workspace通过；覆盖分析数字/图表切换、无库存/失败、经营端五页权限和导航、中英文及窄屏。UI回归使用隔离夹具，无云端修改。全页UI对照为源代码/样式审查，分析页另有截图复核；完整五页视觉还原尚未实施，不以此记录冒充完成。
+
+UI第一轮对齐（2026-10-22）：压缩演示提示和页头、恢复分析参考区顺序及紧凑卡片、支持彩色日图指针拖动/周末标记，统一工作台与资料表单样式。五页截图已查看；lint/build、qa-ui-parity、qa-booking-metrics、qa-operator-sample通过。隔离样本验收无云端修改；Mine浏览/编辑分离和功能缺口仍未完成。

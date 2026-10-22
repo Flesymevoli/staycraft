@@ -27,3 +27,28 @@
 .workspace-signout { min-height: 44px; padding: 0; border: 0; background: none; color: var(--blue); }
 @media (max-width: 359px) { .workspace-page { padding-inline: 18px; } .workspace-empty { padding: 24px 20px; } }
 .workspace-booking{scroll-margin-block:100px}.workspace-booking:target{outline:2px solid var(--blue);outline-offset:3px}
+
+/* Operator pages share the prototype's compact visual rhythm. */
+.workspace-page { padding-inline:22px; }
+.workspace-page > h1 { margin-top:22px; font-size:28px; font-weight:450; }
+.workspace-page.native-home-page > h1 { margin-top:16px; font-size:40px; }
+.workspace-page > .workspace-intro { margin:10px 0 24px; font-size:13px; }
+.workspace-header-label { display:flex; align-items:center; gap:10px; min-width:0; }
+.workspace-sample { position:relative; font-size:11px; color:var(--muted); }
+.workspace-sample > summary { display:flex; align-items:center; min-height:44px; cursor:pointer; list-style:none; }
+.workspace-sample > summary::-webkit-details-marker { display:none; }
+.workspace-sample > summary::before { content:""; width:5px; height:5px; border-radius:50%; background:#8b9eb5; margin-right:5px; }
+.workspace-sample aside { position:absolute; top:42px; left:0; z-index:20; width:min(250px,65vw); padding:14px; background:#fff; border:1px solid var(--hairline); border-radius:14px; box-shadow:var(--card-shadow); line-height:1.7; }
+.workspace-sample summary:focus-visible { outline:2px solid var(--blue); outline-offset:2px; border-radius:6px; }
+.workspace-home .room-preview-calendar { margin-top:18px; }
+.workspace-page .workspace-section { margin-top:28px; }
+.workspace-page .workspace-section > h2, .workspace-page .workspace-account h2 { font-size:20px; font-weight:450; }
+.workspace-page .workspace-booking { padding:18px; border:1px solid #fff; background:var(--card-surface); box-shadow:0 4px 14px #20212403; }
+.workspace-page .workspace-booking small { line-height:1.6; font-size:12px; }
+.workspace-page .workspace-metric { padding:20px 18px; gap:9px; }
+.workspace-page .workspace-empty { padding:24px 22px; margin-top:24px; }
+.workspace-page .workspace-empty h2 { font-size:21px; }
+.workspace-page .profile-form { gap:20px; padding:22px 20px; }
+.workspace-page .profile-field { gap:8px; }
+.workspace-page .profile-field input, .workspace-page .profile-field textarea { background:#f9fafb; border-color:#e5e8ed; font-size:14px; }
+@media (max-width:359px) { .workspace-page { padding-inline:18px; } }
