@@ -23,3 +23,10 @@
 .booking-analysis-toolbar button { min-height:44px; }
 .booking-analysis-readout { margin-bottom:8px; }
 @media (prefers-reduced-motion:reduce) { .workspace-page * { scroll-behavior:auto; } }
+
+/* Keep the period control inside the bookings section, aligned with its cards. */
+.booking-analysis-toolbar { width:100%; }
+.booking-analysis-range { flex:1; display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); border-radius:16px; }
+.booking-analysis-range button { padding:0 8px; border-radius:12px; white-space:nowrap; }
+.booking-analysis-source { margin:10px 0 16px; }
+
