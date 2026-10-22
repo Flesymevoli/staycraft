@@ -8,7 +8,7 @@ import { signOut } from "@/app/login/actions";
 import { validateProfile } from "@/lib/property-profile";
 import {operatorSample} from "./operator-sample";
 
-export async function renderWorkspace(section: WorkspaceSection, roomId?: string) {
+export async function renderWorkspace(section: WorkspaceSection, roomId?: string, detail?: {bookingId?:string;threadId?:string}) {
   if (!hasSupabaseConfig()) redirect("/login");
   const supabase = await createClient();
   let email: string | undefined;
@@ -29,5 +29,5 @@ export async function renderWorkspace(section: WorkspaceSection, roomId?: string
     if(profile)connection.propertyName=profile.name;
   } catch { /* Missing schema or a service failure is not an empty successful read. */ }
 
-  return <WorkspaceClient section={section} userId={userId} roomId={roomId} email={email ?? ""} connection={connection} sample={operatorSample()} signOutAction={signOut} />;
+  return <WorkspaceClient section={section} userId={userId} roomId={roomId} bookingId={detail?.bookingId} threadId={detail?.threadId} email={email ?? ""} connection={connection} sample={operatorSample()} signOutAction={signOut} />;
 }

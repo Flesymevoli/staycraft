@@ -11,7 +11,7 @@ import "./workspace.css";
 import { PropertyProfileEditor } from "./property-profile-editor";
 import { HomeSchedulePreview, RoomPreviewBoard, RoomPreviewDetail, RoomTypesPreview } from "./room-preview";
 import {WorkspaceBookings} from "./workspace-bookings";
-import {WorkspaceInbox} from "./cloud-conversations";
+import {WorkspaceInbox,WorkspaceConversation} from "./cloud-conversations";
 import {HomeBookingOverview,WorkspaceAnalysis} from "./workspace-analysis";
 import {OperatorSampleContext} from "./operator-sample-context";
 
@@ -25,8 +25,8 @@ const sections = [
   { id: "mine", en: "Mine", zh: "我的", href: "/app/mine", icon: "mine", active: "mine-active" },
 ] as const;
 
-export function WorkspaceClient({ section, userId, roomId, email, connection, sample=false, signOutAction }: {
-  section: WorkspaceSection; userId: string; roomId?: string; email: string; connection: WorkspaceConnection; sample?:boolean; signOutAction: () => Promise<void>;
+export function WorkspaceClient({ section, userId, roomId, bookingId, threadId, email, connection, sample=false, signOutAction }: {
+  section: WorkspaceSection; userId: string; roomId?: string; bookingId?:string; threadId?:string; email: string; connection: WorkspaceConnection; sample?:boolean; signOutAction: () => Promise<void>;
 }) {
   // Account pages do not use the prototype's shared sessionStorage or local APIs.
   const {language, setLanguage} = useOperatorLanguage();
@@ -41,8 +41,8 @@ export function WorkspaceClient({ section, userId, roomId, email, connection, sa
   return <OperatorSampleContext value={sample}><div className="native-shell workspace-shell">
     <main className={`native-page workspace-page workspace-${section}${section === "home" ? " native-home-page" : ""}`}>
       <header className="native-header"><div className="workspace-header-label"><span className="native-kicker">{t(current.en.toUpperCase(), current.zh)}</span>{sample&&<details className="workspace-sample" aria-label={t("Fictional sample environment","虚构演示环境")}><summary>{t("Demo", "演示")}</summary><aside>{t("Fictional local sample · edits reset on restart · no cloud or AI requests","本机虚构演示 · 修改重启即还原 · 不连接云端或 AI")}</aside></details>}</div><button className="native-language" type="button" onClick={() => setLanguage(zh ? "en" : "zh")}>{zh ? "EN" : "中文"}</button></header>
-      <h1>{roomId ? roomId==="new"?t("Add room","添加客房"):t("Room details","客房详情") : section === "home" ? t("Welcome.", "你好。") : section === "mine" && connection.status === "linked" ? connection.propertyName : t(current.en, current.zh)}</h1>
-      <p className="workspace-intro">{roomId?t("Your room, at a glance.","查看和维护这间客房的信息。"):section === "home" ? t("A little clarity for your day.", "让经营的每一天，更清晰。") : section === "mine" ? t("The information your workspace works from.", "从你的民宿资料开始。") : section === "analysis" ? t("Select a metric to view its details below", "点选指标，在下方查看详情") : section === "work" ? t("Rooms, bookings and guest conversations.", "客房、订单与客人消息。") : t("Discover opportunities around your stay.", "发现民宿周边的经营机会。")}</p>
+      <h1>{bookingId?t("Booking details","订单详情"):threadId?t("Guest conversation","客人会话"):roomId ? roomId==="new"?t("Add room","添加客房"):t("Room details","客房详情") : section === "home" ? t("Welcome.", "你好。") : section === "mine" && connection.status === "linked" ? connection.propertyName : t(current.en, current.zh)}</h1>
+      <p className="workspace-intro">{bookingId||threadId?"":roomId?t("Your room, at a glance.","查看和维护这间客房的信息。"):section === "home" ? t("A little clarity for your day.", "让经营的每一天，更清晰。") : section === "mine" ? t("The information your workspace works from.", "从你的民宿资料开始。") : section === "analysis" ? t("Select a metric to view its details below", "点选指标，在下方查看详情") : section === "work" ? t("Rooms, bookings and guest conversations.", "客房、订单与客人消息。") : t("Discover opportunities around your stay.", "发现民宿周边的经营机会。")}</p>
 
       {!roomId && connection.status === "unavailable" && <div className="workspace-notice" role="status"><span>{t("Property details are unavailable. Please try again.", "暂时无法读取民宿资料，请稍后重试。")}</span><button type="button" disabled={refreshing} onClick={() => startRefresh(() => router.refresh())}><RefreshCw size={15} aria-hidden="true" />{refreshing ? t("Retrying…", "正在重试…") : t("Retry", "重试")}</button></div>}
 
@@ -51,7 +51,8 @@ export function WorkspaceClient({ section, userId, roomId, email, connection, sa
         <HomeSchedulePreview zh={zh} scope={userId}/>
         <HomeBookingOverview scope={userId} zh={zh}/>
       </>}
-      {section === "work" && !roomId && <><RoomPreviewBoard scope={userId} zh={zh}/><WorkspaceBookings zh={zh} propertyId={!sample&&connection.status==="linked"?connection.propertyId:undefined}/><WorkspaceInbox zh={zh}/></>}
+      {bookingId&&<WorkspaceBookings zh={zh} bookingId={bookingId}/>}{threadId&&<WorkspaceConversation zh={zh} threadId={threadId}/>}
+      {section === "work" && !roomId && !bookingId && !threadId && <><RoomPreviewBoard scope={userId} zh={zh}/><WorkspaceBookings zh={zh} propertyId={!sample&&connection.status==="linked"?connection.propertyId:undefined}/><WorkspaceInbox zh={zh}/></>}
       {section === "analysis" && <WorkspaceAnalysis key={userId} scope={userId} zh={zh}/>}
       {section === "explore" && <section className="workspace-empty"><span className="workspace-symbol"><Compass size={28} strokeWidth={1.4} aria-hidden="true" /></span><h2>{t("Discover what is around you.", "从民宿所在的位置开始。")}</h2><p>{t("Local demand and opportunities need a property location and reliable sources. There are no connected signals yet.", "周边需求和推广机会需要民宿位置及可靠的信息来源，目前尚未接入相关数据。")}</p>{toMine}</section>}
       {section === "mine" && <>

@@ -222,3 +222,5 @@ lint/build、qa-ui-parity、qa-workspace-bookings、qa-conversation-drafts、qa-
 2026-10-23：按用户要求去掉客房看板的常驻解释、房型设置与客房详情中的存储环境说明；保留预订状态读取失败反馈。lint/build和qa-operator-sample通过，未改数据链路。
 
 期间按钮位置纠正：恢复原紧凑胶囊，移回自身预订标题前，介绍下间距24→12px、内容区上间距20→0。lint/build及qa-ui-parity通过；无数据变更。
+
+2026-10-23独立订单/会话页：复用原受保护工作区与现有读取/回复链路，UUID路由校验，订单未找到/读取失败与重试，返回列表定位，详情刷新与语言保持。lint/build、qa-booking-details、qa-conversation-drafts和样本流程通过；隔离虚构适配器，无云端写入。详情截图检查后修复横排继承问题并复测。
