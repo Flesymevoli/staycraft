@@ -50,7 +50,7 @@ export function WorkspaceClient({ section, userId, roomId, email, connection, sa
 
       {roomId && <RoomPreviewDetail scope={userId} roomId={roomId} zh={zh}/>}
       {section === "home" && !roomId && <>
-        <HomeSchedulePreview zh={zh}/>
+        <HomeSchedulePreview zh={zh} scope={userId}/>
         <section className="workspace-section"><h2>{t("Your stay at a glance", "经营一览")}</h2>{metrics}</section>
       </>}
       {section === "work" && !roomId && <><RoomPreviewBoard scope={userId} zh={zh}/><WorkspaceBookings zh={zh} propertyId={!sample&&connection.status==="linked"?connection.propertyId:undefined}/><WorkspaceInbox zh={zh}/></>}

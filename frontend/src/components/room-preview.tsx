@@ -11,6 +11,7 @@ import "./room-board.css";
 import "./room-preview.css";
 import {WorkspaceBookings} from "./workspace-bookings";
 import {useOperatorSample} from "./operator-sample-context";
+import {HomeTodos} from "./home-todos";
 
 function today(){return new Intl.DateTimeFormat("sv-SE",{timeZone:"Asia/Shanghai",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());}
 function template(id:string,zh:boolean):RoomType{return {id:crypto.randomUUID(),name:id==="twin"?(zh?"双床房":"Twin room"):id==="family"?(zh?"家庭房":"Family room"):(zh?"大床房":"Double room"),beds:id==="twin"?(zh?"2 张单人床":"2 single beds"):id==="family"?(zh?"1 张大床 + 1 张单人床":"1 double + 1 single bed"):(zh?"1 张大床":"1 double bed"),capacity:id==="family"?3:2,price:0,photo:""};}
@@ -21,13 +22,13 @@ async function localPhoto(file:File){
 }
 function PreviewNote({zh}:{zh:boolean}){const sample=useOperatorSample();return <p className="room-preview-note">{sample?(zh?"虚构资料 · 仅保存在本机演示内存":"Fictional data · local sample memory only"):(zh?"房型与客房资料已连接云端":"Room settings connected to cloud")}</p>;}
 
-export function HomeSchedulePreview({zh}:{zh:boolean}){
+export function HomeSchedulePreview({zh,scope}:{zh:boolean;scope:string}){
   const [date,setDate]=useState(today);const t=(en:string,cn:string)=>zh?cn:en;
   const anchor=new Date(`${date}T12:00:00+08:00`);const weekStart=new Date(anchor);weekStart.setUTCDate(anchor.getUTCDate()-((anchor.getUTCDay()+6)%7));
   const days=Array.from({length:14},(_,i)=>{const d=new Date(weekStart);d.setUTCDate(weekStart.getUTCDate()+i);return d.toISOString().slice(0,10);});
   return <>
     <section className="room-preview-calendar" aria-label={t("Choose a date","选择日期")}><div className="native-section-head"><h2>{date.slice(0,4)}{zh?" 年 ":" / "}{Number(date.slice(5,7))}{zh?" 月":""}</h2><label className="room-date-picker"><CalendarDays size={18}/><span className="room-sr-only">{t("Choose date","选择日期")}</span><input aria-label={t("Choose date","选择日期")} type="date" value={date} onChange={e=>{if(/^\d{4}-\d{2}-\d{2}$/.test(e.target.value))setDate(e.target.value);}}/></label></div><div className="native-dates">{days.map(day=><div className="native-date" key={day}><span>{new Intl.DateTimeFormat(zh?"zh-CN":"en-US",{weekday:"short",timeZone:"Asia/Shanghai"}).format(new Date(day+"T12:00:00+08:00"))}</span><button type="button" className={day===date?"is-selected":""} aria-label={day} aria-pressed={day===date} onClick={()=>setDate(day)}>{Number(day.slice(8,10))}</button></div>)}</div></section>
-    <section className="home-schedule-preview" aria-label={t("Daily schedule","当日日程")} aria-live="polite"><div className="native-section-head"><h2>{t("Daily schedule","当日日程")}</h2><span>{date}</span></div><WorkspaceBookings date={date} zh={zh}/></section>
+    <HomeTodos key={`${scope}:${date}`} date={date} today={today()} scope={scope} zh={zh}/>
   </>;
 }
 

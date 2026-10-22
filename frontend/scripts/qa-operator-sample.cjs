@@ -18,15 +18,14 @@ async function stop(child){if(child.exitCode!==null)return;await new Promise(res
  await server.ready;browser=await chromium.launch();const context=await browser.newContext({viewport:{width:390,height:844}}),page=await context.newPage();
  const external=[];page.on('request',request=>{if(!request.url().startsWith(base)&&!request.url().startsWith('data:'))external.push(request.url())});
  await context.addCookies([{name:'sb-husrpqalpjjswpvrkxet-auth-token',value:'formal-session-sentinel',url:base}]);
- await page.goto(base+'/app');await page.waitForURL('**/login');
+ await page.clock.install({time:new Date(date+'T04:00:00Z')});await page.goto(base+'/app');await page.waitForURL('**/login');
  await page.locator('#email').fill('demo@example.invalid');await page.locator('#password').fill('incorrect');await page.getByRole('button',{name:'登录',exact:true}).click();await page.getByRole('alert').waitFor();
  await page.reload();
  await page.locator('#email').fill('demo@example.invalid');await page.locator('#password').fill('staycraft-demo');await page.getByRole('button',{name:'登录',exact:true}).click();try{await page.waitForURL('**/app')}catch(error){console.error(await page.locator('body').innerText());throw error;}
  await page.getByLabel('虚构演示环境').waitFor();
  await page.locator('.room-preview-calendar input[type=date]').fill(date);
- await page.getByText('101 · 林小夏（虚构）',{exact:true}).waitFor();await page.getByText('103 · 陈小舟（虚构）',{exact:true}).waitFor();
- assert.equal(await page.getByText('102 · 许知遥（虚构）',{exact:true}).count(),0);
- const cookies=await context.cookies();assert.equal(cookies.find(c=>c.name==='sb-husrpqalpjjswpvrkxet-auth-token').value,'formal-session-sentinel');assert.ok(cookies.some(c=>c.name.startsWith('staycraft-operator-sample-auth')));
+ await page.locator('.home-todos').getByRole('heading',{name:'当日待办',exact:true}).waitFor();assert.equal(await page.locator('.home-todos').getByText(/虚构|林小夏|陈小舟|许知遥/).count(),0);await page.getByRole('button',{name:/展开其余/}).click();await page.locator('.home-todos').getByText('计划离店',{exact:true}).waitFor();assert.equal(await page.locator('.home-todo-row').count(),5);await page.getByRole('button',{name:'收起',exact:true}).click();assert.equal(await page.locator('.home-todo-row').count(),3);
+ await page.screenshot({path:'qa-home-todos.png',fullPage:true});const cookies=await context.cookies();assert.equal(cookies.find(c=>c.name==='sb-husrpqalpjjswpvrkxet-auth-token').value,'formal-session-sentinel');assert.ok(cookies.some(c=>c.name.startsWith('staycraft-operator-sample-auth')));
  await page.goto(base+'/app/work');await page.getByText('启用客房').waitFor();await page.getByText('取消申请待审核',{exact:false}).waitFor();
  assert.equal(await page.locator('.room-grid a').count(),6);assert.equal(await page.getByRole('link',{name:/查看客人预订页/}).count(),0);
  const inv=await (await context.request.get(base+'/api/workspace/inventory')).json();
@@ -38,8 +37,8 @@ async function stop(child){if(child.exitCode!==null)return;await new Promise(res
  await page.goto(base+'/app/analysis');await page.getByText('尚未接入',{exact:true}).first().waitFor();
  for(const width of [320,390,658,1280]){await page.setViewportSize({width,height:900});await page.goto(base+'/app/work');await page.locator('.room-grid a').first().waitFor();assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),String(width));}
  await page.screenshot({path:'qa-operator-sample.png',fullPage:true});
- await stop(server.child);server=start();await server.ready;
+ await page.goto(base+'/app');await page.locator('.home-todo-clean').first().waitFor();assert.equal(await page.locator('.home-todo-clean').count(),1);assert.equal(await page.locator('.home-todo-clean').getByText('102',{exact:true}).count(),0);await stop(server.child);server=start();await server.ready;
  response=await context.request.get(base+'/api/workspace/inventory');const reset=await response.json();assert.ok(reset.inventory.rooms.some(r=>r.number==='101'));assert.equal(reset.inventory.rooms.find(r=>r.number==='102').housekeeping,'dirty');
- assert.deepEqual(external,[]);await page.goto(base+'/app/mine');await page.getByRole('button',{name:'退出登录',exact:true}).click();await page.waitForURL('**/login');assert.equal((await context.request.get(base+'/api/workspace/inventory')).status(),401);
+ await page.goto(base+'/app');await page.locator('.home-todo-clean').first().waitFor();assert.equal(await page.locator('.home-todo-clean').count(),2);await page.route('**/api/workspace/bookings*',route=>route.fulfill({status:503,contentType:'application/json',body:'{}'}));await page.getByRole('button',{name:'刷新待办',exact:true}).click();await page.locator('.home-todos').getByRole('alert').waitFor();assert.equal(await page.locator('.home-todo-arrival').count(),0);await page.unroute('**/api/workspace/bookings*');assert.deepEqual(external,[]);await page.goto(base+'/app/mine');await page.getByRole('button',{name:'退出登录',exact:true}).click();await page.waitForURL('**/login');assert.equal((await context.request.get(base+'/api/workspace/inventory')).status(),401);
  console.log('PASS operator sample: fictional dates/room states/orders, real page login/edit/filter/render, cookie isolation, conflict/restart reset, no external fetch, hosted refusal, logout and responsive widths. No cloud writes.');
  }finally{if(browser)await browser.close();await stop(server.child)}})().catch(error=>{console.error(error);process.exitCode=1});
