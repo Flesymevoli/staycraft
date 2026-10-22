@@ -1,12 +1,29 @@
 // Isolated test/sample adapter, never imported by production code.
 const {randomUUID,createHash}=require('node:crypto');
-module.exports=function conversationFixture(sample){
+module.exports=function conversationFixture(sample,getProfile){
  const threads=new Map();
+ const drafts=new Map();
  if(sample)for(const [index,question] of ['早餐几点开始？','可以提前到店吗？'].entries()){
   const thread={id:randomUUID(),property_id:sample.propertyId,guest_name:index?'周小雨（虚构）':'林小夏（虚构）',hash:'sample-'+index,messages:[{id:randomUUID(),sender:'guest',body:question,created_at:new Date().toISOString()}]};threads.set(thread.id,thread);
  }
  return function handle(url,body,identity,propertyId){
   const json=(body,status=200)=>new Response(JSON.stringify(body),{status,headers:{'Content-Type':'application/json'}});
+  const draftPath=url.pathname.match(/^\/v1\/properties\/([^/]+)\/conversations\/([^/]+)\/draft$/);
+  if(draftPath){
+   const thread=threads.get(draftPath[2]);if(!identity||draftPath[1]!==propertyId||thread?.property_id!==propertyId)return json({detail:'not_found'},404);
+   const message=thread.messages.at(-1);if(message?.sender!=='guest')return json({detail:'conversation_changed'},409);
+   const details=getProfile(propertyId),version=details?.revision||'none',profile=details?.profile||{},key=[thread.id,message.id,version,body.language].join(':');
+   if(drafts.has(key))return json(drafts.get(key));
+   const zh=body.language==='zh',question=message.body;let draft=null,reason='unsupported_question',citations=[];
+   if(/提前|early|退款|refund|cancel|取消/i.test(question))reason=/退款|refund|cancel|取消/i.test(question)?'sensitive_request':'needs_confirmation';
+   else if(/早餐|breakfast/i.test(question)){
+    if(profile.breakfast){draft=zh?`早餐时间：${profile.breakfast}。`:`Breakfast hours: ${profile.breakfast}.`;reason='ready';citations=[{key:'breakfast',value:profile.breakfast}];}else reason='missing_fact';
+   }else if(/入住|check.?in/i.test(question)){
+    if(profile.checkin){draft=zh?`常规入住时间：${profile.checkin}。`:`Standard check-in time: ${profile.checkin}.`;reason='ready';citations=[{key:'checkin',value:profile.checkin}];}else reason='missing_fact';
+   }
+   const result={id:randomUUID(),message_id:message.id,source_version:version,created_at:new Date().toISOString(),decision:{draft,engine:'rules_v1',reason_code:reason,citations,sent:false,disposition:'needs_review'}};
+   drafts.set(key,result);return json(result);
+  }
   if(url.pathname==='/rest/v1/rpc/guest_message_api'){
    if(!/^[a-f0-9]{64}$/.test(body.p_token||''))return json({message:'guest_session_required'},401);
    const hash=createHash('sha256').update(body.p_token).digest('hex');let thread=[...threads.values()].find(t=>t.property_id===body.p_property&&t.hash===hash);

@@ -3,7 +3,7 @@ if (process.env.STAYCRAFT_QA_AUTH_FIXTURES === '1') {
   const sampleMode=process.env.STAYCRAFT_OPERATOR_SAMPLE==='1';
   if(sampleMode&&(process.env.VERCEL==='1'||process.env.STAYCRAFT_HOSTED==='1'||!process.argv.includes('127.0.0.1')))throw new Error('Samples require a separate loopback-only server');
   const sample=sampleMode?require('./operator-sample-data.cjs').createSample(process.env.STAYCRAFT_SAMPLE_DATE||undefined):null;
-  const conversations=require('./conversation-fixture.cjs')(sample);
+  const conversations=require('./conversation-fixture.cjs')(sample,propertyId=>profiles.get(propertyId));
   const originalFetch = globalThis.fetch;
   const profiles = new Map();
   const inventories = new Map();
@@ -23,12 +23,13 @@ if (process.env.STAYCRAFT_QA_AUTH_FIXTURES === '1') {
   }
   globalThis.fetch = async (input, init) => {
     const url = new URL(typeof input === 'string' ? input : input instanceof URL ? input.href : input.url);
-    if (url.hostname !== 'husrpqalpjjswpvrkxet.supabase.co') {
-      if(sampleMode&&!['127.0.0.1','localhost','[::1]'].includes(url.hostname))throw new Error('External network disabled in sample');
-      return originalFetch(input, init);
-    }
     const headers = new Headers(init?.headers || (input instanceof Request ? input.headers : undefined));
     const identity = tokens.get((headers.get('authorization') || '').replace(/^Bearer /, ''));
+    if (url.hostname !== 'husrpqalpjjswpvrkxet.supabase.co') {
+      if(sampleMode&&!['127.0.0.1','localhost','[::1]'].includes(url.hostname))throw new Error('External network disabled in sample');
+      if(sampleMode&&/\/v1\/properties\/[^/]+\/conversations\/[^/]+\/draft$/.test(url.pathname))return conversations(url,JSON.parse(init?.body||'{}'),identity,identity?propertyFor(identity.index):null);
+      return originalFetch(input, init);
+    }
     const json = (body, status = 200) => new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
     const conversation=url.pathname.startsWith('/rest/v1/')?conversations(url,init?.body&&typeof init.body==='string'?JSON.parse(init.body):{},identity,identity?propertyFor(identity.index):null):null;
     if(conversation)return conversation;

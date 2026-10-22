@@ -58,14 +58,14 @@
 
 一段会话可以有很多条消息；客人咨询、AI草稿和经营者已发送的回复要分开记录。
 
-## 6. AI处理记录（云端尚未接通）
+## 6. 草稿处理记录（实际表reply_drafts，正式模型调用未开启）
 
 | 处理ID | 关联消息ID | 使用依据 | 处理结果 | 是否执行发送 |
 | --- | --- | --- | --- | --- |
 | A001 | M001 | 已确认早餐时间07:30–10:00 | 生成回复草稿，待审核 | 否 |
 
-退款/提前入住等待审核事务可后续独立记录，不能把生成建议写成已执行。示例表先帮助确认关系，尚未建立这些新云端表。
+reply_drafts已记录原问题、资料版本、引用和规则/模型模式，始终未发送。退款/提前入住等待审核事务可后续独立记录，不能把生成建议写成已执行。以上示例不是已导入的真实记录。
 
 ## 去哪里看实际表
 
-Supabase项目控制台的Table Editor可查看真实表和已保存记录。当前业务表包括properties、property_details、room_types、rooms、direct_bookings；账号归属为properties.owner_user_id。property_memberships只保留旧记录，不参与鉴权；property_inventory是拆表前的只读快照，不代表当前配置。以上表格中的简短编号和人物均为阅读用虚构示例，不是已经导入的云端记录；实际关联ID使用UUID。站内会话与消息已分别保存到conversations/messages；AI处理记录仍未接通云端。本机演示样本单独维护，不与正式资料混合。
+Supabase项目控制台的Table Editor可查看真实表和已保存记录。当前业务表包括properties、property_details、room_types、rooms、direct_bookings；账号归属为properties.owner_user_id。property_memberships只保留旧记录，不参与鉴权；property_inventory是拆表前的只读快照，不代表当前配置。以上表格中的简短编号和人物均为阅读用虚构示例，不是已经导入的云端记录；实际关联ID使用UUID。站内会话与消息已分别保存到conversations/messages；回复草稿处理记录在reply_drafts，正式模型调用仍关闭。本机演示样本单独维护，不与正式资料混合。

@@ -34,3 +34,8 @@ HOMESTAY_LOCAL_DATA必须为0；Vercel自动启用托管模式，其他Node平�
 
 
 站内消息补充（2026-10-22）：guest_conversations迁移已应用，Next与Supabase即可运行本站留言/人工回复，不增加FastAPI部署依赖。回复回执仅代表写入本站会话，尚无推送、已读、会话找回或历史分页；客人每分钟及单会话限额不是完整IP反滥用方案，仍按受控演示定位。AI草稿后续独立接入，当前不向模型发送真实资料。
+
+
+草稿服务补充（2026-10-22）：资料/客房/订单/站内人工消息仍只需Next+Supabase；准备回复草稿另需FastAPI。Next配置WORKSPACE_BACKEND_URL（本机http://127.0.0.1:8014，托管必须HTTPS），后端配置SUPABASE_URL和publishable key，用已验证用户访问令牌读取RLS资料。HOMESTAY_LOCAL_DATA=0。前后端均不需要service-role/secret key。
+
+后端FORMAL_MODEL_ENABLED默认0，与旧MODEL_ENABLED分开；当前本机二者都为0，因此只生成资料规则建议。以后取得数据范围授权并配置允许的模型后，才同时启用两个开关，密钥只在FastAPI环境。模型超时或返回无效内容回退规则并标注，所有结果仍需人工审核。草稿后端不可用不影响站内人工回复；目前没有部署FastAPI或网页到公网。

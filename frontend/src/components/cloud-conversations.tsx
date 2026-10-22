@@ -3,6 +3,7 @@ import {useEffect,useRef,useState} from "react";
 import {ArrowLeft,MessageCircle} from "lucide-react";
 import {useOperatorSample} from "./operator-sample-context";
 import "./cloud-conversations.css";
+import {ConversationDraft} from "./conversation-draft";
 type Message={id:string;sender:"guest"|"owner";body:string;created_at:string};
 type Summary={id:string;guest_name:string;latest:Message|null};
 async function read(url:string,signal?:AbortSignal){const response=await fetch(url,{cache:"no-store",signal});const body=await response.json();if(!response.ok)throw new Error();return body;}
@@ -27,6 +28,7 @@ function CloudThread({thread,property,zh}:{thread?:string;property?:string;zh:bo
  }
  return <div className="cloud-thread"><div className="native-section-head"><h3>{guest?"联系民宿":t("Conversation","会话")}</h3><button type="button" className="inventory-text" disabled={busy} onClick={()=>{setStatus("loading");setRetry(v=>v+1)}}>{t("Refresh","刷新")}</button></div>
  {status==="loading"?<p role="status">{t("Loading messages…","正在读取消息…")}</p>:status==="error"?<p role="alert">{t("Messages unavailable. Please retry.","暂时无法读取消息，请刷新重试。")}</p>:<><div className="cloud-message-list">{!messages.length&&<p>{t("No messages yet.","暂无消息，可以在下方留言。")}</p>}{messages.map(message=><article key={message.id} className={`cloud-message cloud-message-${message.sender}`}><small>{message.sender==="guest"?t("Guest","客人"):t("Property","民宿")} · {new Date(message.created_at).toLocaleString(zh?"zh-CN":"en-GB",{timeZone:"Asia/Shanghai"})}</small><p>{message.body}</p></article>)}</div>
+ {!guest&&thread&&latest?.sender==="guest"&&<ConversationDraft key={`${latest.id}:${zh}`} thread={thread} zh={zh} disabled={busy||uncertain} hasText={!!text.trim()} onUse={setText}/>}
  <form onSubmit={event=>void send(event)}><label>{guest?"你的问题":t("Your reply","你的回复")}<textarea rows={3} maxLength={2000} required disabled={busy||uncertain} value={text} onChange={event=>setText(event.target.value)}/></label><button className={guest?"guest-primary":"native-primary"} disabled={busy||!text.trim()||(!guest&&latest?.sender!=="guest"&&!uncertain)}>{busy?t("Sending…","正在发送…"):uncertain?t("Retry send","重试发送"):t("Send","发送")}</button></form>
  {!guest&&latest?.sender==="owner"&&<p>{t("Reply sent. Wait for the next guest message.","已回复，等待客人的下一条消息。")}</p>}{notice&&<p role="status">{notice}</p>}</>}
  </div>;

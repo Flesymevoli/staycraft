@@ -236,3 +236,12 @@ operatorSample服务端开关仅在独立样本与夹具标志同时启用且非
 经营者reply_conversation通过private窄权限函数验证owner并锁会话，核对最新guest消息、去重请求号与回复目标，原子写入并返回消息回执；每条guest消息至多一条owner回复。客人留言先锁property再锁会话，限制单民宿500会话、单会话100条客人消息及每分钟10条，事务无网络调用。消息正文最长2000字符；created_at使用clock_timestamp，避免事务开始时间造成并发排序倒置。列表按更新时间返回最近50条，详情最多200条；尚无历史分页、实时推送或已读回执。
 
 新增/api/workspace/conversations与既有/api/guest的message/messages动作，Next只用publishable key及已验证会话；不用service key。返回no-store，写入校验同源、长度和UUID。前端失败保留原文与同一次请求ID，重试不会重复落库；遇到409更新会话并保留文字。回复显示已发送至站内会话，不等于OTA推送或已读。没有调用FastAPI或第三方模型，模型密钥和原SQLite示例未改变，AI草稿仍是后续模块。
+
+
+## 站内回复草稿与依据（2026-10-22）
+
+新增FastAPI POST /v1/properties/{property_id}/conversations/{thread_id}/draft，复用require_property_access和原模型适配器。Next /api/workspace/conversations/draft先getUser/owner鉴权与同源/UUID/语言/正文限额校验，再将当前访问令牌提交至WORKSPACE_BACKEND_URL；浏览器不能提交事实或问题替换库内消息。后端使用同一用户令牌访问RLS表，只取最新guest正文、已确认早餐/常规入住时间，不向模型加入姓名、电话、位置或notes。必要问题本身可能含个人信息，因此正式模型调用另设FORMAL_MODEL_ENABLED开关，默认关闭；也需原MODEL_ENABLED=1才会调用，未获得新数据范围授权前不启用。无服务角色密钥。
+
+reply_drafts保存问题快照、资料revision、语言、rules_v1/model_v1模式、结果与精确引用。后台按消息/资料版本/语言/模式查缓存；无论缓存还是新生成，save_reply_draft事务都会重核最新guest消息及资料revision，引用只能匹配当前保存值，固定needs_review/sent=false。模型网络调用在事务外；持久化唯一约束消除重复记录，但多进程同时未命中时不承诺模型只调用一次。规则/提示词版本变化需显式更新mode或演进缓存键，现有记录保留追溯。
+
+UI在既有会话内显式准备草稿，展示资料建议或AI草稿、引用及人工核实原因；需要点击填入回复框，已有文字不覆盖，最终发送仍由经营者完成。草稿记录不因手工复制发送而改成AI已发送，实际回执仍在messages。资料缺失、提前入住、退款等维持保守规则。当前本机8014为独立受保护服务、local-data关闭，模型两个开关均关闭；旧8013示例服务不变。样本3106用纯内存适配器，不调用8014、云端或模型，界面标为资料建议。
