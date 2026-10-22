@@ -220,3 +220,5 @@ lint/build、qa-ui-parity、qa-workspace-bookings、qa-conversation-drafts、qa-
 2026-10-23：补齐经营订单详情（客房/入住人/日期/晚数/预计到店/金额/创建时间/编号），不新增后端字段或动作；首页锚点自动展开。调整分析统计期间位置与两项等宽布局。lint/build、qa-booking-details、qa-operator-sample、qa-ui-parity全部通过，查看订单截图。测试为隔离虚构数据，不代表真实云端验收。同步用户新范围：探索取消需求日历；演示已完成订单收入日历和订单反馈来源列入待办。
 
 2026-10-23：按用户要求去掉客房看板的常驻解释、房型设置与客房详情中的存储环境说明；保留预订状态读取失败反馈。lint/build和qa-operator-sample通过，未改数据链路。
+
+期间按钮位置纠正：恢复原紧凑胶囊，移回自身预订标题前，介绍下间距24→12px、内容区上间距20→0。lint/build及qa-ui-parity通过；无数据变更。
