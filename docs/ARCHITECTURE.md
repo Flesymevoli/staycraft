@@ -203,3 +203,8 @@ GuestClient.reserve验证输入后重读并保存原localStorage订单键，再�
 ## 总体检查与部署准备（2026-10-22）
 
 部署准备使用默认Next构建/next start与Node24，不再使用standalone输出；Vercel根目录frontend，构建包含lint。默认根进入/app，托管模式门禁分离原型与正式API，业务页和资料API刷新会话、禁用缓存；公开key配置缺失或错误启用本机数据时阻止托管启动。编辑以原始库存快照作基线，服务端revision仍保护最终提交；订单按读取序号避免迟到覆盖。未修改数据库结构，后续以DATABASE.md确认方案。
+
+
+## 账号为最高层（2026-10-22确认）
+
+一个账号默认拥有一家民宿，登录直接进入自己的工作台；MVP不设置加入民宿、成员归属选择或多民宿切换。建议properties.owner_user_id唯一引用Auth账号。当前membership鉴权尚未迁移，先保留现有数据与权限，按DATABASE.md确认后再增量调整。示例表见DATABASE_EXAMPLES.md，全部为结构讨论用虚构资料。
