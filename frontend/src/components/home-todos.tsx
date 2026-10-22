@@ -15,8 +15,8 @@ export function HomeTodos({date,today,scope,zh}:{date:string;today:string;scope:
  const arrivals=confirmed.filter(booking=>booking.arrival===date),departures=confirmed.filter(booking=>booking.departure===date);
  const rows=[
   ...cleanRooms.map(room=>({key:`clean-${room.id}`,room:room.number,label:t("To clean","待清洁"),kind:"clean",Icon:Brush,href:`/app/rooms/${room.id}`})),
-  ...arrivals.map(booking=>({key:`arrival-${booking.id}`,room:booking.room_number,label:booking.expected_arrival?t(`Expected arrival · ${booking.expected_arrival}`,`预计到店 · ${booking.expected_arrival}`):t("Expected arrival · time not recorded","预计到店 · 时间未记录"),kind:"arrival",Icon:LogIn,href:`/app/rooms/${booking.room_id}`})),
-  ...departures.map(booking=>({key:`departure-${booking.id}`,room:booking.room_number,label:t("Departure scheduled","计划离店"),kind:"departure",Icon:LogOut,href:`/app/rooms/${booking.room_id}`})),
+  ...arrivals.map(booking=>({key:`arrival-${booking.id}`,room:booking.room_number,label:booking.expected_arrival?t(`Expected arrival · ${booking.expected_arrival}`,`预计到店 · ${booking.expected_arrival}`):t("Expected arrival · time not recorded","预计到店 · 时间未记录"),kind:"arrival",Icon:LogIn,href:`/app/work#booking-${booking.id}`})),
+  ...departures.map(booking=>({key:`departure-${booking.id}`,room:booking.room_number,label:t("Departure scheduled","计划离店"),kind:"departure",Icon:LogOut,href:`/app/work#booking-${booking.id}`})),
  ];
  const loading=state==="loading"||(date===today&&!inventory.ready),failed=state==="error"||(date===today&&inventory.unavailable);
  return <section className="home-schedule-preview home-todos" aria-label={t("Daily to-dos","当日待办")}>
