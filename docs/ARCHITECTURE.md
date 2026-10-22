@@ -198,3 +198,8 @@ RoomForm将新房型、房间与按房型ID保存的本机图片通过单次save
 ### 客人端自动确认前端演示（2026-10-22）
 
 GuestClient.reserve验证输入后重读并保存原localStorage订单键，再更新React状态及成功页；新记录status=confirmed。单次保存失败不进入成功页、不新增UI订单。无存储结构或API变化，旧pending仍兼容。未接入后台、房量或经营账号预览数据。
+
+
+## 总体检查与部署准备（2026-10-22）
+
+部署准备使用默认Next构建/next start与Node24，不再使用standalone输出；Vercel根目录frontend，构建包含lint。默认根进入/app，托管模式门禁分离原型与正式API，业务页和资料API刷新会话、禁用缓存；公开key配置缺失或错误启用本机数据时阻止托管启动。编辑以原始库存快照作基线，服务端revision仍保护最终提交；订单按读取序号避免迟到覆盖。未修改数据库结构，后续以DATABASE.md确认方案。

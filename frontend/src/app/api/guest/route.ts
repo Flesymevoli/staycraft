@@ -1,4 +1,5 @@
 import {randomBytes} from "node:crypto";
+import {isHosted} from "@/lib/deployment";
 import {cookies} from "next/headers";
 import {createClient} from "@supabase/supabase-js";
 import {supabaseConfig} from "@/lib/supabase/config";
@@ -10,7 +11,7 @@ async function handle(request:Request,write:boolean){try{
  const property=write?data.property:url.searchParams.get("property");const action=write?data.action:url.searchParams.get("action")||"catalog";
  if(typeof property!=="string"||!uuid.test(property)||!(write?["session","book","cancel"]:["catalog","orders"]).includes(String(action)))throw new WorkspaceError("invalid_request",400);
  const jar=await cookies();let token=jar.get("staycraft-guest")?.value;
- if(action==="session"){if(!token||!/^[a-f0-9]{64}$/.test(token)){token=randomBytes(32).toString("hex");jar.set("staycraft-guest",token,{httpOnly:true,sameSite:"strict",secure:request.url.startsWith("https:"),path:"/",maxAge:60*60*24*30});}return Response.json({ready:true},{headers:{"Cache-Control":"no-store"}});}
+ if(action==="session"){if(!token||!/^[a-f0-9]{64}$/.test(token)){token=randomBytes(32).toString("hex");jar.set("staycraft-guest",token,{httpOnly:true,sameSite:"strict",secure:isHosted()||request.url.startsWith("https:"),path:"/",maxAge:60*60*24*30});}return Response.json({ready:true},{headers:{"Cache-Control":"no-store"}});}
  if(action!=="catalog"&&(!token||!/^[a-f0-9]{64}$/.test(token)))throw new WorkspaceError("guest_session_required",401);
  const config=supabaseConfig();const client=createClient(config.url,config.publishableKey,{auth:{persistSession:false,autoRefreshToken:false}});
  const {data:result,error}=await client.rpc("direct_booking_api",{p_property:property,p_action:action,p_token:token||null,p_data:write?data:{arrival:url.searchParams.get("arrival"),departure:url.searchParams.get("departure")}});

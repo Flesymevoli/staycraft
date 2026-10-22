@@ -1,0 +1,7 @@
+node_modules
+.next
+.offline-build
+.env*
+!.env.example
+qa-*
+scripts

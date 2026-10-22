@@ -19,3 +19,5 @@ Thumbs.db
 /backend/data/
 /supabase/local/
 /supabase/.temp/
+
+/frontend/.vercel/

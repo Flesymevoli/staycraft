@@ -1,18 +1,17 @@
 # Staycraft
 
-面向民宿经营者的 AI 辅助经营应用：客人咨询草稿、订单事务建议、客房状态、经营分析与推广文案。当前可运行版本使用本机虚构数据，保留人工审核，不执行真实发送、退款或平台发布。
+民宿经营工作台。目前已接通基本资料、房型/客房图片、直接预订、订单和日期日程。正式AI咨询、入住退房、逾期取消审核动作、经营分析和市场探索尚未完成。
 
-当前原型入口是 [`frontend/`](frontend/README.md)：Home、Work、Analysis、Explore、Mine 五页的 Next.js 移动端交互原型。进入 `frontend` 后运行 `npm install`（首次）和 `npm run dev`，打开 http://localhost:3000 。
+## 运行与部署
 
-开发边界以 [`docs/PRD.md`](docs/PRD.md)、[`docs/DESIGN.md`](docs/DESIGN.md) 和 [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) 为准，开发顺序见 [`TODO.md`](TODO.md)。[`backend/`](backend/README.md) 已接入原有 Work 会话、Analysis 经营总结、Explore 推广文案与首页问 AI。本机 SQLite 保存已确认资料、草稿处理记录、演示消息和推广草稿；可配置 DeepSeek 或兼容的学校 API。当前全部基于虚构示例，未接 OTA、支付或真实消息发送。正式登录代码仍待 Supabase 项目联调。
+使用Node.js 24，在frontend目录运行npm ci、npm run dev。正式入口/app需要Supabase公开URL/key和已关联民宿账号，变量见frontend/.env.example。npm run check执行lint与构建，npm start运行构建后服务。
 
-早期单文件原型、设计试验与旧文档统一放在 [`archive/`](archive/README.md)。`deliverables/` 是课程交付资料，保留原位置。旧版网页可通过当前前端的 `/legacy` 预览。
+根网址进入正式工作台，未登录转登录页。Vercel项目根目录为frontend，配置与限制见[部署说明](docs/DEPLOYMENT.md)。只完成部署准备，尚未公开发布。
 
-Git 仓库记录通过验证的代码模块；逐模块测试、提交与回滚步骤见 [`docs/ROLLBACK.md`](docs/ROLLBACK.md)。远程仓库为 [Flesymevoli/staycraft](https://github.com/Flesymevoli/staycraft)（私有）。课程交付件、本机数据库和密钥不纳入代码仓库。
+## 正式数据与示例
 
+/app使用授权云端数据；本机/native-*为独立虚构示例。课程交付件在deliverables，历史原型在archive，不与正式用户资料混用。经营演示优先，客人端主要作为数据来源：工作台生成的带property参数链接才读取云端；普通/guest仍是独立原型。
 
-当前进展与待确认事项见 [`docs/DEVELOPMENT_STATUS.md`](docs/DEVELOPMENT_STATUS.md)。本机完整演示须同时启动前端与后端并设置 `HOMESTAY_LOCAL_DATA=1`；默认关闭外部模型，启用配置见 backend/README.md。课程 Softr 交付与代码版开发保持独立，尚未发布。
+backend是FastAPI/SQLite示例和AI试验服务，不是本轮云端闭环的部署依赖。密钥只保存在私有环境中；正式部署关闭本机演示接口。
 
-首页客房概览读取本机虚构订单与客房表，标记清洁完成后刷新保留；房态固定为9月17日演示快照，不会办理入住。首页经营一览、Analysis日图/明细和经营总结统一从订单计算7/28日指标（截止9月16日），未来预订进度也从订单计算；市场信号与评分仍为独立示例。
-
-Work原提前入住/退款卡片和Home日程已统一读取同一订单，方案保存后刷新保留，Home待办同步。保存前重新核对依据，房态或规则变化须重新查看；重置演示不会删除已保存方案。Work经营洞察也复用同一指标，不再使用旧独立百分比。不执行退款、入住或真实发送。
+[PRD](docs/PRD.md)、[设计](docs/DESIGN.md)、[架构](docs/ARCHITECTURE.md)、[开发进展](docs/DEVELOPMENT_STATUS.md)、[回滚方案](docs/ROLLBACK.md)。逐模块测试并保存Git回滚点，不随代码回滚删除数据。

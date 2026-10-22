@@ -23,6 +23,8 @@ export async function updateSession(request: NextRequest) {
     },
   });
 
-  await supabase.auth.getClaims();
+  try { await supabase.auth.getClaims(); } catch {
+    // Protected pages and APIs independently verify identity; keep login available during outages.
+  }
   return response;
 }

@@ -1,3 +1,4 @@
+import {isHosted} from "@/lib/deployment";
 import { redirect } from "next/navigation";
 import { hasSupabaseConfig } from "@/lib/supabase/config";
 import { createClient } from "@/lib/supabase/server";
@@ -21,5 +22,5 @@ export default async function LoginPage() {
   }
   if (authenticated) redirect("/app");
 
-  return <div className="auth-shell"><LoginForm configured={hasSupabaseConfig()} /></div>;
+  return <div className="auth-shell"><LoginForm configured={hasSupabaseConfig()} prototypeAvailable={!isHosted()} /></div>;
 }

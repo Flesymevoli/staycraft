@@ -30,14 +30,14 @@ const messages = {
   },
 } as const;
 
-export function LoginForm({ configured }: { configured: boolean }) {
-  const [language, setLanguage] = useState<"en" | "zh">("en");
+export function LoginForm({ configured,prototypeAvailable=true }: { configured: boolean;prototypeAvailable?:boolean }) {
+  const [language, setLanguage] = useState<"en" | "zh">("zh");
   const [state, action, pending] = useActionState<LoginState, FormData>(signIn, undefined);
   const t = messages[language];
 
   return <div className="auth-page">
     <header className="auth-header">
-      <span className="auth-kicker">HOMESTAY AI</span>
+      <span className="auth-kicker">STAYCRAFT</span>
       <button type="button" className="auth-language" onClick={() => setLanguage(language === "en" ? "zh" : "en")}>{language === "en" ? "中文" : "EN"}</button>
     </header>
     <main className="auth-main">
@@ -52,7 +52,7 @@ export function LoginForm({ configured }: { configured: boolean }) {
         {!configured && <p role="status" className="auth-setup">{language === "zh" ? "登录服务尚未配置，当前可查看交互原型。" : "Sign-in is not configured yet. The interactive prototype is available."}</p>}
         <button className="auth-submit" type="submit" disabled={pending || !configured}>{pending ? t.loading : t.submit}</button>
       </form>
-      <a className="auth-demo-link" href="/native-home">{t.demo} <span aria-hidden="true">→</span></a>
+      {prototypeAvailable&&<a className="auth-demo-link" href="/native-home">{t.demo} <span aria-hidden="true">→</span></a>}
     </main>
   </div>;
 }
