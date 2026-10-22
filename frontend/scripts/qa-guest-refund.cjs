@@ -2,7 +2,7 @@ const {chromium}=require('C:/Users/86299/.cache/codex-runtimes/codex-primary-run
 const assert=require('node:assert/strict');
 const base=process.env.GUEST_QA_URL || 'http://127.0.0.1:3105';
 const key='staycraft-guest-prototype-orders-v1';
-const fixture={id:'SC-REFUND01',room:'garden',arrival:'2026-11-10',departure:'2026-11-12',name:'虚构旅客',total:1040,status:'pending',expectedArrival:'18:00 前'};
+const fixture={id:'SC-REFUND01',room:'garden',arrival:'2026-11-10',departure:'2026-11-12',name:'虚构旅客',total:1040,status:'confirmed',expectedArrival:'18:00 前'};
 (async()=>{
  const browser=await chromium.launch();
  try{
@@ -16,7 +16,7 @@ const fixture={id:'SC-REFUND01',room:'garden',arrival:'2026-11-10',departure:'20
    await page.getByRole('button',{name:'申请退款',exact:true}).click();if(automatic)await page.screenshot({path:'qa-guest-refund-request.png',fullPage:true});await page.getByRole('button',{name:'确认申请',exact:true}).click();
    await page.getByText(automatic?'符合规则，申请已自动通过':'已记录申请，等待民宿审核',{exact:true}).waitFor();
    const stored=await page.evaluate(key=>JSON.parse(localStorage.getItem(key)),key);
-   assert.equal(stored.length,1);assert.equal(stored[0].status,automatic?'cancelled':'pending');assert.equal(stored[0].refund.result,automatic?'auto_cancelled':'review_pending');
+   assert.equal(stored.length,1);assert.equal(stored[0].status,automatic?'cancelled':'confirmed');assert.equal(stored[0].refund.result,automatic?'auto_cancelled':'review_pending');
    assert.equal(await page.locator('.guest-order-actions').getByRole('button',{name:automatic?'已取消':'申请已提交',exact:true}).isDisabled(),true);
    await page.reload();await page.getByText(automatic?'符合规则，申请已自动通过':'已记录申请，等待民宿审核',{exact:true}).waitFor();
    if(automatic){await page.locator('.guest-filters').getByRole('button',{name:'已取消',exact:true}).click();await page.getByRole('heading',{name:'花园大床房'}).waitFor();await page.screenshot({path:'qa-guest-refund.png',fullPage:true});}
@@ -27,7 +27,7 @@ const fixture={id:'SC-REFUND01',room:'garden',arrival:'2026-11-10',departure:'20
   const page=await failed.newPage();await page.goto(base+'/guest/orders');await page.getByRole('button',{name:'申请退款',exact:true}).click();
   await page.evaluate(()=>{Storage.prototype.setItem=function(){throw new Error('QA storage blocked');};});
   await page.getByRole('button',{name:'确认申请',exact:true}).click();await page.getByRole('alert').filter({hasText:'申请未保存，订单状态未改变'}).waitFor();
-  assert.equal(await page.getByText('等待民宿确认',{exact:true}).count(),1);assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
+  assert.equal(await page.getByText('预订已确认',{exact:true}).count(),1);assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
   console.log('PASS refund: before/exact/after 18:00 China time, alternate browser timezone, cancel confirmation, idempotency, persistence, cancelled filter, storage failure, no backend calls.');
  }finally{await browser.close();}
 })().catch(error=>{console.error(error);process.exitCode=1;});

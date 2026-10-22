@@ -179,3 +179,8 @@ HomeSchedulePreview独立负责日期与常驻日程空态，RoomPreviewBoard只
 ### 同页添加客房与复用房型（2026-10-22）
 
 RoomForm将新房型、房间与按房型ID保存的本机图片通过单次save写入原sessionStorage文档，验证失败或保存失败不产生独立房型记录。已有房型通过typeId引用共用图片和价格。无数据结构、API或后端变更；localPhoto复用原缩放及大小约束。
+
+
+### 客人端自动确认前端演示（2026-10-22）
+
+GuestClient.reserve验证输入后重读并保存原localStorage订单键，再更新React状态及成功页；新记录status=confirmed。单次保存失败不进入成功页、不新增UI订单。无存储结构或API变化，旧pending仍兼容。未接入后台、房量或经营账号预览数据。
