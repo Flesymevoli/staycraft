@@ -37,6 +37,12 @@ if (process.env.STAYCRAFT_QA_AUTH_FIXTURES === '1') {
       if(method==='PATCH' && (!previous || url.searchParams.get('revision')!==`eq.${previous.revision}`))return json([]);
       inventories.set(propertyId,body);return json([body],method==='POST'?201:200);
     }
+    if (url.pathname === '/rest/v1/direct_bookings') {
+      if(identity.index!==1)return json({code:'42501'},403);
+      if(process.env.STAYCRAFT_QA_BOOKINGS!=='1')return json([]);
+      const item={id:'11111111-1111-4111-8111-111111111111',room_id:'22222222-2222-4222-8222-222222222222',room_number:'QA301',type_name:'QA 房型',arrival:'2026-11-10',departure:'2026-11-12',guest_name:'QA 日程客人',expected_arrival:'18:00 前',total:760,status:'confirmed'};
+      const filter=url.searchParams.get('or');return json(filter&&!filter.includes('2026-11-10')&&!filter.includes('2026-11-12')?[]:[item]);
+    }
     if (url.pathname === '/rest/v1/property_details') {
       if (identity.index !== 1) return json({ code: '42501' }, 403);
       const propertyId = 'dddddddd-dddd-4ddd-8ddd-dddddddddddd';

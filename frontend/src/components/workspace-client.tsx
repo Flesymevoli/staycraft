@@ -9,10 +9,11 @@ import "./native-home.css";
 import "./workspace.css";
 import { PropertyProfileEditor } from "./property-profile-editor";
 import { HomeSchedulePreview, RoomPreviewBoard, RoomPreviewDetail, RoomTypesPreview } from "./room-preview";
+import {WorkspaceBookings} from "./workspace-bookings";
 import { useRoomPreview } from "./room-preview-store";
 
 export type WorkspaceSection = "home" | "work" | "analysis" | "explore" | "mine";
-export type WorkspaceConnection = { status: "unavailable" | "unassigned" } | { status: "linked"; propertyName: string };
+export type WorkspaceConnection = { status: "unavailable" | "unassigned" } | { status: "linked"; propertyName: string;propertyId:string };
 const sections = [
   { id: "home", en: "Home", zh: "首页", href: "/app", icon: "home-inactive", active: "home" },
   { id: "work", en: "Work", zh: "工作", href: "/app/work", icon: "work", active: "work-active" },
@@ -34,7 +35,7 @@ export function WorkspaceClient({ section, userId, roomId, email, connection, si
   const current = sections.find(item => item.id === section)!;
   const toMine = <Link className="native-primary" href="/app/mine">{t("Set up property", "设置民宿资料")}<ArrowRight size={16} aria-hidden="true" /></Link>;
   const summaryLabels = section === "home" ? [t("Rooms", "客房"), t("Occupancy", "入住率")] : [t("Occupancy", "入住率"), t("Booking pace", "预订进度")];
-  const metrics = <div className="workspace-metrics">{summaryLabels.map((label,index) => <div className="workspace-metric" key={label}><span>{label}</span><strong>{section==="home" && index===0 && roomCount!==null?roomCount:"—"}</strong><small>{section==="home" && index===0 && roomCount!==null?t("Local preview · active rooms","本机预览 · 已启用客房"):t("Not connected yet", "尚未接入")}</small></div>)}</div>;
+  const metrics = <div className="workspace-metrics">{summaryLabels.map((label,index) => <div className="workspace-metric" key={label}><span>{label}</span><strong>{section==="home" && index===0 && roomCount!==null?roomCount:"—"}</strong><small>{section==="home" && index===0 && roomCount!==null?t("Saved active rooms","已保存 · 已启用客房"):t("Not connected yet", "尚未接入")}</small></div>)}</div>;
 
   return <div className="native-shell workspace-shell">
     <main className={`native-page workspace-page${section === "home" ? " native-home-page" : ""}`}>
@@ -49,7 +50,7 @@ export function WorkspaceClient({ section, userId, roomId, email, connection, si
         <HomeSchedulePreview zh={zh}/>
         <section className="workspace-section"><h2>{t("Your stay at a glance", "经营一览")}</h2>{metrics}</section>
       </>}
-      {section === "work" && !roomId && <><RoomPreviewBoard scope={userId} zh={zh}/><section className="workspace-empty"><span className="workspace-symbol"><MessageCircle size={28} strokeWidth={1.4} aria-hidden="true" /></span><h2>{t("Ready for your first conversation.", "等待第一条客人消息。")}</h2><p>{t("Guest conversations and requests will appear here once connected. AI needs confirmed property information before it can help with replies.", "接入消息后，客人咨询和待办会出现在这里。AI 需要已确认的民宿资料，才能辅助回复。")}</p>{toMine}</section></>}
+      {section === "work" && !roomId && <><RoomPreviewBoard scope={userId} zh={zh}/><WorkspaceBookings zh={zh} propertyId={connection.status==="linked"?connection.propertyId:undefined}/><section className="workspace-empty"><span className="workspace-symbol"><MessageCircle size={28} strokeWidth={1.4} aria-hidden="true" /></span><h2>{t("Ready for your first conversation.", "等待第一条客人消息。")}</h2><p>{t("Guest conversations and requests will appear here once connected. AI needs confirmed property information before it can help with replies.", "接入消息后，客人咨询和待办会出现在这里。AI 需要已确认的民宿资料，才能辅助回复。")}</p>{toMine}</section></>}
       {section === "analysis" && <>{metrics}<section className="workspace-empty"><span className="workspace-symbol"><ChartNoAxesCombined size={28} strokeWidth={1.4} aria-hidden="true" /></span><h2>{t("Your story starts with data.", "有了数据，才能看清经营。")}</h2><p>{t("Connect bookings to see trends, a plain-language summary and suggestions grounded in your property.", "接入订单后，这里会展示经营趋势、文字总结和有依据的建议。")}</p></section></>}
       {section === "explore" && <section className="workspace-empty"><span className="workspace-symbol"><Compass size={28} strokeWidth={1.4} aria-hidden="true" /></span><h2>{t("Discover what is around you.", "从民宿所在的位置开始。")}</h2><p>{t("Local demand and opportunities need a property location and reliable sources. There are no connected signals yet.", "周边需求和推广机会需要民宿位置及可靠的信息来源，目前尚未接入相关数据。")}</p>{toMine}</section>}
       {section === "mine" && <>

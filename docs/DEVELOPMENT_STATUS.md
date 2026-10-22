@@ -1,5 +1,15 @@
 # 开发状态 · 2026-10-21
 
+## 云端客房 → 直订 → 日程 · 2026-10-22
+
+已完成用户授权的后端恢复：房型/房间/图片云端保存、旧本机客房显式导入、民宿专属客人链接、数据库自动确认与分配房号、客人会话订单/取消、经营端订单及首页常驻日程/房间详情读取。当日已预订与已入住分开，清洁独立。页面打开/焦点/手动刷新同步，未做实时推送。
+
+验证通过：lint/build；qa-room-cloud、qa-room-import、qa-workspace、qa-workspace-bookings；qa-direct-bookings真实云端虚构测试；旧qa-guest与qa-guest-refund回归。真实云端验证覆盖两房三并发仅两笔确认、重复请求复用、取消释放后再订、价格篡改拒绝、客人不能读取/取消别人订单、跨来源拒绝。SQL事务验证成员可见/非成员不可见/匿名直接表访问拒绝，以及逾期取消保持预订待审核；事务测试回滚。经营端页面与图片上传流程使用隔离Auth/Storage夹具验证，不声称两个真实账号浏览器联调已完成。
+
+真实测试临时民宿仅使用f0f0...专用ID与QA名称，测试订单、库存与该民宿已精确清理，direct_bookings最终为0。用户原民宿、成员与基本资料保持。room-photos桶和新表保留供使用，未删除旧本机资料。安全顾问未发现本轮RLS/函数问题；已有Auth泄漏密码保护关闭提示未改，参见 https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection 。
+
+3101为最终构建；从工作台“查看客人预订页”使用云端链路。无property参数的/guest保留旧独立原型，不能用它验证同步。咨询接通、逾期取消人工审核动作、入住/离店办理、指标和AI正式订单分析仍待后续模块。本轮未调用模型、收费API或部署服务。
+
 这是自主开发代码版的进度，课程 Softr、看板和交付文件未改，也未发布。
 
 代码备份：GitHub私有仓库https://github.com/Flesymevoli/staycraft，保留模块提交历史。上传代码不等于应用已部署；本机数据库、环境密钥和课程deliverables不上传。

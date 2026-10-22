@@ -1,5 +1,19 @@
 # Homestay AI｜技术架构与开发约束
 
+## 当前实施状态 · 2026-10-22 云端客房与直订
+
+此节覆盖后文历史阶段的“未接云端”描述。Supabase MCP已连接并应用property_inventory、direct_bookings两份迁移，保留既有properties、property_memberships和property_details。现有FastAPI/SQLite虚构演示及模型进程未改动。本轮沿用已经建立的Next服务端资料API；预订原子性由PostgreSQL RPC负责，避免跨请求锁房竞态，不增加另一套订单数据库。
+
+room-preview-store改为按已验证账号隔离的云端缓存；同一标签页复用，窗口焦点刷新。资料PUT使用revision乐观锁，冲突不覆盖，图片使用私有桶。旧sessionStorage仅作显式导入来源，成功也不清除源记录。上传成功而资料保存失败可能留下未引用图片，本轮不自动删除。
+
+新增/api/guest、/api/guest/photo与/api/workspace/bookings。客人入口需要显式property参数，普通/guest仍是独立旧演示。服务器生成256位随机HttpOnly/SameSite严格Cookie，数据库仅保存SHA256摘要。客人查询/取消只按property及会话摘要定位；订单无匿名表级权限。经营者订单SELECT受成员RLS保护。
+
+private.direct_booking_api为受限SECURITY DEFINER能力接口，放置于未暴露private schema，固定空search_path；public包装函数为SECURITY INVOKER。匿名客人不使用auth.uid，改为不可枚举的会话能力令牌校验，只返回该会话的脱敏订单。catalog仅返回启用房型、价格和聚合房量，不返回内部房号/客人信息。照片匿名读取只允许被有效房型引用且存在启用客房的路径，不公开未引用图片。服务端仅使用publishable key，无secret/service-role key。
+
+book与cancel锁定同一property_inventory行，在短事务内重核价格、日期、房量并分配房号；数据库唯一约束保护同一property/guest/request请求。相邻离店/入住日不重叠，区间为[arrival,departure)。取消截止时间由数据库北京时间判定，逾期不释放房量。预订快照保留当时房型/房号/价格，不冒充付款或已入住。
+
+前端刷新或窗口焦点刷新同步，不使用Realtime推送。超过200客房/20房型仍遵循原校验。上线前另需访问频率/反滥用控制、匿名会话找回及运维监测；当前只作本地开发闭环，不部署。云端控制台早期初始化与本地CLI历史尚未完整对账，不能盲目db push或重复执行旧初始化。
+
 ## 客人端独立前端原型 · 2026-10-22
 
 /guest、/guest/book、/guest/orders、/guest/contact共用GuestClient，Next页面只传查询参数，不读取Auth、Supabase、SQLite或模型。仅使用staycraft-guest-prototype-orders-v1/messages-v1浏览器键；订单不保存联系电话，不混入正式工作台和原经营端本机演示。文本由React转义，存储读取做形状校验/数量限制，失败显示提示。所有业务状态都是虚构，未接订单库存、支付、消息发送或AI。后续真实接入须重新设计服务端校验和身份/房量边界，不能信任这些记录。

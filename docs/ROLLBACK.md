@@ -1,5 +1,13 @@
 # Git 提交、验证与回滚方案
 
+## 云端直订模块回滚 · 2026-10-22
+
+应用代码可revert本模块提交并重建前端；恢复旧本机客房/客人原型。不能因回滚代码删除property_inventory、direct_bookings、room-photos或成员资料。数据库与图片一旦有用户订单/照片必须保留并先备份，再前向修复。
+
+若需立即暂停新预订，管理员可单独撤销anon/authenticated对public.direct_booking_api(uuid,text,text,jsonb)和private.direct_booking_api(uuid,text,text,jsonb)的EXECUTE，页面将失败而非假成功；这也会暂时影响客人自助读取/取消，应在维护窗口处理。不要关闭RLS或赋予匿名表写权限。现有订单由经营端成员SELECT继续保护。
+
+本机旧键、课程交付件、SQLite及模型进程未删除。本轮QA临时民宿和订单已清理，不能将QA清理语句用于用户民宿。迁移历史尚未对账，不反复运行旧初始化或强制db push。
+
 这个目录已是本地 Git 仓库。`main` 只保存**通过验证的模块**；远程仓库尚未配置。代码、规范和旧版原型归档进入 Git，`deliverables/` 课程交付件与当前前端生成的 QA 图片保留在本机，不纳入代码提交。归档中的历史截图随旧版一起保存。任何部署或推送到远程仓库都要单独安排。
 
 ## 每个模块的固定顺序

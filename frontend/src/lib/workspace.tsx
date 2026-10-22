@@ -29,7 +29,7 @@ export async function renderWorkspace(section: WorkspaceSection, roomId?: string
       const row = data[0];
       const property = Array.isArray(row.properties) ? row.properties[0] : row.properties;
       if ((row.role === "owner" || row.role === "manager") && property && typeof property.name === "string") {
-        connection = { status: "linked", propertyName: property.name };
+        connection = { status: "linked", propertyName: property.name,propertyId:row.property_id };
         const details = await supabase.from("property_details").select("profile").eq("property_id", row.property_id).maybeSingle();
         const profile = !details.error && details.data ? validateProfile(details.data.profile) : null;
         if (profile) connection.propertyName = profile.name;

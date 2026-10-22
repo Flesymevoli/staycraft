@@ -1,0 +1,3 @@
+import {createClient} from "@supabase/supabase-js";
+import {supabaseConfig} from "@/lib/supabase/config";
+export async function GET(request:Request){const path=new URL(request.url).searchParams.get("path")||"";if(!/^[a-f0-9-]{36}\/[a-f0-9-]{36}\.webp$/i.test(path))return new Response(null,{status:404});const config=supabaseConfig();const client=createClient(config.url,config.publishableKey,{auth:{persistSession:false}});const {data,error}=await client.storage.from("room-photos").download(path);if(error||!data)return new Response(null,{status:404});return new Response(data,{headers:{"Content-Type":"image/webp","Cache-Control":"private, no-store","X-Content-Type-Options":"nosniff"}});}
