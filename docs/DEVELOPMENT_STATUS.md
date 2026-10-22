@@ -196,3 +196,7 @@ lint/build、qa-conversation-drafts、qa-cloud-conversations、qa-operator-sampl
 npm run check与qa-booking-metrics、qa-workspace、qa-operator-sample、qa-conversation-drafts、qa-hosted全部通过。浏览器为隔离适配器，覆盖7/28切换、图表/明细、首页一致、停用与空库存、失败清旧值、中英文和320/390/658/1280宽度；截图已查看。真实SQL权限测试与UI夹具分开，不声称真实双账号浏览器验收。安全顾问仅既有泄漏密码保护提示。
 
 样本默认未来7天5/35间夜=14.3%，28天5/140=3.6%。指标是预订占用率，当前启用客房为分母；尚无办理入住退房、真实收款、历史容量比较、市场需求或评分来源，不能视为整个Analysis/Explore完成。未公开部署。
+
+满意度范围调整与计划重整（2026-10-22）：按用户确认隐藏正式Analysis客人评分占位卡，参考区改两列；历史native原型保留。入住后评分留言暂缓，无数据库变更。旧TODO归档，CURRENT_BASELINE统一现行范围，UI_PARITY_AUDIT记录五页视觉差异；根AGENTS指向当前清单，避免模型切换后继续执行过期任务。
+
+本轮验证：lint/build、qa-booking-metrics与qa-workspace通过；覆盖分析数字/图表切换、无库存/失败、经营端五页权限和导航、中英文及窄屏。UI回归使用隔离夹具，无云端修改。全页UI对照为源代码/样式审查，分析页另有截图复核；完整五页视觉还原尚未实施，不以此记录冒充完成。

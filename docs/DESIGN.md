@@ -1,3 +1,5 @@
+> 当前有效范围与优先级见 [CURRENT_BASELINE.md](CURRENT_BASELINE.md) 和根目录 TODO.md；本文件下方含历史阶段记录，冲突以当前基线及最新用户指示为准。
+
 # Homestay AI｜界面与交互边界
 
 ## 当前云端流程 · 2026-10-22

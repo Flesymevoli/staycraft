@@ -1,7 +1,7 @@
 "use client";
 import {useState} from "react";
 import Link from "next/link";
-import {BedDouble,CalendarDays,Tag,TrendingUp,Star} from "lucide-react";
+import {BedDouble,CalendarDays,Tag,TrendingUp} from "lucide-react";
 import {useBookingMetrics} from "./booking-metrics";
 import "./workspace-analysis.css";
 export function HomeBookingOverview({scope,zh}:{scope:string;zh:boolean}){
@@ -23,6 +23,6 @@ export function WorkspaceAnalysis({scope,zh}:{scope:string;zh:boolean}){
  <button type="button" className="inventory-text" aria-expanded={showDaily} onClick={()=>setShowDaily(v=>!v)}>{t("Daily details","每日明细")} {showDaily?"−":"+"}</button>{showDaily&&<div className="booking-analysis-table"><table><thead><tr><th>{t("Date","日期")}</th><th>{t("Booked","已订")}</th><th>{t("Unbooked","未订")}</th></tr></thead><tbody>{data.daily.map(day=><tr key={day.date}><td>{day.date}</td><td>{day.booked}</td><td>{day.available}</td></tr>)}</tbody></table></div>}
  </section>}
  {data&&<section className="booking-analysis-panel"><h2>{t("Booking summary","预订概览")}</h2><p>{data.capacity_room_nights?t(`Over the next ${days} days, ${data.booked_room_nights} of ${data.capacity_room_nights} active-room nights are booked (${data.booked_pct}%).`,`未来 ${days} 天，当前启用客房共 ${data.capacity_room_nights} 间夜，已订 ${data.booked_room_nights} 间夜，预订占用率 ${data.booked_pct}%。`):t("No active inventory is available to calculate a ratio.","当前没有启用库存，暂不能计算比例。")}</p>{data.inactive_booked_room_nights>0&&<p className="booking-analysis-warning">{t(`${data.inactive_booked_room_nights} additional booked room nights belong to inactive rooms and are excluded from the active-room ratio.`, `另有 ${data.inactive_booked_room_nights} 间夜预订属于已停用客房，未计入启用客房比例，请核对订单安排。`)}</p>}<p>{t("These are reservation figures, not actual check-ins or collected revenue. Cancelled orders are excluded; cancellations awaiting review still reserve capacity. The denominator uses current room settings, without historical capacity or pace comparisons.","以上为预订数据，不代表实际入住或已收收入。已取消订单不计入，取消待审核仍保留预订。分母按当前客房设置计算，暂不比较历史库存或预订速度。")}</p><Link href="/app/work" className="inventory-text">{t("View rooms and orders","查看客房与订单")} →</Link></section>}
- <div className="booking-analysis-context">{[{Icon:Tag,label:t("Configured rate","设置房价"),value:rate,help:t("Current active room types","当前启用房型基础价")},{Icon:TrendingUp,label:t("Market demand","市场需求"),value:t("Not connected","尚未接入"),help:t("No reliable source connected","暂无可靠数据来源")},{Icon:Star,label:t("Guest ratings","客人评分"),value:t("Not connected","尚未接入"),help:t("No rating data connected","暂无评价数据来源")}].map(({Icon,label,value,help})=><div key={label}><span><Icon size={16}/>{label}</span><strong>{value}</strong><small>{help}</small></div>)}</div>
+ <div className="booking-analysis-context">{[{Icon:Tag,label:t("Configured rate","设置房价"),value:rate,help:t("Current active room types","当前启用房型基础价")},{Icon:TrendingUp,label:t("Market demand","市场需求"),value:t("Not connected","尚未接入"),help:t("No reliable source connected","暂无可靠数据来源")}].map(({Icon,label,value,help})=><div key={label}><span><Icon size={16}/>{label}</span><strong>{value}</strong><small>{help}</small></div>)}</div>
  </div>;
 }
