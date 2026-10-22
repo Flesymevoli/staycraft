@@ -213,3 +213,10 @@ GuestClient.reserve验证输入后重读并保存原localStorage订单键，再�
 ## 一账号一民宿实施（2026-10-22）
 
 single_account_property迁移已应用。properties.owner_user_id为非空、唯一且引用Auth用户；从唯一旧owner关联回填，存在无主、多主、多民宿或manager歧义时迁移会拒绝执行。properties只授权本人SELECT和指定列INSERT，不开放改owner或删除。资料、库存、订单及图片RLS改按owner校验；旧membership行保留、authenticated权限撤销。accountProperty由验证过的userId查找/初始化自己的唯一民宿；23505时重读处理双标签页竞态。FastAPI权限网关同步查properties(id,owner_user_id)，不再查membership。
+
+
+## 房型与具体客房规范化（2026-10-22，已应用）
+
+本节替代前文关于property_inventory作为当前库存来源的说明。20261022012450与20261022013032迁移已应用：room_types与rooms使用(property_id,id)复合主键；rooms引用同民宿房型，direct_bookings引用同民宿房间和房型，关联列均有索引。properties.inventory_revision保存并发版本，旧JSON只留只读快照。
+
+get_room_inventory按owner RLS组合兼容文档；save_room_inventory通过鉴权、版本校验及同一事务更新两表。配置修改、预订分房和取消统一锁properties行；前端输入/图片协议不变，不维护第二套可写库存。已有房型与房间不硬删除，房间使用active停用。经营端订单API关联rooms返回当前房号，数据库中的成交房号/价格快照不改写。正式入住与清洁、预订仍分别处理，未新增办理入住能力。

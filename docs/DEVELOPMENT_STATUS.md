@@ -139,3 +139,14 @@ lint/build、qa-room-preview、qa-workspace及qa-property-profile通过。覆盖
 ## 一账号一民宿实施（2026-10-22）
 
 已完成一账号一民宿：原民宿1行保留，owner空值0；旧关联保留但不参与鉴权。真实数据库事务用两位虚构Auth用户验证本人创建、唯一约束、禁止代别人创建、跨账号不可见/不可写，所有测试对象随事务回滚。lint/build、66项后端单测、qa-account-property、qa-workspace、qa-property-profile、qa-room-cloud、qa-workspace-bookings、qa-room-import、qa-hosted通过；前端使用隔离夹具，未声称真实双账号浏览器验收。安全顾问仅保留原泄漏密码保护提示，无新增RLS告警。没有公开发布，也未执行房型/客房拆表。
+
+
+## 房型与客房拆表完成（2026-10-22）
+
+已应用normalized_rooms和booking_room_index迁移，API、公开预订、图片授权及订单房号显示切换到room_types/rooms；property_inventory仅保留迁移时快照。未修改页面布局或扩展业务范围，未公开部署。
+
+真实云端先创建虚构旧格式房型、两间房及订单，再执行迁移：稳定ID、旧revision、订单单晚380/合计760均保留。事务回滚断言通过：改房型价格不改旧订单；旧版本冲突、直接写表/删除已有客房、跨账号访问、全半角重复房号及跨民宿订单外键均被拒绝。真实云端客人预订/取消、两间房三笔并发只确认两笔、请求去重和会话隔离测试通过。经营端页面使用隔离身份夹具验收，不冒充真实双账号浏览器测试。
+
+lint/build及qa-room-cloud、qa-room-import、qa-workspace-bookings、qa-account-property、qa-property-profile、qa-hosted通过。订单夹具以旧房号OLD301和当前房号QA301验证显示联动。安全顾问无新增数据库告警，仅原Auth泄漏密码保护提示。云端本次虚构数据清理结果另见本节末尾；真实民宿保持保留。下一模块是独立整理可重复示例样本，正式消息/AI、逾期取消审核动作、入住/退房和自身经营指标仍未完成。
+
+收尾查询确认：本次临时Auth用户、民宿、旧库存、房型、客房和订单均为0；原有民宿仍保留1行，无主民宿0行。没有上传云端测试图片。临时数据已清理，不作为后续演示样本。

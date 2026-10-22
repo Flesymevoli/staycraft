@@ -16,7 +16,7 @@
 
 当前基本资料实际保存在property_details；这里为直观展示合在同一表中，最终物理拆分再确认。
 
-## 2. 房型表（计划独立）
+## 2. 房型表（实际表room_types）
 
 | 房型ID | 民宿ID | 房型名称 | 床型 | 最多人数 | 每晚基础价 | 图片路径 |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -25,7 +25,7 @@
 
 一份房型资料可被多间实际客房复用，修改图片无需每间房重复上传。
 
-## 3. 具体客房表（计划独立）
+## 3. 具体客房表（实际表rooms）
 
 | 客房ID | 民宿ID | 房号 | 楼层 | 所属房型ID | 清洁状态 | 是否启用 |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -68,4 +68,4 @@
 
 ## 去哪里看实际表
 
-Supabase项目控制台的Table Editor可查看真实表和已保存记录。当前云端有properties、property_memberships、property_details、property_inventory、direct_bookings；账号归属已改为properties.owner_user_id；property_memberships只保留旧记录，不再参与鉴权。房型和客房目前还在property_inventory的JSON中，以上独立房型/客房表是计划结构。示例数据之后单独维护，不与正式资料混合。
+Supabase项目控制台的Table Editor可查看真实表和已保存记录。当前业务表包括properties、property_details、room_types、rooms、direct_bookings；账号归属为properties.owner_user_id。property_memberships只保留旧记录，不参与鉴权；property_inventory是拆表前的只读快照，不代表当前配置。以上表格中的简短编号和人物均为阅读用虚构示例，不是已经导入的云端记录；实际关联ID使用UUID。消息和AI表仍未接通云端，演示样本之后单独维护，不与正式资料混合。

@@ -28,21 +28,20 @@ if (process.env.STAYCRAFT_QA_AUTH_FIXTURES === '1') {
       if(init?.method==='POST'){photos.set(path,init.body);return json({Key:'room-photos/'+path});}
       return photos.has(path)?new Response(photos.get(path),{headers:{'Content-Type':'image/webp'}}):json({message:'Missing'},404);
     }
-    if (url.pathname === '/rest/v1/property_inventory') {
-      if(identity.index===2)return json({code:'42501'},403);
-      const propertyId=propertyFor(identity.index);const method=init?.method || 'GET';
-      if(method==='GET')return json(inventories.has(propertyId)?[inventories.get(propertyId)]:[]);
-      const body=JSON.parse(init.body);if(body.property_id!==propertyId)return json({code:'42501'},403);
-      if(body.inventory?.types[0]?.name==='QA_SAVE_FAILURE')return json({code:'internal_error'},500);
+    if(url.pathname==='/rest/v1/rpc/get_room_inventory'||url.pathname==='/rest/v1/rpc/save_room_inventory'){
+      const body=JSON.parse(init.body),propertyId=propertyFor(identity.index);
+      if(identity.index===2||body.p_property!==propertyId)return json({message:'property_not_owned'},403);
       const previous=inventories.get(propertyId);
-      if(method==='POST' && previous)return json({code:'23505'},409);
-      if(method==='PATCH' && (!previous || url.searchParams.get('revision')!==`eq.${previous.revision}`))return json([]);
-      inventories.set(propertyId,body);return json([body],method==='POST'?201:200);
+      if(url.pathname.endsWith('/get_room_inventory'))return json(previous||{inventory:{types:[],rooms:[]},revision:null});
+      if(body.p_inventory?.types[0]?.name==='QA_SAVE_FAILURE')return json({message:'save_unavailable'},500);
+      if((previous?.revision||null)!==body.p_revision)return json({message:'inventory_changed'},409);
+      if(previous&&previous.inventory.rooms.some(room=>!body.p_inventory.rooms.some(item=>item.id===room.id)))return json({message:'archive_room_instead'},400);
+      const value={inventory:body.p_inventory,revision:require('node:crypto').randomUUID()};inventories.set(propertyId,value);return json(value);
     }
     if (url.pathname === '/rest/v1/direct_bookings') {
       if(identity.index===2)return json({code:'42501'},403);
       if(process.env.STAYCRAFT_QA_BOOKINGS!=='1'||identity.index!==1)return json([]);
-      const item={id:'11111111-1111-4111-8111-111111111111',room_id:'22222222-2222-4222-8222-222222222222',room_number:'QA301',type_name:'QA 房型',arrival:'2026-11-10',departure:'2026-11-12',guest_name:'QA 日程客人',expected_arrival:'18:00 前',total:760,status:'confirmed'};
+      const item={id:'11111111-1111-4111-8111-111111111111',room_id:'22222222-2222-4222-8222-222222222222',room_number:'OLD301',rooms:{number:'QA301'},type_name:'QA 房型',arrival:'2026-11-10',departure:'2026-11-12',guest_name:'QA 日程客人',expected_arrival:'18:00 前',total:760,status:'confirmed'};
       const filter=url.searchParams.get('or');return json(filter&&!filter.includes('2026-11-10')&&!filter.includes('2026-11-12')?[]:[item]);
     }
     if (url.pathname === '/rest/v1/property_details') {
