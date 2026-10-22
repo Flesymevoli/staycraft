@@ -226,3 +226,5 @@ lint/build、qa-ui-parity、qa-workspace-bookings、qa-conversation-drafts、qa-
 2026-10-23独立订单/会话页：复用原受保护工作区与现有读取/回复链路，UUID路由校验，订单未找到/读取失败与重试，返回列表定位，详情刷新与语言保持。lint/build、qa-booking-details、qa-conversation-drafts和样本流程通过；隔离虚构适配器，无云端写入。详情截图检查后修复横排继承问题并复测。
 
 2026-10-23客房卡片增加房型：读取关联typeId对应名称，房号下浅色单行展示，过长省略并保留title。lint/build与五页双语宽度回归通过。
+
+2026-10-23：间夜进度条统一为蓝色圆角浅灰槽，消除浏览器默认绿/灰方条；lint/build、五页UI回归及进度条截图检查通过。

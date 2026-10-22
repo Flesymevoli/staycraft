@@ -27,3 +27,9 @@
 /* Preserve the original compact control; reduce only the space above it. */
 .workspace-page.workspace-analysis > .workspace-intro { margin-bottom:12px; }
 .workspace-page > .workspace-analysis { margin-top:0; }
+
+.booking-analysis-panel progress { appearance:none; -webkit-appearance:none; height:8px; border:0; border-radius:999px; overflow:hidden; background:#edf1f6; color:var(--blue); }
+.booking-analysis-panel progress::-webkit-progress-bar { background:#edf1f6; border-radius:999px; }
+.booking-analysis-panel progress::-webkit-progress-value { background:var(--blue); border-radius:999px; }
+.booking-analysis-panel progress::-moz-progress-bar { background:var(--blue); border-radius:999px; }
+
