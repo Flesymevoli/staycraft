@@ -202,3 +202,7 @@ npm run check与qa-booking-metrics、qa-workspace、qa-operator-sample、qa-conv
 本轮验证：lint/build、qa-booking-metrics与qa-workspace通过；覆盖分析数字/图表切换、无库存/失败、经营端五页权限和导航、中英文及窄屏。UI回归使用隔离夹具，无云端修改。全页UI对照为源代码/样式审查，分析页另有截图复核；完整五页视觉还原尚未实施，不以此记录冒充完成。
 
 UI第一轮对齐（2026-10-22）：压缩演示提示和页头、恢复分析参考区顺序及紧凑卡片、支持彩色日图指针拖动/周末标记，统一工作台与资料表单样式。五页截图已查看；lint/build、qa-ui-parity、qa-booking-metrics、qa-operator-sample通过。隔离样本验收无云端修改；Mine浏览/编辑分离和功能缺口仍未完成。
+
+Mine摘要与按需编辑完成（2026-10-22）：已保存民宿资料默认键值摘要，编辑资料进入原表单，确认保存成功返回摘要；取消修改恢复本页已保存快照。新账号直接表单，加载/错误与编辑内容分开处理，取消/保存后焦点返回摘要标题。导入位于编辑态，原确认、校验、revision冲突与失败保留机制不变。无API/数据库变更。
+
+lint/build、qa-property-profile（含新账号导入/保存/刷新摘要/取消恢复/旧版本冲突保留/失败保留）、qa-ui-parity与qa-workspace通过；390px摘要截图已检查，四种宽度与双语无溢出。测试使用隔离夹具，没有写入真实资料。

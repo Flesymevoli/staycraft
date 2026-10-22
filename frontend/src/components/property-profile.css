@@ -26,3 +26,19 @@
 .profile-saved { display: flex; gap: 6px; align-items: center; margin: 0; font-size: 13px; }
 
 .profile-document{margin-top:22px;font-size:13px;color:var(--muted)}.profile-document>summary{min-height:44px;cursor:pointer;padding:12px 0}.profile-document .profile-upload{margin-top:8px}
+
+.profile-summary { margin-top:20px; padding:20px; border:1px solid white; border-radius:var(--card-radius); background:var(--card-surface); box-shadow:var(--card-shadow); }
+.profile-summary-head { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:6px; }
+.profile-summary-head h2 { margin:0; }
+.profile-summary-head button { flex-shrink:0; font-size:13px; }
+.profile-summary dl { margin:0; }
+.profile-summary dl > div { display:grid; grid-template-columns:minmax(75px,1fr) minmax(0,1.8fr); gap:16px; padding:17px 0; border-bottom:1px solid var(--hairline); font-size:13px; line-height:1.6; }
+.profile-summary dl > div:last-child { border-bottom:0; }
+.profile-summary dt { color:var(--muted); }
+.profile-summary dd { margin:0; text-align:right; overflow-wrap:anywhere; white-space:pre-wrap; }
+.profile-summary dl > .profile-summary-notes { display:block; }
+.profile-summary-notes dd { text-align:left; margin-top:8px; }
+.profile-summary .profile-saved { margin-top:12px; }
+.profile-save-actions { display:flex; align-items:center; flex-wrap:wrap; gap:14px; }
+.profile-save-actions > .native-primary { flex:1; justify-content:center; }
+.profile-save-actions > .profile-text-button { padding-inline:8px; }

@@ -6,7 +6,7 @@ await context.addCookies([{name:'staycraft-operator-sample-auth',url:base,value:
 for(const section of ['','work','analysis','explore','mine']){
  await page.goto(base+'/app'+(section?'/'+section:''));await page.locator('main > h1').waitFor();
  if(section==='analysis')await page.locator('.booking-analysis-cards').getByText('14.3%',{exact:true}).waitFor();
- if(section==='mine')await page.locator('.profile-form').waitFor();
+ if(section==='mine')await page.locator('.profile-summary dl').waitFor();
  if(section==='work')await page.locator('.inventory-room').first().waitFor();
  for(const width of [320,390,658,1280]){await page.setViewportSize({width,height:844});assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),section+' overflow '+width);}
  await page.setViewportSize({width:390,height:844});await page.screenshot({path:'qa-ui-'+(section||'home')+'.png',fullPage:true});

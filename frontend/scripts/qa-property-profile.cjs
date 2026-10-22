@@ -39,7 +39,12 @@ function pdfFixture() {
     await page.getByLabel('我已核对以上资料，确认内容准确。',{exact:true}).check();
     await page.getByRole('button',{name:'确认保存',exact:true}).click();
     await page.getByText('已保存确认后的资料。',{exact:true}).waitFor();
-    await page.reload();await page.getByLabel('民宿名称 *',{exact:true}).waitFor();
+    await page.reload();await page.locator('.profile-summary').getByText('虚构测试小屋',{exact:true}).waitFor();
+    assert.equal(await page.locator('.profile-form').count(),0);
+    await page.getByRole('button',{name:'编辑资料',exact:true}).click();await page.getByLabel('民宿名称 *',{exact:true}).fill('Discard this edit');
+    await page.getByRole('button',{name:'取消修改',exact:true}).click();assert.equal(await page.locator('.profile-form').count(),0);
+    await page.locator('.profile-summary').getByText('虚构测试小屋',{exact:true}).waitFor();
+    await page.getByRole('button',{name:'编辑资料',exact:true}).click();await page.getByLabel('民宿名称 *',{exact:true}).waitFor();
     await page.waitForFunction(()=>document.querySelector('input[required]')?.value==='虚构测试小屋');
     const initial=await(await context.request.get(base+'/api/workspace/profile')).json();
     const bad=await context.request.put(base+'/api/workspace/profile',{headers:{origin:base},data:{profile:{...initial.profile,checkin:'25:00'},revision:initial.revision,confirmed:true}});assert.equal(bad.status(),400);
@@ -47,6 +52,9 @@ function pdfFixture() {
     assert.equal((await context.request.put(base+'/api/workspace/profile',{headers:{origin:base},data:{profile:initial.profile,revision:initial.revision,confirmed:false}})).status(),400);
     const update=await context.request.put(base+'/api/workspace/profile',{headers:{origin:base},data:{profile:{...initial.profile,location:'Fictional village'},revision:initial.revision,confirmed:true}});assert.equal(update.status(),200);
     const stale=await context.request.put(base+'/api/workspace/profile',{headers:{origin:base},data:{profile:initial.profile,revision:initial.revision,confirmed:true}});assert.equal(stale.status(),409);
+    await page.getByLabel('入住规则与客人须知',{exact:true}).fill('Keep this conflict draft');
+    await page.getByLabel('我已核对以上资料，确认内容准确。',{exact:true}).check();await page.getByRole('button',{name:'确认保存',exact:true}).click();
+    await page.getByRole('alert').filter({hasText:'资料已在其他页面更新'}).waitFor();assert.equal(await page.getByLabel('入住规则与客人须知',{exact:true}).inputValue(),'Keep this conflict draft');
     await page.getByLabel('入住规则与客人须知',{exact:true}).fill('QA_SAVE_FAILURE');
     await page.getByLabel('我已核对以上资料，确认内容准确。',{exact:true}).check();await page.getByRole('button',{name:'确认保存',exact:true}).click();
     await page.getByRole('alert').getByText('保存未成功，输入内容已保留，请稍后重试。',{exact:true}).waitFor();

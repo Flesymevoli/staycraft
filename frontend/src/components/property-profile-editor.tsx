@@ -11,6 +11,10 @@ export function PropertyProfileEditor({ zh }: { zh: boolean }) {
   const t = (en: string, cn: string) => zh ? cn : en;
   const router = useRouter();
   const [profile, setProfile] = useState<PropertyProfile>({ ...blankProfile });
+  const [snapshot, setSnapshot] = useState<PropertyProfile | null>(null);
+  const [editing, setEditing] = useState(false);
+  const summaryRef = useRef<HTMLHeadingElement>(null);
+  const formRef = useRef<HTMLFormElement>(null);
   const [revision, setRevision] = useState<string | null>(null);
   const [state, setState] = useState<"loading" | "ready" | "unavailable" | "unassigned">("loading");
   const [error, setError] = useState("");
@@ -27,16 +31,28 @@ export function PropertyProfileEditor({ zh }: { zh: boolean }) {
     const controller = new AbortController();
     fetch("/api/workspace/profile", { cache: "no-store", signal: controller.signal }).then(async response => {
       const body = await response.json();
+      if (controller.signal.aborted) return;
       if (response.status === 401) { router.replace("/login"); return; }
-      if (body.error === "property_not_linked") { setState("unassigned"); return; }
+      if (body.error === "property_not_linked") { setState("unassigned"); setEditing(true); return; }
       if (!response.ok) throw new Error();
       const value = body.profile === null ? { ...blankProfile } : validateProfile(body.profile);
       if (!value) throw new Error();
-      if (!dirty.current) { setProfile(value); setRevision(body.revision); }
+      if (!dirty.current) { setProfile(value); setRevision(body.revision); setSnapshot(body.profile === null ? null : value); if (body.profile === null) setEditing(true); }
       setState("ready");
-    }).catch(() => { if (!controller.signal.aborted) setState("unavailable"); });
+    }).catch(() => { if (!controller.signal.aborted) { setState("unavailable"); setEditing(true); } });
     return () => controller.abort();
   }, [router, reload]);
+  useEffect(() => {
+    if (editing) formRef.current?.querySelector<HTMLInputElement>("input")?.focus();
+    else if (saved) summaryRef.current?.focus();
+  }, [editing, saved]);
+  const beginEdit = () => { setEditing(true); setSaved(false); setError(""); };
+  const cancelEdit = () => {
+    if (busy || !snapshot) return;
+    setProfile({...snapshot}); dirty.current = false; setEditing(false); setConfirmed(false);
+    setError(""); setPreview(null); setSelected([]); setSaved(false);
+    requestAnimationFrame(() => summaryRef.current?.focus());
+  };
   const retry = () => { setState("loading"); setError(""); setReload(value => value + 1); };
   const edit = (key: keyof PropertyProfile, value: string) => {
     dirty.current = true; setProfile(current => ({ ...current, [key]: value })); setConfirmed(false); setSaved(false); setError("");
@@ -70,7 +86,7 @@ export function PropertyProfileEditor({ zh }: { zh: boolean }) {
       const body = await response.json();
       if (!response.ok) { setError(body.error ?? "save_failed"); return; }
       const value = validateProfile(body.profile); if (!value || typeof body.revision !== "string") throw new Error();
-      setProfile(value); setRevision(body.revision); dirty.current = false; setSaved(true); setConfirmed(false); router.refresh();
+      setProfile(value); setRevision(body.revision); dirty.current = false; setSnapshot(value); setEditing(false); setPreview(null); setSelected([]); setSaved(true); setConfirmed(false); router.refresh();
     } catch { setError("save_failed"); }
     finally { setBusy(null); }
   };
@@ -84,7 +100,12 @@ export function PropertyProfileEditor({ zh }: { zh: boolean }) {
     t("Could not read the file. Your existing input has not changed.", "暂时无法解析文件，已有输入没有改变。请重试。");
 
   return <section className="workspace-profile" aria-label={t("Property details and upload", "民宿资料与上传")}>
-    <form onSubmit={save} className="profile-form">
+    {state === "ready" && snapshot && !editing ? <div className="profile-summary">
+      <div className="profile-summary-head"><h2 ref={summaryRef} tabIndex={-1}>{t("Property information", "民宿资料")}</h2><button type="button" className="profile-text-button" onClick={beginEdit}>{t("Edit details", "编辑资料")}</button></div>
+      <dl>{profileFields.filter(field=>field.key!=="roomCount").map(field=><div className={field.key==="notes"?"profile-summary-notes":""} key={field.key}><dt>{field[zh?"zh":"en"]}</dt><dd>{snapshot[field.key] || t("Not set", "未设置")}</dd></div>)}</dl>
+      {saved && <p role="status" className="profile-saved"><Check size={16} aria-hidden="true"/>{t("Confirmed details saved.", "已保存确认后的资料。")}</p>}
+    </div> : state === "loading" && !editing ? <div className="profile-summary"><h2>{t("Property information", "民宿资料")}</h2><p role="status" className="profile-connection">{t("Loading saved information…", "正在读取已保存资料…")}</p></div> : <>
+    <form ref={formRef} onSubmit={save} className="profile-form">
       <h2>{t("Property information", "民宿资料")}</h2>
       {state === "loading" && <p role="status">{t("Loading saved information…", "正在读取已保存资料…")}</p>}
       {(state === "unavailable" || state === "unassigned") && <div className="profile-connection" role="status"><p>{state === "unassigned" ? t("Link a property before saving. You can prepare and review details here first.", "关联民宿后才能保存，现在可以先填写、上传并核对资料。") : t("Saving is not available yet. You can prepare and review details here without losing them.", "资料保存暂未接通，你可以先填写、上传并核对，当前输入会保留在此页面。")}</p><button type="button" onClick={retry} className="profile-text-button" disabled={!!busy}>{t("Retry connection", "重试连接")}</button></div>}
@@ -92,12 +113,12 @@ export function PropertyProfileEditor({ zh }: { zh: boolean }) {
       <label className="profile-confirm"><input type="checkbox" checked={confirmed} disabled={!!busy} onChange={event => setConfirmed(event.target.checked)} /><span>{t("I have reviewed these details and confirm they are accurate.", "我已核对以上资料，确认内容准确。")}</span></label>
       {error && <p role="alert" className="profile-error">{errorText}</p>}
       {saved && <p role="status" className="profile-saved"><Check size={16} aria-hidden="true" />{t("Confirmed details saved.", "已保存确认后的资料。")}</p>}
-      <button type="submit" className="native-primary" disabled={state !== "ready" || !!busy || !confirmed}>{busy === "save" ? t("Saving…", "正在保存…") : t("Confirm and save", "确认保存")}</button>
+      <div className="profile-save-actions"><button type="submit" className="native-primary" disabled={state !== "ready" || !!busy || !confirmed}>{busy === "save" ? t("Saving…", "正在保存…") : t("Confirm and save", "确认保存")}</button>{snapshot && <button type="button" className="profile-text-button" disabled={!!busy} onClick={cancelEdit}>{t("Cancel changes", "取消修改")}</button>}</div>
     </form>
     <details className="profile-document"><summary>{t("Fill from a document (optional)","从文档辅助填写（可选）")}</summary>
     <div className="profile-upload">
       <h2>{t("Start with your property details", "从民宿资料开始")}</h2>
-      <p>{t("Upload a document, review the suggested fields, then confirm what to save. You can also type below.", "上传资料，核对识别出的字段，再确认保存。也可以直接在下方填写。")}</p>
+      <p>{t("Upload a document, review the suggested fields, then confirm what to save. You can also use the form above.", "上传资料，核对识别出的字段，再确认保存。也可以直接在上方填写。")}</p>
       <label className={`native-primary${busy ? " is-disabled" : ""}`}><Upload size={16} aria-hidden="true" />{busy === "upload" ? t("Reading file…", "正在读取…") : t("Upload property document", "上传民宿资料")}
         <input type="file" accept=".pdf,.docx,.txt,.md,.csv" disabled={!!busy} onChange={event => { void importFile(event.target.files?.[0]); event.target.value = ""; }} aria-label={t("Upload property document", "上传民宿资料")} />
       </label>
@@ -111,5 +132,6 @@ export function PropertyProfileEditor({ zh }: { zh: boolean }) {
       <div className="profile-actions"><button type="button" className="native-primary" disabled={!selected.length} onClick={applyPreview}>{t("Apply selected fields", "填入所选字段")}</button><button type="button" className="profile-text-button" onClick={() => setPreview(null)}>{t("Cancel", "取消")}</button></div>
     </div>}
     </details>
+    </>}
   </section>;
 }
