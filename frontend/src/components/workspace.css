@@ -110,3 +110,5 @@
 .cloud-inbox-row { color:inherit; text-decoration:none; }
 .workspace-orders .workspace-booking.booking-page-card { display:block; width:100%; }
 .booking-page-card .booking-summary-copy { display:flex; flex-direction:column; gap:8px; }
+
+.workspace-work .inventory-room .room-type-label { display:block; width:100%; min-width:0; color:var(--muted); font-size:10px; line-height:1.5; font-weight:400; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; margin-top:-3px; }
