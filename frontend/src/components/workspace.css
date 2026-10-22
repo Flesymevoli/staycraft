@@ -119,3 +119,16 @@
 .workspace-work .inventory-room .room-type-label { text-align:center; margin:0; line-height:15px; }
 .workspace-work .inventory-room > span { margin:0; line-height:16px; }
 .workspace-work .inventory-room > small:not(.room-type-label) { margin:0; line-height:16px; }
+
+.workspace-work .inventory-room { grid-template-rows:28px 15px 20px; gap:6px; font:inherit; cursor:pointer; }
+.workspace-work .inventory-room > span { display:flex; align-items:center; justify-content:center; gap:5px; }
+.room-dirty-badge { color:var(--blue); flex-shrink:0; }
+.room-action-sheet { position:fixed; inset:auto 0 0; margin:0 auto; padding:0; width:min(100%,480px); max-height:85dvh; border:0; border-radius:28px 28px 0 0; background:var(--card-surface,#fff); color:var(--ink); box-shadow:0 -12px 50px #18233218; }
+.room-action-sheet::backdrop { background:#18233255; }
+.room-action-content { padding:24px 24px max(24px,env(safe-area-inset-bottom)); }
+.room-action-content header { display:flex; align-items:flex-start; justify-content:space-between; }
+.room-action-content h2 { margin:0; font-size:28px; }
+.room-action-content p { font-size:14px; }
+.room-action-details { display:flex; align-items:center; min-height:44px; margin-top:14px; color:var(--blue); font-size:13px; }
+.room-cleaned-notice,.room-cleaned-notice span { display:flex; align-items:center; gap:8px; }
+.room-cleaned-notice { justify-content:space-between; font-size:13px; }
