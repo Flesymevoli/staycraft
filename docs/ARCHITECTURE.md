@@ -227,3 +227,12 @@ get_room_inventory按owner RLS组合兼容文档；save_room_inventory通过鉴�
 新增npm run sample启动独立127.0.0.1:3106进程，以测试夹具适配现有资料/库存/订单接口；源数据由operator-sample-data.cjs按北京时间启动日生成。数据和图片仅保存在该进程内存，未建立云端演示账号或新增迁移。正式Next入口不导入夹具，生产构建默认不加载数据。
 
 operatorSample服务端开关仅在独立样本与夹具标志同时启用且非托管时生效。server/proxy使用独立Cookie名staycraft-operator-sample-auth；实际页面和API仍走原getUser/账号归属校验，只有独立进程的网络适配器返回虚构身份。样本拒绝托管与非loopback启动，拦截全部云端目标并拒绝外部fetch；公开部署不得启用该加载器。页面显式标记本机虚构演示，客人端云端入口隐藏。未接通功能保持原提示，未新增经营能力。
+
+
+## 云端站内消息基础链路（2026-10-22）
+
+20261022100213_guest_conversations迁移新增conversations/messages，两表沿property_id隔离。经营端只有指定列SELECT权限，读取受owner RLS约束；guest_hash不授予客户端。公开guest_message_api使用256位HttpOnly客人会话令牌的SHA256摘要定位唯一会话，无匿名表级读取；与直订复用同一会话Cookie，不向客人暴露其他会话或内部房号。首次会话可从同会话订单取得显示名，无订单显示访客。
+
+经营者reply_conversation通过private窄权限函数验证owner并锁会话，核对最新guest消息、去重请求号与回复目标，原子写入并返回消息回执；每条guest消息至多一条owner回复。客人留言先锁property再锁会话，限制单民宿500会话、单会话100条客人消息及每分钟10条，事务无网络调用。消息正文最长2000字符；created_at使用clock_timestamp，避免事务开始时间造成并发排序倒置。列表按更新时间返回最近50条，详情最多200条；尚无历史分页、实时推送或已读回执。
+
+新增/api/workspace/conversations与既有/api/guest的message/messages动作，Next只用publishable key及已验证会话；不用service key。返回no-store，写入校验同源、长度和UUID。前端失败保留原文与同一次请求ID，重试不会重复落库；遇到409更新会话并保留文字。回复显示已发送至站内会话，不等于OTA推送或已读。没有调用FastAPI或第三方模型，模型密钥和原SQLite示例未改变，AI草稿仍是后续模块。

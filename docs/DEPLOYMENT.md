@@ -31,3 +31,6 @@ HOMESTAY_LOCAL_DATA必须为0；Vercel自动启用托管模式，其他Node平�
 ## 官方资料
 
 [Vercel项目根目录](https://vercel.com/docs/monorepos)、[环境变量](https://vercel.com/docs/environment-variables)、[Node版本](https://vercel.com/docs/functions/runtimes/node-js/node-js-versions)。
+
+
+站内消息补充（2026-10-22）：guest_conversations迁移已应用，Next与Supabase即可运行本站留言/人工回复，不增加FastAPI部署依赖。回复回执仅代表写入本站会话，尚无推送、已读、会话找回或历史分页；客人每分钟及单会话限额不是完整IP反滥用方案，仍按受控演示定位。AI草稿后续独立接入，当前不向模型发送真实资料。

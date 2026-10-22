@@ -45,7 +45,7 @@
 
 订单保留当时价格快照，后来修改房型价格不改变旧订单金额。日期范围含入住日、不含离店日。已确认不代表已入住；当前不收付款，金额不是已付款金额。
 
-## 5. 会话与消息（云端尚未接通）
+## 5. 会话与消息（站内消息已接通，AI草稿尚未接通）
 
 | 会话ID | 民宿ID | 关联订单ID | 客人显示名 |
 | --- | --- | --- | --- |
@@ -54,7 +54,7 @@
 | 消息ID | 会话ID | 发送者 | 内容 | 状态 |
 | --- | --- | --- | --- | --- |
 | M001 | C001 | 客人 | 早餐几点开始？ | 已收到 |
-| M002 | C001 | AI草稿 | 早餐时间为07:30–10:00。 | 待审核，未发送 |
+| M002 | C001 | 经营者 | 早餐时间为07:30–10:00。 | 已存入站内会话，不代表客人已读 |
 
 一段会话可以有很多条消息；客人咨询、AI草稿和经营者已发送的回复要分开记录。
 
@@ -68,4 +68,4 @@
 
 ## 去哪里看实际表
 
-Supabase项目控制台的Table Editor可查看真实表和已保存记录。当前业务表包括properties、property_details、room_types、rooms、direct_bookings；账号归属为properties.owner_user_id。property_memberships只保留旧记录，不参与鉴权；property_inventory是拆表前的只读快照，不代表当前配置。以上表格中的简短编号和人物均为阅读用虚构示例，不是已经导入的云端记录；实际关联ID使用UUID。消息和AI表仍未接通云端，演示样本之后单独维护，不与正式资料混合。
+Supabase项目控制台的Table Editor可查看真实表和已保存记录。当前业务表包括properties、property_details、room_types、rooms、direct_bookings；账号归属为properties.owner_user_id。property_memberships只保留旧记录，不参与鉴权；property_inventory是拆表前的只读快照，不代表当前配置。以上表格中的简短编号和人物均为阅读用虚构示例，不是已经导入的云端记录；实际关联ID使用UUID。站内会话与消息已分别保存到conversations/messages；AI处理记录仍未接通云端。本机演示样本单独维护，不与正式资料混合。

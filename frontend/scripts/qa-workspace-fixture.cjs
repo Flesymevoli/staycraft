@@ -3,6 +3,7 @@ if (process.env.STAYCRAFT_QA_AUTH_FIXTURES === '1') {
   const sampleMode=process.env.STAYCRAFT_OPERATOR_SAMPLE==='1';
   if(sampleMode&&(process.env.VERCEL==='1'||process.env.STAYCRAFT_HOSTED==='1'||!process.argv.includes('127.0.0.1')))throw new Error('Samples require a separate loopback-only server');
   const sample=sampleMode?require('./operator-sample-data.cjs').createSample(process.env.STAYCRAFT_SAMPLE_DATE||undefined):null;
+  const conversations=require('./conversation-fixture.cjs')(sample);
   const originalFetch = globalThis.fetch;
   const profiles = new Map();
   const inventories = new Map();
@@ -29,6 +30,8 @@ if (process.env.STAYCRAFT_QA_AUTH_FIXTURES === '1') {
     const headers = new Headers(init?.headers || (input instanceof Request ? input.headers : undefined));
     const identity = tokens.get((headers.get('authorization') || '').replace(/^Bearer /, ''));
     const json = (body, status = 200) => new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json' } });
+    const conversation=url.pathname.startsWith('/rest/v1/')?conversations(url,init?.body&&typeof init.body==='string'?JSON.parse(init.body):{},identity,identity?propertyFor(identity.index):null):null;
+    if(conversation)return conversation;
     if(sample&&url.pathname==='/auth/v1/token'){
       const body=JSON.parse(init.body||'{}');
       if(body.email!=='demo@example.invalid'||body.password!=='staycraft-demo')return json({message:'Invalid demo credentials',code:'invalid_credentials'},400);

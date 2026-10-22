@@ -1,0 +1,32 @@
+const {chromium}=require('C:/Users/86299/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright');
+const {spawn}=require('node:child_process'),path=require('node:path'),assert=require('node:assert/strict');
+const base='http://127.0.0.1:3104',property='dddddddd-dddd-4ddd-8ddd-dddddddddddd';
+(async()=>{const child=spawn(process.execPath,['--require',path.resolve('scripts/qa-workspace-fixture.cjs'),'node_modules/next/dist/bin/next','start','--hostname','127.0.0.1','--port','3104'],{env:{...process.env,STAYCRAFT_QA_AUTH_FIXTURES:'1',STAYCRAFT_OPERATOR_SAMPLE:'1',HOMESTAY_LOCAL_DATA:'0'},stdio:['ignore','pipe','pipe']});let output='',browser;
+child.stdout.on('data',c=>output+=c);child.stderr.on('data',c=>output+=c);
+try{await new Promise((resolve,reject)=>{const timer=setInterval(()=>{if(output.includes('Ready in')){clearInterval(timer);resolve()}},100);setTimeout(()=>{clearInterval(timer);reject(new Error(output))},20000).unref()});
+ browser=await chromium.launch();const owner=await browser.newContext({viewport:{width:390,height:844}}),guest=await browser.newContext({viewport:{width:390,height:844}}),other=await browser.newContext();
+ const id='bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',enc=v=>Buffer.from(JSON.stringify(v)).toString('base64url'),token=`${enc({alg:'HS256',typ:'JWT'})}.${enc({sub:id,exp:4102444800,iat:1700000000,aud:'authenticated',role:'authenticated'})}.qa-signature`;
+ await owner.addCookies([{name:'staycraft-operator-sample-auth',url:base,value:'base64-'+enc({access_token:token,refresh_token:'qa',expires_at:4102444800,expires_in:3600,token_type:'bearer',user:{id}})}]);
+ const gp=await guest.newPage(),op=await owner.newPage();await gp.goto(`${base}/guest/contact?property=${property}`);await gp.getByRole('textbox',{name:'你的问题'}).fill('测试客人：早餐几点开始？');
+ await gp.getByRole('button',{name:'发送',exact:true}).click();await gp.getByText('已发送至站内会话。',{exact:true}).waitFor();
+ await gp.reload();await gp.locator('.cloud-message').getByText('测试客人：早餐几点开始？',{exact:true}).waitFor();
+ await op.goto(base+'/app/work');await op.locator('.cloud-inbox-row').filter({hasText:'测试客人：早餐几点开始？'}).click();
+ await op.getByRole('textbox',{name:'你的回复'}).fill('早餐从07:30开始，到10:00结束。');
+ // The backend commits, but the response is lost. Retrying must reuse the request id.
+ await op.route('**/api/workspace/conversations',async route=>{if(route.request().method()==='POST'){await route.fetch();await route.fulfill({status:503,contentType:'application/json',body:'{}'});}else await route.continue();});
+ await op.getByRole('button',{name:'发送',exact:true}).click();await op.getByText(/尚未确认发送成功/).waitFor();assert.equal(await op.getByRole('textbox',{name:'你的回复'}).inputValue(),'早餐从07:30开始，到10:00结束。');
+ await op.unroute('**/api/workspace/conversations');await op.getByRole('button',{name:'重试发送',exact:true}).click();await op.getByText('演示回复已保存到本机。',{exact:true}).waitFor();
+ await gp.getByRole('button',{name:'刷新',exact:true}).click();await gp.locator('.cloud-message-owner').getByText('早餐从07:30开始，到10:00结束。',{exact:true}).waitFor();assert.equal(await gp.locator('.cloud-message-owner').count(),1);
+ await gp.getByRole('textbox',{name:'你的问题'}).fill('那我可以提前入住吗？');await gp.getByRole('button',{name:'发送',exact:true}).click();await gp.getByRole('textbox',{name:'你的问题'}).waitFor();
+ await op.locator('.cloud-thread').getByRole('button',{name:'刷新',exact:true}).click();await op.locator('.cloud-message-guest').getByText('那我可以提前入住吗？',{exact:true}).waitFor();
+ await op.getByRole('textbox',{name:'你的回复'}).fill('我会先核对房间安排。');
+ await guest.request.post(base+'/api/guest',{headers:{origin:base},data:{property,action:'message',requestId:require('node:crypto').randomUUID(),body:'我又补充了一条问题。'}});
+ await op.getByRole('button',{name:'发送',exact:true}).click();await op.getByText(/会话已更新/).waitFor();assert.equal(await op.getByRole('textbox',{name:'你的回复'}).inputValue(),'我会先核对房间安排。');
+ for(const width of [320,390,658,1280]){await op.setViewportSize({width,height:900});assert.ok(await op.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1));}
+ await op.screenshot({path:'qa-cloud-conversations.png',fullPage:true});
+ assert.equal((await other.request.get(base+'/api/workspace/conversations')).status(),401);
+ await other.request.post(base+'/api/guest',{headers:{origin:base},data:{property,action:'session'}});const isolated=await (await other.request.get(`${base}/api/guest?property=${property}&action=messages`)).json();assert.deepEqual(isolated.messages,[]);
+ assert.equal((await owner.request.post(base+'/api/workspace/conversations',{headers:{origin:'https://wrong.invalid'},data:{}})).status(),403);
+ assert.equal((await guest.request.post(base+'/api/guest',{headers:{origin:base},data:{property,action:'message',requestId:require('node:crypto').randomUUID(),body:'x'.repeat(2001)}})).status(),400);
+ console.log('PASS guest contact → owner inbox → reply → guest refresh, persistence, lost-response retry without duplicates, stale reply conflict/input preservation, session/origin/length guards and layouts. Isolated adapter; SQL RLS separately tested.');
+}finally{if(browser)await browser.close();child.kill()}})().catch(error=>{console.error(error);process.exitCode=1});

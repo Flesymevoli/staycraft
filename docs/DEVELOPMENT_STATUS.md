@@ -157,3 +157,14 @@ lint/build及qa-room-cloud、qa-room-import、qa-workspace-bookings、qa-account
 独立sample进程提供3房型、6客房（5启用/1停用）、5虚构订单，按启动日计算今日/明日到店、离店、已取消及取消待审核。页面明确标记样本；修改仅在内存，重启恢复。演示使用独立Cookie，正式凭据Cookie不被覆盖；guest云端链接在样本中隐藏。没有数据库写入或迁移、模型调用、真实账号创建、实际付款或公开发布。
 
 lint/build、qa-operator-sample通过：错误凭据拒绝、正确登录、日程取消过滤、当前房号关联、清洁编辑、保存冲突、重启恢复、退出、外部fetch拒绝、托管启动拒绝和320/390/658/1280宽度；截图已查看。正式qa-workspace、qa-room-cloud、qa-workspace-bookings、qa-hosted回归通过。测试运行真实Next页面和隔离内存适配器，不声称云端RLS或真实双账号端到端测试。使用与场景见OPERATOR_SAMPLE.md。
+
+
+## 站内消息基础闭环完成（2026-10-22）
+
+已应用guest_conversations迁移，联系民宿→云端留言→工作台会话→人工回复→客人刷新读取已实现，未接AI或外部消息渠道。主流程使用现有消息区域，样本增加两条虚构咨询。未公开部署、未调用模型、未发送真实消息。
+
+真实数据库事务以两名虚构Auth用户验收：留言/回复落库、guest会话隔离、owner RLS与跨账号拒绝、匿名表/经营端RPC拒绝、直接改消息拒绝、请求去重、旧回复拒绝及每分钟限额；全部测试数据回滚。收尾查询conversations/messages为0，测试Auth用户0，原民宿1行保留。
+
+lint/build、qa-cloud-conversations通过：双浏览器留言/回复/刷新、服务端已写入但响应失败后重试仅一条、客人新消息到达时拒绝旧回复且保留输入、匿名/同源/超长限制及320/390/658/1280布局；截图已查看。界面双浏览器用隔离夹具，数据库权限另以真实SQL事务测试，不声称真实双账号浏览器端到端验收。原workspace、room-cloud、workspace-bookings、operator-sample与hosted回归记录于本轮最终检查。
+
+安全顾问仅原Auth泄漏密码保护提示；性能顾问仅此前两个订单外键索引尚未使用的信息，不删除用于完整性约束查询的索引。无新增RLS或函数安全告警。正式AI草稿/处理记录、实际入住退房、逾期取消审批及经营分析仍待后续。
