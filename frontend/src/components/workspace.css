@@ -52,3 +52,46 @@
 .workspace-page .profile-field { gap:8px; }
 .workspace-page .profile-field input, .workspace-page .profile-field textarea { background:#f9fafb; border-color:#e5e8ed; font-size:14px; }
 @media (max-width:359px) { .workspace-page { padding-inline:18px; } }
+
+/* Work: roomy room tiles, grouped bookings and a compact inbox. */
+.workspace-work .native-section-head { margin-bottom:12px; align-items:center; }
+.workspace-work .native-section-head h2 { font-size:19px; font-weight:450; }
+.workspace-work > .workspace-intro { margin-bottom:24px; }
+.workspace-work .room-board-surface { padding:18px 16px 12px; }
+.workspace-work .room-board-legend { gap:20px; padding-bottom:15px; }
+.workspace-work .room-board-legend b { font-size:17px; }
+.workspace-work .room-floor { margin-top:17px; }
+.workspace-work .room-floor-label { font-size:11px; margin-bottom:9px; }
+.workspace-work .room-grid { grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; }
+.workspace-work .inventory-room { min-height:90px; padding:13px 6px; gap:7px; border-radius:16px; border:1px solid #e4e8ed; background:#fafbfd; }
+.workspace-work .inventory-room strong { font-size:23px; font-weight:450; }
+.workspace-work .inventory-room.is-clean { background:#f3f8f5; border-color:#e0ece4; }
+.workspace-work .inventory-room.is-dirty { background:#f0f6fd; border-color:#dfeaf8; }
+.workspace-work .inventory-room.is-reserved { background:#f7f8fa; }
+.workspace-work .inventory-room.is-inactive { background:#f1f2f4; border-style:dashed; }
+.workspace-work .inventory-room span { font-size:11px; }
+.workspace-work .room-board-hint { margin:16px 0 0; font-size:11px; line-height:1.6; }
+.workspace-work .room-preview-note { margin:5px 0 0; }
+.workspace-work .room-add-link { padding:0 10px; border-radius:14px; background:#edf5ff; }
+.workspace-work .workspace-section { margin-top:30px; }
+.workspace-booking-list { padding:0 18px; border:1px solid #fff; border-radius:24px; background:var(--card-surface); box-shadow:var(--card-shadow); }
+.workspace-page .workspace-booking-list .workspace-booking { margin:0; padding:18px 0; border:0; border-bottom:1px solid var(--hairline); background:transparent; border-radius:0; box-shadow:none; }
+.workspace-page .workspace-booking-list .workspace-booking:last-child { border-bottom:0; }
+.workspace-booking-list .workspace-booking strong { font-size:15px; font-weight:500; }
+.workspace-booking-list .workspace-booking small:first-of-type { margin-top:8px; font-size:12px; line-height:1.7; }
+.workspace-booking-list .workspace-booking small:last-of-type { display:inline-block; margin-top:9px; padding:4px 8px; border-radius:7px; font-size:11px; background:#f1f5f9; color:#566779; }
+.workspace-booking-list .booking-review small:last-of-type { background:#faf4e9; color:#826026; }
+.workspace-booking-list .booking-cancelled small:last-of-type { background:#f1f2f4; color:#757b83; }
+.workspace-booking-list .workspace-booking:target { border-radius:12px; outline-offset:4px; }
+.workspace-messages .cloud-inbox { padding:4px 18px; }
+.workspace-messages .cloud-inbox:has(.cloud-thread) { padding:20px; }
+.workspace-messages .cloud-inbox-row { display:flex; align-items:center; gap:12px; padding:18px 0; min-height:96px; }
+.workspace-messages .cloud-inbox-row:last-child { border-bottom:0; }
+.workspace-messages .cloud-inbox-avatar { display:grid; place-items:center; flex-shrink:0; width:42px; height:42px; background:#eaf2fc; border-radius:15px; color:#577ba2; font-size:18px; }
+.workspace-messages .cloud-inbox-copy { flex:1; min-width:0; display:grid; gap:6px; }
+.workspace-messages .cloud-inbox-copy strong { font-size:14px; font-weight:500; }
+.workspace-messages .cloud-inbox-copy > span { font-size:13px; color:var(--muted); line-height:1.5; -webkit-line-clamp:1; }
+.workspace-messages .cloud-inbox-copy small { font-size:11px; color:var(--muted); }
+.workspace-messages .cloud-inbox-copy small.is-pending { color:var(--blue); }
+.workspace-messages .cloud-inbox-chevron { color:#89939f; flex-shrink:0; }
+@media(max-width:359px) { .workspace-work .room-grid { gap:7px; } .workspace-booking-list { padding-inline:14px; } .workspace-messages .cloud-inbox { padding-inline:14px; } }
