@@ -39,7 +39,7 @@ npm run release:check
 
 统一检查先构建，再串行27项隔离QA，端口3104须空闲，报告写入忽略的qa-release-report.json。使用虚构夹具，不运行真实订单脚本、不消费模型、不迁移线上数据库。GitHub CI执行同样检查而不部署。
 
-可选接口验证：仅使用已获授权的固定虚构资料；把密钥放在本机忽略文件，设置STAYCRAFT_MODEL_ENV为该文件路径，再设置RUN_PAID_MODEL_TEST=1并运行node scripts/qa-ai-live.cjs。最多两次有输出上限的分类/排序调用，不读云端资料；不要加入默认发布检查。2026-10-23已使用DeepSeek deepseek-flash完成两次固定虚构资料请求，分类/排序结果均有效；正式模型与发送开关保持0。模型名与基础地址按[官方接入文档](https://api-docs.deepseek.com/quick_start)配置，换供应商需重验。
+可选接口验证：仅使用已获授权的固定虚构资料；把密钥放在本机忽略文件，设置STAYCRAFT_MODEL_ENV为该文件路径，再设置RUN_PAID_MODEL_TEST=1并运行node scripts/qa-ai-live.cjs。最多两次有输出上限的分类/排序调用，不读云端资料；不要加入默认发布检查。扩展评估node scripts/qa-ai-evaluation.cjs同样须RUN_PAID_MODEL_TEST=1，最多8次请求，11个固定虚构场景；报告qa-ai-evaluation-report.json由Git忽略，不能当全面质量分数。node scripts/qa-ai-workspace-live.cjs为同样opt-in的隔离Next页面链路检查：3104端口，虚构内存适配器，最多两次模型请求，外网仅放行所配置模型接口；不改变3101/3106或真实账号设置。2026-10-23已使用DeepSeek deepseek-flash完成两次固定虚构资料请求，分类/排序结果均有效；正式模型与发送开关保持0。模型名与基础地址按[官方接入文档](https://api-docs.deepseek.com/quick_start)配置，换供应商需重验。
 
 ## 实际环境验收（待授权发布后）
 
