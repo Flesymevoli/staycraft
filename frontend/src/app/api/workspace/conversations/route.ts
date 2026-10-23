@@ -6,9 +6,9 @@ export async function GET(request:Request){try{
  const {supabase,propertyId}=await verifiedProperty();const thread=new URL(request.url).searchParams.get("thread");
  if(!thread){const {data,error}=await supabase.rpc("get_conversations",{p_property:propertyId});if(error)throw error;return Response.json({items:data},{headers});}
  if(!uuid.test(thread))throw new WorkspaceError("invalid_thread",400);
- const {data:conversation,error}=await supabase.from("conversations").select("id,guest_name").eq("property_id",propertyId).eq("id",thread).maybeSingle();
+ const {data:conversation,error}=await supabase.from("conversations").select("id,guest_name,manual_control,handoff_reason").eq("property_id",propertyId).eq("id",thread).maybeSingle();
  if(error)throw error;if(!conversation)throw new WorkspaceError("conversation_not_found",404);
- const {data:messages,error:readError}=await supabase.from("messages").select("id,sender,body,created_at").eq("property_id",propertyId).eq("conversation_id",thread).order("created_at").order("id").limit(200);
+ const {data:messages,error:readError}=await supabase.from("messages").select("id,sender,body,created_at,automatic,automation_engine").eq("property_id",propertyId).eq("conversation_id",thread).order("created_at").order("id").limit(200);
  if(readError)throw readError;return Response.json({...conversation,messages},{headers});
 }catch(error){return workspaceFailure(error);}}
 export async function POST(request:Request){try{

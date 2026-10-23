@@ -12,3 +12,5 @@
 .cloud-inbox-row small{font-size:12px;color:var(--blue,#006de0)}.cloud-inbox-empty{padding:12px 0}
 .conversation-draft{margin:16px 0;padding:12px 14px;border:1px solid var(--hairline,#dbe0e8);border-radius:16px;background:#f6f9fc}
 .conversation-draft>small{display:block;font-size:12px;color:var(--muted,#667085);margin-top:8px}.conversation-draft p{font-size:12px;line-height:1.65;color:var(--muted,#667085);margin:8px 0}.conversation-draft p.conversation-draft-text{font-size:14px;color:var(--ink,#202124);white-space:pre-wrap}.conversation-draft button,.conversation-draft>a{min-height:44px}
+
+.conversation-control{display:flex;align-items:center;justify-content:space-between;gap:12px;font-size:12px;color:var(--muted);flex-wrap:wrap}.conversation-control button{min-height:44px}

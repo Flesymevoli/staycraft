@@ -12,6 +12,7 @@ import { PropertyProfileEditor } from "./property-profile-editor";
 import { HomeSchedulePreview, RoomPreviewBoard, RoomPreviewDetail, RoomTypesPreview } from "./room-preview";
 import {WorkspaceBookings} from "./workspace-bookings";
 import {WorkspaceInbox,WorkspaceConversation} from "./cloud-conversations";
+import {ReplyAutomationPanel} from "./reply-automation-panel";
 import {WorkBookingInsight} from "./booking-insight";
 import {HomeBookingOverview,WorkspaceAnalysis} from "./workspace-analysis";
 import {OperatorSampleContext} from "./operator-sample-context";
@@ -50,10 +51,10 @@ export function WorkspaceClient({ section, userId, roomId, bookingId, threadId, 
       {roomId && <RoomPreviewDetail scope={userId} roomId={roomId} zh={zh}/>}
       {section === "home" && !roomId && <>
         <HomeSchedulePreview zh={zh} scope={userId}/>
-        <HomeBookingOverview scope={userId} zh={zh}/>
+        <HomeBookingOverview scope={userId} zh={zh}/><ReplyAutomationPanel zh={zh} compact/>
       </>}
       {bookingId&&<WorkspaceBookings zh={zh} bookingId={bookingId}/>}{threadId&&<WorkspaceConversation zh={zh} threadId={threadId}/>}
-      {section === "work" && !roomId && !bookingId && !threadId && <><RoomPreviewBoard scope={userId} zh={zh}/><WorkspaceBookings zh={zh} propertyId={!sample&&connection.status==="linked"?connection.propertyId:undefined}/><WorkspaceInbox zh={zh}/><WorkBookingInsight scope={userId} zh={zh}/></>}
+      {section === "work" && !roomId && !bookingId && !threadId && <><ReplyAutomationPanel zh={zh}/><RoomPreviewBoard scope={userId} zh={zh}/><WorkspaceBookings zh={zh} propertyId={!sample&&connection.status==="linked"?connection.propertyId:undefined}/><WorkspaceInbox zh={zh}/><WorkBookingInsight scope={userId} zh={zh}/></>}
       {section === "analysis" && <WorkspaceAnalysis key={userId} scope={userId} zh={zh}/>}
       {section === "explore" && <section className="workspace-empty"><span className="workspace-symbol"><Compass size={28} strokeWidth={1.4} aria-hidden="true" /></span><h2>{t("Discover what is around you.", "从民宿所在的位置开始。")}</h2><p>{t("Local demand and opportunities need a property location and reliable sources. There are no connected signals yet.", "周边需求和推广机会需要民宿位置及可靠的信息来源，目前尚未接入相关数据。")}</p>{toMine}</section>}
       {section === "mine" && <>

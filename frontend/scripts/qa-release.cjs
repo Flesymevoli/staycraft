@@ -3,10 +3,10 @@ const fs=require('node:fs');
 const path=require('node:path');
 process.chdir(path.resolve(__dirname,'..'));
 const checks=[
- ['qa-business-analysis.cjs'],['qa-revenue-insights.cjs'],['qa-revenue-source.cjs'],['qa-release-config.cjs'],
+ ['qa-business-analysis.cjs'],['qa-reply-plan.cjs'],['qa-revenue-insights.cjs'],['qa-revenue-source.cjs'],['qa-release-config.cjs'],
  ['qa-workspace.cjs'],['qa-property-profile.cjs'],['qa-room-cloud.cjs'],['qa-booking-metrics.cjs'],
  ['qa-booking-details.cjs'],['qa-room-actions.cjs'],['qa-room-scroll.cjs'],
- ['qa-formal-stays.cjs'],['qa-arrival-cleaning.cjs'],['qa-cancellation-review.cjs','approve'],['qa-cancellation-review.cjs','reject'],
+ ['qa-formal-stays.cjs'],['qa-arrival-cleaning.cjs'],['qa-reply-automation.cjs'],['qa-cancellation-review.cjs','approve'],['qa-cancellation-review.cjs','reject'],
  ['qa-booking-next-steps.cjs'],['qa-revenue-preview.cjs'],['qa-formal-revenue.cjs'],['qa-ui-parity.cjs'],
  ['qa-recovery.cjs'],['qa-hosted.cjs'],
 ];
@@ -19,7 +19,7 @@ async function run(args){
  const code=await new Promise((resolve,reject)=>{
   const child=spawn(process.execPath,[path.join('scripts',args[0]),...args.slice(1)],{
    stdio:'inherit',windowsHide:true,
-   env:{...process.env,VERCEL:'0',STAYCRAFT_HOSTED:'0',STAYCRAFT_OPERATOR_SAMPLE:'0',STAYCRAFT_QA_AUTH_FIXTURES:'0',STAYCRAFT_QA_FORMAL_STAYS:'0',
+   env:{...process.env,VERCEL:'0',STAYCRAFT_HOSTED:'0',STAYCRAFT_OPERATOR_SAMPLE:'0',STAYCRAFT_QA_AUTH_FIXTURES:'0',STAYCRAFT_QA_FORMAL_STAYS:'0',FORMAL_AUTO_REPLY_ENABLED:'0',FORMAL_MODEL_ENABLED:'0',MODEL_ENABLED:'0',
     NEXT_PUBLIC_SUPABASE_URL:'https://husrpqalpjjswpvrkxet.supabase.co',NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY:'sb_publishable_release_fixture_only'},
   });
   child.once('error',reject);child.once('exit',resolve);

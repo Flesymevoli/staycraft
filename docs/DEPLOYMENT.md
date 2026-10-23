@@ -60,3 +60,5 @@ npm run release:check
 发布记录绑定Git提交和环境配置。页面问题回退到前一已验证部署；代码回滚不回滚或删除订单、图片。数据库使用增量迁移、先备份、再前向修复，禁止自动降级或重新执行初始化SQL。
 
 用户允许后可从固定Git版本建立预览；目前未向GitHub推送本轮提交、未创建Vercel项目或域名、未公开发布。检查点和验证日志见DEVELOPMENT_STATUS、ROLLBACK。
+
+自动回复增量（W1b）：FORMAL_AUTO_REPLY_ENABLED=0、FORMAL_MODEL_ENABLED=0、MODEL_ENABLED=0为默认；公开部署或导入仓库不构成正式启用授权。只有另获授权并完成两个真实Auth测试账号验收后，才配置服务端MODEL_BASE_URL/MODEL_NAME/MODEL_API_KEY及启用开关；绝不使用NEXT_PUBLIC前缀。未启用时界面允许人工回复与接管，自动开关不可开启。当前仅早餐/常规入住时间自动回答，其他转人工。迁移reply_automation与reply_automation_fact_gate已应用；正式模型未调用。线上演示不能开启本机夹具。

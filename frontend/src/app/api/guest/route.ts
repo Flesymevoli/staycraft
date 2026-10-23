@@ -1,3 +1,4 @@
+import {automaticDeliveryAvailable,planReply} from "@/lib/reply-automation";
 import {randomBytes} from "node:crypto";
 import {isHosted} from "@/lib/deployment";
 import {cookies} from "next/headers";
@@ -17,6 +18,17 @@ async function handle(request:Request,write:boolean){try{
  const config=supabaseConfig();const client=createClient(config.url,config.publishableKey,{auth:{persistSession:false,autoRefreshToken:false}});
  const {data:result,error}=await client.rpc(action==="messages"||action==="message"?"guest_message_api":"direct_booking_api",{p_property:property,p_action:action,p_token:token||null,p_data:write?data:{arrival:url.searchParams.get("arrival"),departure:url.searchParams.get("departure")}});
  if(error){const known=["stay_changed","sold_out","price_changed","request_changed","booking_limit","invalid_dates","invalid_guest","type_unavailable","order_not_found","property_unavailable","invalid_message","message_rate_limit","conversation_limit"];const code=known.find(code=>error.message.includes(code));throw new WorkspaceError(code||"booking_unavailable",code==="message_rate_limit"?429:code==="stay_changed"||code==="sold_out"||code==="price_changed"||code==="request_changed"?409:code?400:503);}
+ if(action==="message"&&automaticDeliveryAvailable()){
+  // A reply failure never rolls back or duplicates the already saved guest message.
+  try{
+   const begun=await client.rpc("guest_reply_automation",{p_property:property,p_token:token,p_action:"begin",p_data:{}});
+   if(!begun.error&&begun.data?.state==="processing"&&begun.data.claim&&typeof begun.data.message==="string"){
+    const plan=await planReply(begun.data.message,begun.data.profile||{},{model:process.env.FORMAL_MODEL_ENABLED==="1"&&process.env.MODEL_ENABLED==="1"});
+    await client.rpc("guest_reply_automation",{p_property:property,p_token:token,p_action:"finish",p_data:{claim:begun.data.claim,...plan}});
+   }
+   const fresh=await client.rpc("guest_message_api",{p_property:property,p_action:"messages",p_token:token,p_data:{}});if(!fresh.error&&fresh.data)return Response.json(fresh.data,{headers:{"Cache-Control":"no-store"}});
+  }catch{/* The saved guest message remains available for manual handling. */}
+ }
  return Response.json(result,{headers:{"Cache-Control":"no-store"}});
 }catch(error){return workspaceFailure(error);}}
 export async function GET(request:Request){return handle(request,false);}

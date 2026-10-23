@@ -4,7 +4,7 @@ const path=require('node:path');
 if(process.env.VERCEL==='1'||process.env.STAYCRAFT_HOSTED==='1')throw new Error('Local sample cannot run on hosted deployments');
 process.chdir(path.resolve(__dirname,'..'));
 const child=spawn(process.execPath,['--require',path.join(__dirname,'qa-workspace-fixture.cjs'),'node_modules/next/dist/bin/next','start','--hostname','127.0.0.1','--port','3106'],{
-  env:{...process.env,STAYCRAFT_OPERATOR_SAMPLE:'1',STAYCRAFT_QA_AUTH_FIXTURES:'1',HOMESTAY_LOCAL_DATA:'0'},stdio:'inherit',windowsHide:true,
+  env:{...process.env,STAYCRAFT_OPERATOR_SAMPLE:'1',STAYCRAFT_QA_AUTH_FIXTURES:'1',HOMESTAY_LOCAL_DATA:'0',FORMAL_AUTO_REPLY_ENABLED:'1',FORMAL_MODEL_ENABLED:'0',MODEL_ENABLED:'0'},stdio:'inherit',windowsHide:true,
 });
 console.log('Staycraft 本机虚构演示：http://127.0.0.1:3106/login');
 console.log('登录：demo@example.invalid / staycraft-demo（仅本机演示凭据，不是真实账号）');
