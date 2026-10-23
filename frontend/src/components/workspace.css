@@ -147,3 +147,18 @@
 .cancellation-review h3 { font-size:16px; margin:0 0 8px; }
 .cancellation-review p { font-size:12px; line-height:1.7; color:var(--muted); }
 .cancellation-review > div { display:flex; flex-wrap:wrap; gap:10px; }
+
+.booking-next-steps { margin-top:28px; }
+.booking-next-steps h2 { font-size:20px; font-weight:450; margin:0 0 16px; }
+.booking-next-step { display:flex; align-items:center; justify-content:space-between; gap:14px; width:100%; min-width:0; padding:20px; margin:12px 0; border:1px solid white; border-radius:24px; background:var(--card-surface); color:var(--ink); font:inherit; text-align:left; text-decoration:none; box-shadow:var(--card-shadow); cursor:pointer; }
+.booking-next-step > span { min-width:0; }
+.booking-next-step strong,.booking-next-step small { display:block; }
+.booking-next-step strong { font-size:15px; font-weight:500; line-height:1.5; }
+.booking-next-step small { font-size:12px; color:var(--muted); line-height:1.6; margin-top:7px; }
+.booking-next-step svg { flex-shrink:0; color:var(--blue); }
+.booking-next-step.is-priority { border-color:#dbe7f5; }
+.work-booking-insight .native-card { padding:20px; }
+.work-booking-insight h3 { font-weight:500; font-size:18px; line-height:1.5; margin:12px 0; }
+.work-booking-insight small,.work-booking-insight p { color:var(--muted); font-size:12px; line-height:1.7; }
+.work-booking-insight .inventory-text { display:inline-flex; align-items:center; gap:8px; }
+.booking-next-step:focus-visible { outline:2px solid var(--blue); outline-offset:3px; }
