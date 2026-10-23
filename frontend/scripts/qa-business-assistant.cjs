@@ -1,0 +1,13 @@
+const assert=require('node:assert/strict'),fs=require('node:fs'),ts=require('typescript');
+const cache={};function load(name){if(cache[name])return cache[name];const m={exports:{}};new Function('exports','require',ts.transpileModule(fs.readFileSync('src/lib/'+name+'.ts','utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS}}).outputText)(m.exports,id=>load(id.replace('./','')));return cache[name]=m.exports}
+const {groundedInsights,prioritiseInsights}=load('business-assistant');
+const data={active_rooms:2,capacity_room_nights:14,booked_room_nights:2,available_room_nights:12,inactive_booked_room_nights:1,booked_order_room_nights:2,amount_cents:10001,daily:Array.from({length:7},(_,i)=>({date:'2026-10-'+(23+i),booked:i?0:2,capacity:2,available:i?2:0}))};
+(async()=>{const items=groundedInsights(data,'week',true);assert.equal(items[0].id,'inactive');assert(items.some(i=>i.id==='commitments'));assert(items.some(i=>i.evidence.includes('100.01')));
+const attention=groundedInsights(data,'attention',false,{dirty:2,pendingMessages:1,conversationsRead:50});assert(attention.some(i=>i.evidence.includes('50 most recent')));assert.equal(attention[0].id,'inactive');
+Object.assign(process.env,{MODEL_BASE_URL:'https://provider.example/v1',MODEL_NAME:'fixture',MODEL_API_KEY:'fixture-only'});
+const fetcher=async(url,init)=>{const payload=JSON.parse(init.body);assert.equal(payload.messages.length,2);return new Response(JSON.stringify({choices:[{finish_reason:'stop',message:{content:JSON.stringify({priorities:[...items].reverse().map(i=>i.id)})}}]}))};
+const ranked=await prioritiseInsights(items,{model:true,fetcher});assert.equal(ranked.engine,'model_v1');assert.equal(ranked.items[0].id,'inactive');assert.deepEqual(new Set(ranked.items.map(i=>i.evidence)),new Set(items.map(i=>i.evidence)));
+const invalid=await prioritiseInsights(items,{model:true,fetcher:async()=>new Response(JSON.stringify({choices:[{finish_reason:'stop',message:{content:'{"priorities":["invented"]}'}}]}))});assert.equal(invalid.fallback,true);assert.equal(invalid.engine,'rules_v1');
+assert.equal((await prioritiseInsights(items,{model:false,fetcher:()=>{throw new Error('must not call')}})).engine,'rules_v1');
+console.log('PASS grounded assistance: operational evidence, completed-vs-booked distinction, capped inbox scope, model ranking only, risk cannot be demoted, invalid/disabled model fallback. Mock provider only.');
+})().catch(error=>{console.error(error);process.exitCode=1});

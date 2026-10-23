@@ -12,6 +12,7 @@ import { PropertyProfileEditor } from "./property-profile-editor";
 import { HomeSchedulePreview, RoomPreviewBoard, RoomPreviewDetail, RoomTypesPreview } from "./room-preview";
 import {WorkspaceBookings} from "./workspace-bookings";
 import {WorkspaceInbox,WorkspaceConversation} from "./cloud-conversations";
+import {WorkspaceAssistant} from "./workspace-assistant";
 import {ReplyAutomationPanel} from "./reply-automation-panel";
 import {WorkBookingInsight} from "./booking-insight";
 import {HomeBookingOverview,WorkspaceAnalysis} from "./workspace-analysis";
@@ -50,7 +51,7 @@ export function WorkspaceClient({ section, userId, roomId, bookingId, threadId, 
 
       {roomId && <RoomPreviewDetail scope={userId} roomId={roomId} zh={zh}/>}
       {section === "home" && !roomId && <>
-        <HomeSchedulePreview zh={zh} scope={userId}/>
+        <WorkspaceAssistant zh={zh}/><HomeSchedulePreview zh={zh} scope={userId}/>
         <HomeBookingOverview scope={userId} zh={zh}/><ReplyAutomationPanel zh={zh} compact/>
       </>}
       {bookingId&&<WorkspaceBookings zh={zh} bookingId={bookingId}/>}{threadId&&<WorkspaceConversation zh={zh} threadId={threadId}/>}
