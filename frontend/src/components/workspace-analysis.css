@@ -33,3 +33,5 @@
 .booking-analysis-panel progress::-webkit-progress-value { background:var(--blue); border-radius:999px; }
 .booking-analysis-panel progress::-moz-progress-bar { background:var(--blue); border-radius:999px; }
 
+
+.business-analysis h3{font-size:15px;font-weight:500;line-height:1.6;margin:0 0 8px}.business-analysis-action{border-top:1px solid var(--hairline);padding-top:16px;margin-top:16px}.business-analysis details{font-size:12px;color:var(--muted);margin-top:12px}.business-analysis summary{cursor:pointer;min-height:44px;display:flex;align-items:center}.business-analysis details p{font-size:12px}

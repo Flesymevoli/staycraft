@@ -250,3 +250,6 @@ lint/build、qa-ui-parity、qa-workspace-bookings、qa-conversation-drafts、qa-
 2026-10-23分析行动入口：lint/build、qa-booking-next-steps通过，覆盖空余日期定位、Work→Analysis、停用房预订订单锚点、零房/订满/503、双语和四种宽度，并查看截图。隔离指标适配器；无写接口/数据库迁移/模型调用，未实现市场推广或模型分析。
 
 2026-10-23总结标题按用户要求改为经营状况分析/Business overview，构建通过。
+
+## 2026-10-23 经营状况分析实质改写
+新增纯前端确定性分布分析，替换数字复述；保留日期行动入口。npm run check通过（首次受限环境TypeScript spawn EPERM，获准环境重跑通过）；qa-business-analysis涵盖7类分布/风险与双语；qa-booking-next-steps涵盖页面判断、日期动作、锚点、零/满/失败及双语宽度。检查390px截图。未接收入后端或模型，无云端写入。回滚到7a86910；只撤销本轮列明文件，保留用户未跟踪草稿。
