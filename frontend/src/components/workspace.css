@@ -139,3 +139,6 @@
  .workspace-work .room-grid:focus-visible { outline:2px solid var(--blue); outline-offset:3px; border-radius:10px; }
 }
 @media(max-width:359px) { .workspace-work .room-grid { grid-auto-columns:calc((100% - 14px)/3); } }
+
+.workspace-work .inventory-room.is-occupied { background:#edf3fb; border-color:#d7e3f2; }
+.room-action-content .native-primary { margin:8px 8px 8px 0; }

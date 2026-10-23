@@ -1,0 +1,6 @@
+import {operatorSample} from "@/lib/operator-sample";
+import {boundedBody,requireSameOrigin,verifiedProperty,WorkspaceError,workspaceFailure} from "@/lib/workspace-access";
+export const dynamic="force-dynamic";
+async function access(){if(!operatorSample())throw new WorkspaceError("not_available",404);return verifiedProperty()}
+export async function GET(){try{const {supabase,propertyId}=await access();const {data,error}=await supabase.rpc("sample_stays",{p_property:propertyId});if(error)throw new WorkspaceError("stays_unavailable",503);return Response.json(data,{headers:{"Cache-Control":"no-store"}})}catch(error){return workspaceFailure(error)}}
+export async function POST(request:Request){try{requireSameOrigin(request);const {supabase,propertyId}=await access();let input;try{input=JSON.parse(new TextDecoder().decode(await boundedBody(request,2000)))}catch{throw new WorkspaceError("invalid_input",400)}if(!["checkin","checkout"].includes(input?.action)||!/^[a-f0-9-]{36}$/i.test(input?.booking||""))throw new WorkspaceError("invalid_input",400);const {data,error}=await supabase.rpc("sample_stays",{p_property:propertyId,p_action:input.action,p_booking:input.booking});if(error)throw new WorkspaceError("stay_changed",409);return Response.json(data,{headers:{"Cache-Control":"no-store"}})}catch(error){return workspaceFailure(error)}}

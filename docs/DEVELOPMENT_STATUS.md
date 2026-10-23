@@ -238,3 +238,5 @@ lint/build、qa-ui-parity、qa-workspace-bookings、qa-conversation-drafts、qa-
 2026-10-23横滑客房：lint/build、qa-room-scroll（15房同层，320/390/658单行、114px、无页面溢出、最后客房键盘与清洁面板、1280桌面换行）、qa-room-actions通过；已查看截图。隔离测试不改正式客房。
 
 2026-10-23清洁图标纠正：房卡与清洁操作统一使用lucide Broom扫帚，替换误用Brush画笔；lint/build通过。
+
+2026-10-23演示入住退房：新接口仅operatorSample开启，沿用已验证账号/民宿权限和同源保护；模拟适配器原子更新内存入住与清洁。check、qa-sample-stays（入住/刷新/失败退房/退房清洁/订单待办/取消/跨域）及清洁/UI回归通过；正式云端没有迁移，P6正式接通仍待做。

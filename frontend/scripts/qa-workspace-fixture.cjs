@@ -21,6 +21,7 @@ if (process.env.STAYCRAFT_QA_AUTH_FIXTURES === '1') {
     profiles.set(sample.propertyId,{property_id:sample.propertyId,profile:sample.profile,revision:'20000000-0000-4000-8000-000000000001'});
     inventories.set(sample.propertyId,{inventory:sample.inventory,revision:'20000000-0000-4000-8000-000000000002'});
   }
+  const stays=new Map(sample?sample.bookings.filter(b=>b.arrival<sample.anchor&&b.departure===sample.anchor&&b.status==='confirmed').map(b=>[b.id,'checked_in']):[]);
   globalThis.fetch = async (input, init) => {
     const url = new URL(typeof input === 'string' ? input : input instanceof URL ? input.href : input.url);
     const headers = new Headers(init?.headers || (input instanceof Request ? input.headers : undefined));
@@ -42,11 +43,27 @@ if (process.env.STAYCRAFT_QA_AUTH_FIXTURES === '1') {
     if (!identity) return json({ message: 'Invalid session' }, 401);
     if (url.pathname === '/auth/v1/user') return json({ id: identity.id, email: `account-${identity.index}@example.invalid`, aud: 'authenticated', role: 'authenticated', app_metadata: {}, user_metadata: {}, identities: [], created_at: '2026-01-01T00:00:00Z' });
     if (url.pathname === '/auth/v1/logout') return json({});
+    if(url.pathname==='/rest/v1/rpc/sample_stays'){
+      const body=JSON.parse(init.body||'{}');
+      if(!sample||identity.id!==sample.ownerId||body.p_property!==sample.propertyId)return json({message:'property_not_owned'},403);
+      if(body.p_action){
+       const b=sample.bookings.find(b=>b.id===body.p_booking),room=inventories.get(sample.propertyId).inventory.rooms.find(r=>r.id===b?.room_id),state=stays.get(b?.id)||'pending';
+       if(!b||!room||b.status!=='confirmed'||b.refund_result==='review_pending')return json({message:'stay_changed'},409);
+       if(body.p_action==='checkin'&&state!=='checked_in'){
+        if(state!=='pending'||!room.active||room.housekeeping!=='clean'||b.arrival>sample.anchor||b.departure<=sample.anchor||sample.bookings.some(other=>other.room_id===b.room_id&&stays.get(other.id)==='checked_in'))return json({message:'stay_changed'},409);
+        stays.set(b.id,'checked_in');
+       }else if(body.p_action==='checkout'&&state!=='completed'){
+        if(state!=='checked_in')return json({message:'stay_changed'},409);
+        const previous=inventories.get(sample.propertyId);inventories.set(sample.propertyId,{inventory:{...previous.inventory,rooms:previous.inventory.rooms.map(r=>r.id===room.id?{...r,housekeeping:'dirty'}:r)},revision:require('node:crypto').randomUUID()});stays.set(b.id,'completed');
+       }
+      }
+      return json({bookings:sample.bookings.map(b=>({...b,stay_state:stays.get(b.id)||'pending'}))});
+    }
     if(url.pathname==='/rest/v1/rpc/get_booking_metrics'){
       const body=JSON.parse(init.body),propertyId=propertyFor(identity.index);
       if(identity.index===2||body.p_property!==propertyId)return json({message:'property_not_owned'},403);
       const inventory=inventories.get(propertyId)?.inventory||{types:[],rooms:[]};
-      return json(require('./booking-metrics-fixture.cjs')(inventory,sample?.bookings||[],body.p_days,sample?.anchor||new Intl.DateTimeFormat('sv-SE',{timeZone:'Asia/Shanghai',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date())));
+      return json(require('./booking-metrics-fixture.cjs')(inventory,sample?.bookings.filter(b=>stays.get(b.id)!=='completed')||[],body.p_days,sample?.anchor||new Intl.DateTimeFormat('sv-SE',{timeZone:'Asia/Shanghai',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date())));
     }
     if (url.pathname.includes('/storage/v1/object/') && url.pathname.includes('/room-photos/')) {
       if(identity.index===2)return json({message:'Forbidden'},403);
