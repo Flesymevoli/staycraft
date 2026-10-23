@@ -92,6 +92,14 @@ if (process.env.STAYCRAFT_QA_AUTH_FIXTURES === '1') {
       const value={inventory:body.p_inventory,revision:require('node:crypto').randomUUID()};inventories.set(propertyId,value);return json(value);
     }
     if (url.pathname === '/rest/v1/direct_bookings') {
+      if(process.env.STAYCRAFT_QA_REVENUE==='1'){
+        if(identity.index===2)return json({code:'42501'},403);
+        const month=new Intl.DateTimeFormat('sv-SE',{timeZone:'Asia/Shanghai',year:'numeric',month:'2-digit'}).format(new Date());
+        const item={id:'11111111-1111-4111-8111-111111111111',room_number:'101',type_name:'花园大床房',arrival:month+'-01',departure:month+'-04',total:'100.01',status:'confirmed',stay_state:'completed'};
+        const rows=identity.index===1&&url.searchParams.get('arrival')==='lt.'+new Date(new Date(month+'-01T00:00:00Z').setUTCMonth(Number(month.slice(5)))).toISOString().slice(0,10)?[item]:[];
+        return new Response(JSON.stringify(rows),{status:200,headers:{'Content-Type':'application/json','Content-Range':rows.length?'0-0/1':'*/0'}});
+      }
+
       if(identity.index===2)return json({code:'42501'},403);
       if(sample){
         if(identity.id!==sample.ownerId)return json([]);

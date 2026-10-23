@@ -3,11 +3,11 @@ const fs=require('node:fs');
 const path=require('node:path');
 process.chdir(path.resolve(__dirname,'..'));
 const checks=[
- ['qa-business-analysis.cjs'],['qa-revenue-insights.cjs'],['qa-release-config.cjs'],
+ ['qa-business-analysis.cjs'],['qa-revenue-insights.cjs'],['qa-revenue-source.cjs'],['qa-release-config.cjs'],
  ['qa-workspace.cjs'],['qa-property-profile.cjs'],['qa-room-cloud.cjs'],['qa-booking-metrics.cjs'],
  ['qa-booking-details.cjs'],['qa-room-actions.cjs'],['qa-room-scroll.cjs'],
  ['qa-formal-stays.cjs'],['qa-arrival-cleaning.cjs'],['qa-cancellation-review.cjs','approve'],['qa-cancellation-review.cjs','reject'],
- ['qa-booking-next-steps.cjs'],['qa-revenue-preview.cjs'],['qa-ui-parity.cjs'],
+ ['qa-booking-next-steps.cjs'],['qa-revenue-preview.cjs'],['qa-formal-revenue.cjs'],['qa-ui-parity.cjs'],
  ['qa-recovery.cjs'],['qa-hosted.cjs'],
 ];
 const report={started:new Date().toISOString(),scope:'Isolated fixtures and hosted smoke; no live account writes or public deployment.',results:[]};
