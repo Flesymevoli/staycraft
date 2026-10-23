@@ -1,4 +1,4 @@
-const { chromium } = require('C:/Users/86299/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright');
+const { chromium } = require('./qa-browser.cjs');
 const { spawn } = require('node:child_process');
 const { zipSync, strToU8 } = require('fflate');
 const path = require('node:path');

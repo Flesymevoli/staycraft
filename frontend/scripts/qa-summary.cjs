@@ -1,4 +1,4 @@
-const {chromium}=require('C:/Users/86299/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright');
+const {chromium}=require('./qa-browser.cjs');
 (async()=>{
 const b=await chromium.launch({headless:true}); const p=await b.newPage({viewport:{width:390,height:844}});
 await p.goto('http://localhost:3000/native-analysis');

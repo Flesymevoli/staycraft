@@ -1,10 +1,10 @@
 # Staycraft
 
-民宿经营工作台。目前已接通基本资料、房型/客房图片、直接预订、订单、首页待办、站内客人消息/人工回复，以及基于已确认时间资料的回复草稿与依据。真实模型调用保持关闭；未来7/28天的订单预订分析与首页指标已接通；实际入住退房、逾期取消审核动作及市场探索尚未完成。
+民宿经营工作台。目前已接通基本资料、房型/客房图片、直接预订、订单、首页待办、站内客人消息/人工回复，以及基于已确认时间资料的回复草稿与依据。真实模型调用保持关闭；未来7/28天的订单预订分析与首页指标已接通；实际入住退房与逾期取消审核已接通；市场探索、正式收入和首页AI仍待完善。
 
 ## 运行与部署
 
-使用Node.js 24，在frontend目录运行npm ci、npm run dev。正式入口/app需要Supabase公开URL/key和已关联民宿账号，变量见frontend/.env.example。npm run check执行lint与构建，npm start运行构建后服务。
+使用Node.js 24，在frontend目录运行npm ci、npm run dev。正式入口/app需要Supabase公开URL/key和已关联民宿账号，变量见frontend/.env.example。npm run check执行lint与构建，npm start运行构建后服务。npx playwright install chromium后可用npm run release:check运行统一发布检查。
 
 根网址进入正式工作台，未登录转登录页。Vercel项目根目录为frontend，配置与限制见[部署说明](docs/DEPLOYMENT.md)。只完成部署准备，尚未公开发布。
 

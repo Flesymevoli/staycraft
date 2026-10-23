@@ -1,43 +1,62 @@
-# Staycraft 部署准备
+# Staycraft 受控部署验收
 
-当前只准备部署经营端资料、客房、订单和日程闭环，没有执行部署或公开发布。客人端主要作为数据入口；完整经营演示样本将单独维护，不将示例当真实用户资料。
+更新：2026-10-23。当前准备的是经营端v1受控验收版本；尚未公开发布。功能事实以CURRENT_BASELINE、TODO及发布检查报告为准。
 
-## 最小部署组成
+## 发布组成
 
-Vercel项目根目录选frontend，框架Next.js，Node.js 24.x。frontend/vercel.json使用npm ci安装、npm run check进行lint和构建。当前云端闭环只需要Next.js和Supabase，不要求部署FastAPI；AI/SQLite示例服务保持独立。
+Vercel项目Root Directory选`frontend`，框架Next.js，Node.js 24.x。安装`npm ci`，构建`npm run check`（已在vercel.json配置）。其他Node平台执行同样命令后`npm start`，反向代理提供HTTPS；不要公开运行开发服务器。部署产物、源码与环境变量应来自同一次版本，更新公开变量后重新构建。
 
-根网址进入/app，未登录转/login。健康检查/api/health仅验证服务运行，不冒充数据库可用。配置NEXT_PUBLIC_SUPABASE_URL和NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY；不要上传.env.local，不要用secret/service_role key替代公开key。
+Next.js和Supabase即可运行经营资料、房型/图片、客房、预订、入住/退房、取消审核、站内消息及预订指标。FastAPI是回复草稿可选服务；未部署它时可继续人工回复。仓库内旧SQLite/native演示不是线上依赖。
 
-HOMESTAY_LOCAL_DATA必须为0；Vercel自动启用托管模式，其他Node平台设置STAYCRAFT_HOSTED=1。缺配置或错误启用本机数据会阻止托管服务启动。公开变量改变后重新构建部署。
+## 配置
 
-托管模式关闭/native-*、/legacy、旧HTML、/api/demo/*、/api/local/*及不带property的独立客人原型；登录页隐藏原型链接。本机保留示例。后续若需在线展示完整示例经营端，应单独准备明确标记的演示环境与固定数据，不能直接放开真实账号数据边界。
+| 变量 | 线上设置 |
+|---|---|
+| NEXT_PUBLIC_SUPABASE_URL | 目标项目HTTPS地址 |
+| NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY | sb_publishable_公开key；绝不可填secret或service-role |
+| HOMESTAY_LOCAL_DATA | 0 |
+| STAYCRAFT_HOSTED | 非Vercel平台设1；Vercel自动检测 |
+| STAYCRAFT_OPERATOR_SAMPLE / STAYCRAFT_QA_AUTH_FIXTURES / STAYCRAFT_QA_FORMAL_STAYS | 不设置；误设1会拒绝启动 |
+| WORKSPACE_BACKEND_URL | 可选；部署草稿服务后填其HTTPS地址，否则不设置 |
 
-## 数据和账号
+不要上传.env.local、backend/.env或本机数据。NEXT_PUBLIC_变量属于浏览器公开配置。正式模型开关保持关闭；部署草稿服务也不等于获得真实资料模型调用授权。
 
-现有Supabase已应用客房、图片与direct_bookings迁移。早期控制台初始化与CLI历史尚未完全对账，不盲目db push或重复建表。新环境先核对迁移再准备Auth测试账号。一个有效账号首次访问会自动建立自己的唯一空民宿，无需手工配置成员；尚无前端自助注册页面。
+Supabase项目当前为husrpqalpjjswpvrkxet。一账号一民宿，首次登录创建自己的空容器；邮箱密码登录，尚无前端自助注册或密码找回。测试账号由管理员在Auth控制台准备；不要用本机demo@example.invalid账户尝试线上登录。
 
-当前使用邮箱密码登录，没有OAuth回调。部署后将实际域名配置为Supabase Auth Site URL；以后新增邮件验证/找回密码时，再逐项配置实际回调地址，不将这些功能标为已实现。
+## 发布前统一检查
 
-先用受控测试账号、虚构资料验收，发布前确定部署保护和邀请范围。匿名直订尚缺完整反滥用限流及浏览器丢失后订单找回，不作为面向陌生客人的商用服务。课程以经营端示例为主，客人端不接收付款。
+在frontend运行：
 
-## 发布与回退
+```powershell
+npm ci
+npx playwright install chromium
+npm run release:check
+```
 
-先运行npm run check。经营端回归：scripts/qa-room-cloud.cjs、qa-workspace-bookings.cjs、qa-workspace.cjs、qa-property-profile.cjs、qa-room-import.cjs、qa-hosted.cjs，脚本必须串行运行以免3104端口冲突。
+统一检查先做lint/build，再串行运行隔离QA；测试都使用虚构夹具，不运行真实订单写入脚本，也不调用模型。端口3104须空闲。结果写入被Git忽略的`frontend/qa-release-report.json`，首次失败即停止。单独执行`npm audit --omit=dev --audit-level=high`核对生产依赖；可复现计算测试与浏览器版本跟随lockfile。CI执行相同流程，但不会自动部署。
 
-更新预览环境后检查登录、保存图片/房间、订单、日期日程、退出；两个真实账号的浏览器隔离仍需发布前验证。确认后才更新稳定演示版本；尚未执行任何部署。
+发布检查不等于真实账号与域名验收。授权发布后，先创建受部署保护的预览环境，完成下面清单，再确定是否转稳定版本。
 
-页面问题回退到上一已验证部署或Git提交。数据库不随代码自动降级，不删除用户订单和图片；结构变更采用增量迁移、先备份、再前向修复。
+## 实际部署环境验收
 
-## 官方资料
+1. 配置HTTPS域名与访问保护；在Supabase Auth更新Site URL。当前没有OAuth/邮件回调流程，不声称注册找回已支持。
+2. 用专用虚构测试账号A登录；未登录页面与API不可访问。退出后刷新、返回工作台应要求重新登录。
+3. 保存虚构资料，上传房型图片、添加/编辑房号，刷新检查持久化。使用账号B确认看不到A的资料、图片、订单和会话。
+4. 只在专用测试民宿上创建客人预订/消息，核对经营端同步；确认入住、退房转待清洁、清洁撤销、逾期取消批准/拒绝以及重复操作。
+5. 检查7/28天预订指标、中文/英文切换及手机宽度。正式营业额应显示未接入；不得显示本机演示金额。
+6. 检查404与异常恢复、健康检查`/api/health`、禁止收录标记。健康检查只表示进程可用；数据库状态需以上业务验收确认。
 
-[Vercel项目根目录](https://vercel.com/docs/monorepos)、[环境变量](https://vercel.com/docs/environment-variables)、[Node版本](https://vercel.com/docs/functions/runtimes/node-js/node-js-versions)。
+2026-10-23只读核对：相关7张公开业务表RLS开启，6个预订/入住/审核/客人接口公开包装为security invoker；room-photos私有。当前远端有11条迁移记录，前期控制台初始化和本地迁移时间戳存在历史差异，详见supabase/README；不要盲目db push。安全扫描仍提醒Auth泄漏密码保护未启用；管理员可在账号安全设置中评估开启。
 
+## 本版能力边界
 
-站内消息补充（2026-10-22）：guest_conversations迁移已应用，Next与Supabase即可运行本站留言/人工回复，不增加FastAPI部署依赖。回复回执仅代表写入本站会话，尚无推送、已读、会话找回或历史分页；客人每分钟及单会话限额不是完整IP反滥用方案，仍按受控演示定位。AI草稿后续独立接入，当前不向模型发送真实资料。
+- 正式可用：资料/房型/客房、图片、直订与分房、订单、入住退房、取消审批、站内人工消息、日期待办、预订占用率/进度与规则分析。
+- 仅本机演示：营业额、收入热力日历与收入结构分析；demo@example.invalid隔离进程。不能打开测试开关把它部署上线。
+- 尚未完成：正式营业额后端、市场探索来源、首页问AI/完整处理记录、客人评分反馈、前端注册/密码找回。保留原任务，不暗中删除或声称实现。
+- 客人站仅为受控数据来源；尚无完整IP反滥用、订单跨设备找回与商用客服保障。无真实付款或退款，不作为面向陌生客人的商用预订平台。
 
+## 回滚与更新
 
-草稿服务补充（2026-10-22）：资料/客房/订单/站内人工消息仍只需Next+Supabase；准备回复草稿另需FastAPI。Next配置WORKSPACE_BACKEND_URL（本机http://127.0.0.1:8014，托管必须HTTPS），后端配置SUPABASE_URL和publishable key，用已验证用户访问令牌读取RLS资料。HOMESTAY_LOCAL_DATA=0。前后端均不需要service-role/secret key。
+发布记录绑定Git提交和环境配置。页面问题回退到前一已验证部署；代码回滚不回滚或删除订单、图片。数据库使用增量迁移、先备份、再前向修复，禁止自动降级或重新执行初始化SQL。
 
-后端FORMAL_MODEL_ENABLED默认0，与旧MODEL_ENABLED分开；当前本机二者都为0，因此只生成资料规则建议。以后取得数据范围授权并配置允许的模型后，才同时启用两个开关，密钥只在FastAPI环境。模型超时或返回无效内容回退规则并标注，所有结果仍需人工审核。草稿后端不可用不影响站内人工回复；目前没有部署FastAPI或网页到公网。
-
-预订分析无需FastAPI：Next直接通过用户会话读取Supabase只读指标RPC。部署前需包含20261022141345_booking_metrics迁移；仅支持未来7/28天当前库存口径，不依赖模型配置。正式数据与本机样本仍分开。
+用户允许后可从固定Git版本建立预览；目前未向GitHub推送本轮提交、未创建Vercel项目或域名、未公开发布。检查点和验证日志见DEVELOPMENT_STATUS、ROLLBACK。

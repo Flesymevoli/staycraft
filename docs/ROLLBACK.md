@@ -207,3 +207,5 @@ Work视觉调整（2026-10-23）：revert对应提交并重建恢复旧房态网
 2026-10-23 经营分析内容：前一检查点7a86910。回滚本轮business-analysis.ts及分析组件/样式/相关QA和文档即可；无数据库迁移、无环境变量变化。
 
 收入分析前端回滚基点4fbfd9c；撤销本轮revenue-preview组件/样式/lib与收入QA、文档，无数据库变化。
+
+2026-10-23发布收尾：前一检查点de3c872。回滚代码时同时恢复package.json/lockfile并npm ci，再构建；该旧版本含已知Next依赖安全报告，回滚不等于允许公开上线。本轮没有数据库迁移，禁止删表/订单/图片。用户未跟踪operator-desktop.css、根scripts/和tmp/保持原样。

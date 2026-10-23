@@ -1,40 +1,39 @@
-# Supabase 开发项目初始化
+# Supabase 当前结构与迁移
 
-本目录仅属于 Staycraft 自主开发，与课程 Softr 数据独立。
+更新：2026-10-23。仅属Staycraft自主开发；课程Softr数据独立。当前模型为一个Auth账号拥有一家民宿，不再使用早期成员归属方案。
 
-## 当前边界
+## 当前结构
 
-Auth 邮箱登录已连接，用户在浏览器成功登录已观察确认。五页仍使用本机虚构数据；登录成功不代表云端业务、成员隔离或消息渠道已经接入。
+- properties.owner_user_id唯一，资料在property_details。
+- room_types与rooms为房型/实际客房规范化来源；property_inventory旧快照只读兼容。
+- direct_bookings含住宿日期、订单价格快照、预订/取消审核状态、显式stay_state及入住/退房时间。
+- conversations/messages提供站内会话；reply_drafts保留人工审核草稿。
+- room-photos为私有桶，图片只能通过获授权路径读取。
 
-首份迁移 `migrations/202610150001_property_access.sql` 尚未执行到云端。它在一个事务中建立 properties/property_memberships、启用 RLS、撤销匿名及客户端写权限，并只授予 authenticated 受 RLS 约束的读取权限。不创建用户，不改变密码。
+2026-10-23只读核对：properties/property_details/room_types/rooms/direct_bookings/conversations/messages均启用RLS；预订指标、入住/退房、取消审核、直订与客人消息公开RPC包装为invoker，内部权限检查保留。未修改真实订单或账号。完整字段见migrations，当前范围见docs/CURRENT_BASELINE.md。
 
-## 执行
+## 远端迁移记录
 
-开发者已准备 `local/staycraft-setup.sql`（Git 忽略），把基线迁移、当前测试账号关联和数据库内权限断言合并为一个事务。该文件只适用于 husrpqalpjjswpvrkxet 项目；在其 SQL Editor 的新查询里完整执行一次。不要先单独执行迁移，再执行合并脚本。
+当前项目husrpqalpjjswpvrkxet，Management API返回的记录如下。本地同名SQL时间戳可能不同，不能据此推断未执行。
 
-预期最后返回 `setup_status = ready`。脚本找不到指定且已确认的账号、表已存在或权限断言失败，整个事务回滚；保留错误信息用于诊断，不通过关闭 RLS、替换密钥或删表来绕过。
+| 远端版本 | 名称 |
+|---|---|
+| 20261022002652 | property_inventory |
+| 20261022002912 | direct_bookings |
+| 20261022012130 | single_account_property |
+| 20261022012849 | normalized_rooms |
+| 20261022013109 | booking_room_index |
+| 20261022100854 | guest_conversations |
+| 20261022134911 | conversation_reply_drafts |
+| 20261022141826 | booking_metrics |
+| 20261023023304 | booking_stays |
+| 20261023024506 | cancellation_review |
+| 20261023024604 | guest_review_projection |
 
-验证含：指定用户可读取本示例民宿；无成员关系的用户不能读取该民宿或成员行；匿名无读权限；客户端无新增/改写成员权限。这是数据库角色与 JWT claims 的事务内测试，不替代真实两个账号的端到端验收。执行后还须核对 REST 读写权限、后端访问接口和真实账号隔离。
+早期properties/property_details由控制台初始化，未完整登记CLI历史。不要重跑local/staycraft-setup.sql、不要直接db push、不要删除表来修复迁移历史。新环境需要按依赖核对所有SQL、扩展、grants、RLS及存储；迁移历史对账必须比较实际schema后单独处理。当前发布使用已核对的现有项目，不声称空白项目一键重建已验收。
+
+supabase/tests为事务回滚夹具，原验证结果见docs/DEVELOPMENT_STATUS.md；它们不替代实际两账号浏览器隔离验收。安全扫描仍有Auth泄漏密码保护未启用提醒。
 
 ## 回滚
 
-本轮云端执行前不影响现有 SQLite 数据。执行失败会回滚新增表和关联；执行成功后不要直接删表，先导出备份并检查是否已有业务依赖。需暂停访问时，由管理员撤销本次明确关联的成员行或收回指定表 API grants，保留账号、表与数据；不关闭 RLS。尚未执行的迁移可通过 Git revert 回退源码。
-
-## 资料表准备（2026-10-22）
-
-新增尚未执行迁移20261021174207_property_details.sql。local/staycraft-setup.sql已更新，合并基线、资料表、当前测试账号关联与事务内RLS读写断言；成功提交只保留空的民宿容器和成员关系，临时资料测试行/隔离容器在提交前删除。此SQL会允许经RLS验证的owner/manager读取、新建和更新本民宿资料；匿名不能读写，成员不能改归属或删除资料。需要用户在执行前明确确认；不能沿用浏览器中旧版未更新的SQL。
-
-文件提取不需要资料表即可给已登录账号预览；确认保存必须先初始化云端。未经真实执行和测试，不声称生产资料已保存或AI已使用。
-
-## 已执行状态（2026-10-22）
-
-用户确认后，两份迁移已在指定项目SQL Editor执行并返回ready，账号成员关联及事务内RLS断言通过。真实登录会话确认保存、刷新恢复均通过；临时资料按完整值限定清理，返回1行，表单恢复为空。此前“尚未执行”描述为历史记录。
-
-不要再次运行local/staycraft-setup.sql。当前是控制台直接执行，尚未记录CLI迁移历史；后续CLI同步必须先核对远端schema再处理历史，不直接db push重建。两个真实账号端到端隔离尚未验收，正式Work尚未读取这份资料。
-
-
-## 房间配置迁移（2026-10-22，未执行）
-
-新增20261021190759_property_inventory.sql，建立有界配置文档、稳定房间ID保护和private room-photos桶，成员只读写自己民宿，匿名不可读取。不要重新运行之前两表初始化脚本。
-
-supabase/local/inventory-setup.sql（Git忽略）合并本次单独迁移与角色断言，适用指定Staycraft项目，成功返回inventory_ready。会临时写入虚构房型/房号用于断言，并在同一事务提交前删除，保留空配置。当前因浏览器控制台连接超时、CLI未登录尚未执行；执行后须真实验证图片上传/下载、保存刷新与非成员隔离，不能把隔离QA当作云端成功。
+代码可回退Git检查点；数据库不自动降级。先导出备份，保留订单与图片，用增量前向修复。营业额仍未连接正式订单，不启用真实模型调用。部署步骤见docs/DEPLOYMENT.md。

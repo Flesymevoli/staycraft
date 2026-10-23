@@ -1,4 +1,4 @@
-const {chromium}=require('C:/Users/86299/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright');
+const {chromium}=require('./qa-browser.cjs');
 const {spawn}=require('node:child_process');const path=require('node:path');const assert=require('node:assert/strict');const base='http://127.0.0.1:3104';
 function cookie(index){const id=['aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa','bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb'][index];const enc=v=>Buffer.from(JSON.stringify(v)).toString('base64url');const token=`${enc({alg:'HS256',typ:'JWT'})}.${enc({sub:id,exp:4102444800,iat:1700000000,aud:'authenticated',role:'authenticated'})}.qa-signature`;return{name:'sb-husrpqalpjjswpvrkxet-auth-token',value:'base64-'+enc({access_token:token,refresh_token:'qa',expires_at:4102444800,expires_in:3600,token_type:'bearer',user:{id}}),url:base};}
 (async()=>{

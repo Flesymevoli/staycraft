@@ -1,4 +1,4 @@
-const {chromium}=require('C:/Users/86299/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright');
+const {chromium}=require('./qa-browser.cjs');
 const assert=require('node:assert/strict');
 const base=process.env.GUEST_QA_URL || 'http://127.0.0.1:3105';
 (async()=>{

@@ -18,8 +18,7 @@
   min-height: 100dvh;
   margin: 0 auto;
   padding: 18px 24px 56px;
-  background: radial-gradient(ellipse 420px 270px at 0 0, #f3ded2bb, transparent),
-    radial-gradient(ellipse 400px 280px at 100% 0, #dfdaf1b0, transparent), #f8f9fb;
+  background: #f8f9fb;
 }
 .auth-header { height: 44px; display: flex; align-items: center; justify-content: space-between; }
 .auth-kicker { color: #61656d; font-size: 10px; letter-spacing: .15em; }

@@ -1,5 +1,5 @@
 // Uses a fresh isolated fictional database: records both existing owner plans.
-const { chromium } = require('C:/Users/86299/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright');
+const { chromium } = require('./qa-browser.cjs');
 const assert = require('node:assert/strict');
 (async () => {
   const browser = await chromium.launch();

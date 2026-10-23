@@ -1,4 +1,4 @@
-const {chromium}=require('C:/Users/86299/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright');
+const {chromium}=require('./qa-browser.cjs');
 const {spawn}=require('node:child_process'),path=require('node:path'),assert=require('node:assert/strict');
 const base='http://127.0.0.1:3104',property='dddddddd-dddd-4ddd-8ddd-dddddddddddd';
 (async()=>{const child=spawn(process.execPath,['--require',path.resolve('scripts/qa-workspace-fixture.cjs'),'node_modules/next/dist/bin/next','start','--hostname','127.0.0.1','--port','3104'],{env:{...process.env,STAYCRAFT_QA_AUTH_FIXTURES:'1',STAYCRAFT_OPERATOR_SAMPLE:'1',HOMESTAY_LOCAL_DATA:'0'},stdio:['ignore','pipe','pipe']});let output='',browser;

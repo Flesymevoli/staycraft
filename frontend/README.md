@@ -1,11 +1,11 @@
 # Staycraft 前端
 
-Next.js App Router、React、TypeScript；Node.js 24。npm ci后运行npm run dev；npm run check执行lint和构建，npm start运行构建后服务。
+Next.js App Router / React / TypeScript，Node.js 24。`npm ci`后`npm run dev`本机开发；`npm run check`做lint和生产构建，`npm start`运行构建。
 
-/app为首页日期日程与客房数量；/app/work为客房概览、添加/详情和预订订单；/app/mine为基本资料和房型维护。Analysis、Explore正式页仍为待接入状态。默认根网址进入/app，未登录转/login。
+正式入口/app需Supabase公开URL/publishable key和Auth账号。一账号一民宿，首次登录为空容器。Work管理房态、订单、入住退房、取消审核和站内消息；Mine维护资料与房型；Analysis提供自身预订分析。营业额仅本机演示，Explore来源与首页AI尚未接通。
 
-配置.env.local中的Supabase公开URL/publishable key，并使用已关联民宿账号；上述云端闭环不要求启动FastAPI。工作台生成的/guest?property=...仅作为云端数据入口，不接支付。
+构建后`npm run sample`在127.0.0.1:3106运行隔离虚构演示，重启还原。不要在线上启用测试开关。
 
-本机/native-*仍是独立示例，需要FastAPI的功能按backend/README配置。托管模式关闭旧示例，具体步骤见[DEPLOYMENT](../docs/DEPLOYMENT.md)。
+安装浏览器`npx playwright install chromium`后，`npm run release:check`运行可复现发布检查。旧native/后端专用QA不全部属于发布检查；`qa-direct-bookings`涉及真实数据库，不能自动运行或指向用户民宿。
 
-经营端QA脚本使用隔离身份和数据夹具，串行运行以免测试端口冲突。qa-direct-bookings须明确选择专用虚构测试民宿才运行，不能指向用户民宿。
+[部署配置与实际环境验收](../docs/DEPLOYMENT.md)。

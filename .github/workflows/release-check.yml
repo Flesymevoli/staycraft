@@ -1,0 +1,39 @@
+name: Release checks
+on:
+  workflow_dispatch:
+  push:
+    paths: ['frontend/**', 'supabase/**', '.github/workflows/release-check.yml']
+  pull_request:
+    paths: ['frontend/**', 'supabase/**', '.github/workflows/release-check.yml']
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    defaults:
+      run:
+        working-directory: frontend
+    env:
+      NEXT_PUBLIC_SUPABASE_URL: https://husrpqalpjjswpvrkxet.supabase.co
+      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_release_fixture_only
+      HOMESTAY_LOCAL_DATA: '0'
+      STAYCRAFT_HOSTED: '0'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm audit --omit=dev --audit-level=high
+      - run: npm run release:check
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: isolated-release-checks
+          path: frontend/qa-release-report.json
+          if-no-files-found: ignore
+          retention-days: 7

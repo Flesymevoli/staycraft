@@ -1,6 +1,6 @@
 const assert=require('node:assert/strict'),path=require('node:path');
 const {spawn,spawnSync}=require('node:child_process');
-const {chromium}=require('C:/Users/86299/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright');
+const {chromium}=require('./qa-browser.cjs');
 const {createSample}=require('./operator-sample-data.cjs');
 const date='2026-10-22',base='http://127.0.0.1:3104';
 const rollover=createSample('2026-12-31');assert.equal(rollover.bookings[2].departure,'2027-01-03');

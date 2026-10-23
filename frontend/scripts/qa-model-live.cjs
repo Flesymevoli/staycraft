@@ -1,5 +1,5 @@
 // Opt-in paid API smoke test: fictional data only, one model call.
-const {chromium}=require('C:/Users/86299/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright');
+const {chromium}=require('./qa-browser.cjs');
 const assert=require('node:assert/strict');
 (async()=>{
  if(process.env.RUN_PAID_MODEL_TEST!=='1') throw Error('Explicitly set RUN_PAID_MODEL_TEST=1; this test makes one paid model call.');

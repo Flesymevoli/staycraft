@@ -256,3 +256,6 @@ lint/build、qa-ui-parity、qa-workspace-bookings、qa-conversation-drafts、qa-
 
 ## 2026-10-23 收入分析前端
 在营业额月历内增加房型贡献与日期集中判断，保留完成订单口径。qa-revenue-insights验证跨月分摊、金额守恒、取消/未完成排除、并列与空月份；qa-revenue-preview验证峰值日期定位、切月空态、双语与宽度，截图已查。npm run check通过。无云端或模型调用。回滚基点4fbfd9c。
+
+## 2026-10-23 受控部署收尾
+修复Next生产依赖安全报告并锁定Next16.4.2/浏览器1.62.1；npm ci重装、lint/TS/build通过，生产audit为0。发布检查18项全通过，详见RELEASE_READINESS。增加统一404/异常重试、robots/noindex及托管QA开关拒绝；修复入住读取失败误判空闲/未入住以及待办计数，加入失败/重试回归。旧测试同步当前卡片/提示/路由播报元素，浏览器路径改为项目依赖。新增CI但尚未推送/运行远端CI。云端只读核对，无真实订单写入、无模型或公开部署。文档更新数据库迁移映射，保留尚未完成功能。前一检查点de3c872；旧版本安全报告不宜公开部署。
