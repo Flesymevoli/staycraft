@@ -2,6 +2,7 @@
 import {useState} from "react";
 import Link from "next/link";
 import {BedDouble,CalendarDays,Tag,TrendingUp} from "lucide-react";
+import {RevenuePreview} from "./revenue-preview";
 import {useBookingMetrics} from "./booking-metrics";
 import "./workspace-analysis.css";
 export function HomeBookingOverview({scope,zh}:{scope:string;zh:boolean}){
@@ -14,6 +15,7 @@ export function WorkspaceAnalysis({scope,zh}:{scope:string;zh:boolean}){
  const changeDays=(value:7|28)=>{setDays(value);setSelected(null)};
  const rate=data?.rate_min==null?"—":data.rate_min===data.rate_max?`¥${data.rate_min}`:`¥${data.rate_min}–${data.rate_max}`;
  return <div className="workspace-analysis">
+ <RevenuePreview zh={zh}/>
  <div className="booking-analysis-toolbar"><div className="booking-analysis-range" role="group" aria-label={t("Booking period","预订统计期间")}>{([7,28] as const).map(value=><button type="button" key={value} aria-pressed={days===value} onClick={()=>changeDays(value)}>{t(`Next ${value} days`,`未来${value}天`)}</button>)}</div><button className="inventory-text" type="button" onClick={retry}>{t("Refresh","刷新")}</button></div>
  <p className="booking-analysis-source">{data?`${data.period_start} — ${data.period_end} · ${t("Current bookings","当前订单快照")}`:t("Your bookings","自身预订")}</p>
  {status==="loading"&&<p role="status">{t("Reading booking data…","正在读取订单指标…")}</p>}{status==="error"&&<p role="alert">{t("Booking metrics could not be loaded. Please refresh.","订单指标暂时无法读取，请刷新重试。")}</p>}
