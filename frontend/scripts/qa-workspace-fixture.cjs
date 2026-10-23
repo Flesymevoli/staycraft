@@ -43,6 +43,14 @@ if (process.env.STAYCRAFT_QA_AUTH_FIXTURES === '1') {
     if (!identity) return json({ message: 'Invalid session' }, 401);
     if (url.pathname === '/auth/v1/user') return json({ id: identity.id, email: `account-${identity.index}@example.invalid`, aud: 'authenticated', role: 'authenticated', app_metadata: {}, user_metadata: {}, identities: [], created_at: '2026-01-01T00:00:00Z' });
     if (url.pathname === '/auth/v1/logout') return json({});
+    if(url.pathname==='/rest/v1/rpc/review_booking_cancellation'){
+      const body=JSON.parse(init.body||'{}');if(!sample||identity.id!==sample.ownerId||body.p_property!==sample.propertyId)return json({message:'property_not_owned'},403);
+      const b=sample.bookings.find(b=>b.id===body.p_booking),result=body.p_decision==='approve'?'review_approved':'review_rejected';
+      if(!b||!['approve','reject'].includes(body.p_decision))return json({message:'review_changed'},409);
+      if(b.refund_result===result)return json({id:b.id,status:b.status,refund_result:result});
+      if(b.refund_result!=='review_pending'||b.status!=='confirmed'||stays.get(b.id)&&stays.get(b.id)!=='pending')return json({message:'review_changed'},409);
+      b.refund_result=result;b.status=body.p_decision==='approve'?'cancelled':'confirmed';return json({id:b.id,status:b.status,refund_result:result});
+    }
     if(['/rest/v1/rpc/sample_stays','/rest/v1/rpc/get_booking_stays','/rest/v1/rpc/change_booking_stay'].includes(url.pathname)){
       if(!sample)return json({bookings:[]});
       const body=JSON.parse(init.body||'{}');

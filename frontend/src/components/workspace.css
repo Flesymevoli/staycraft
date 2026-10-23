@@ -142,3 +142,8 @@
 
 .workspace-work .inventory-room.is-occupied { background:#edf3fb; border-color:#d7e3f2; }
 .room-action-content .native-primary { margin:8px 8px 8px 0; }
+
+.cancellation-review { padding-top:18px; margin-top:18px; border-top:1px solid var(--hairline); }
+.cancellation-review h3 { font-size:16px; margin:0 0 8px; }
+.cancellation-review p { font-size:12px; line-height:1.7; color:var(--muted); }
+.cancellation-review > div { display:flex; flex-wrap:wrap; gap:10px; }

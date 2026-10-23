@@ -1,6 +1,7 @@
 "use client";
 import {useEffect,useRef,useState} from "react";
 import Link from "next/link";
+import {CancellationReview} from "./cancellation-review";
 import {useBookingStays} from "./booking-stays";
 import {ChevronRight,ArrowLeft} from "lucide-react";
 type Booking={id:string;room_number:string;type_name:string;arrival:string;departure:string;guest_name:string;expected_arrival:string;total:number;status:string;refund_result?:string;created_at?:string};
@@ -23,6 +24,8 @@ export function WorkspaceBookings({date,zh,propertyId,roomId,bookingId}:{date?:s
  {item.created_at&&<div><dt>{t("Booked at","下单时间")}</dt><dd>{new Date(item.created_at).toLocaleString(zh?"zh-CN":"en-GB",{timeZone:"Asia/Shanghai"})}</dd></div>}
  <div><dt>{t("Booking ID","订单编号")}</dt><dd>{item.id}</dd></div>
  </dl>
+ {item.refund_result==="review_pending"&&<CancellationReview booking={item.id} zh={zh} onReviewed={()=>setRetry(v=>v+1)}/>}
+ {item.refund_result==="review_rejected"&&<p className="booking-detail-note">{t("Cancellation request rejected. The reservation is retained.","取消申请已拒绝，预订保留。")}</p>}
  </>}</article>)}</div>}
  </section>;
 }

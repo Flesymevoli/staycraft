@@ -66,3 +66,5 @@ get_booking_metrics(property, days) 是仅认证owner可执行的只读RPC，保
 ## 2026-10-23入住状态
 
 direct_bookings.stay_state为pending/checked_in/completed，与status预订确认/取消分开；checked_in_at/checked_out_at为timestamptz。唯一部分索引(property_id,room_id)限制checked_in最多一条；时间一致性约束。现有业主RLS继续保护读取，authenticated无直接写权限，通过get_booking_stays/change_booking_stay操作。迁移20261023023304_booking_stays已应用；测试全部在事务回滚。
+
+取消审核扩展：refund_result新增review_approved/review_rejected，cancellation_reviewed_at/cancellation_reviewed_by记录审核。仅review_booking_cancellation RPC可受控写入；复用既有业主RLS。20261023024506_cancellation_review已应用。

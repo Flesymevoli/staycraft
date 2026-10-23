@@ -10,7 +10,7 @@ export function RoomActions({scope,roomId,zh,reserved,onClose}:{scope:string;roo
  const {data,save,writing,unavailable,reload}=useRoomPreview(scope),dialog=useRef<HTMLDialogElement>(null);
  const [error,setError]=useState(false),[undo,setUndo]=useState<PropertyInventory|null>(null);
  const room=data.inventory.rooms.find(r=>r.id===roomId),type=data.inventory.types.find(t=>t.id===room?.typeId);
- const occupied=stays.bookings.find(b=>b.room_id===roomId&&b.stay_state==="checked_in"),today=new Intl.DateTimeFormat("sv-SE",{timeZone:"Asia/Shanghai",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date()),arrival=stays.bookings.find(b=>b.room_id===roomId&&b.stay_state==="pending"&&b.status==="confirmed"&&!b.refund_result&&b.arrival<=today&&b.departure>today);
+ const occupied=stays.bookings.find(b=>b.room_id===roomId&&b.stay_state==="checked_in"),today=new Intl.DateTimeFormat("sv-SE",{timeZone:"Asia/Shanghai",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date()),arrival=stays.bookings.find(b=>b.room_id===roomId&&b.stay_state==="pending"&&b.status==="confirmed"&&b.refund_result!=="review_pending"&&b.arrival<=today&&b.departure>today);
  async function act(){const booking=occupied||arrival;if(!booking||stayBusy)return;setStayBusy(true);setUndo(null);setError(false);try{if(!await changeBookingStay(booking.id,occupied?"checkout":"checkin"))setError(true);await reload()}catch{setError(true)}finally{setStayBusy(false)}}
  const t=(en:string,cn:string)=>zh?cn:en;
  useEffect(()=>{const node=dialog.current;node?.showModal();return()=>node?.close()},[]);

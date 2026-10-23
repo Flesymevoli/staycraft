@@ -1,0 +1,7 @@
+"use client";
+import {useRef,useState} from "react";
+export function CancellationReview({booking,zh,onReviewed}:{booking:string;zh:boolean;onReviewed:()=>void}){
+ const [busy,setBusy]=useState(false),[error,setError]=useState(false),lock=useRef(false);const t=(en:string,cn:string)=>zh?cn:en;
+ async function review(decision:"approve"|"reject"){if(lock.current)return;lock.current=true;setBusy(true);setError(false);try{const r=await fetch("/api/workspace/cancellations",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({booking,decision})});if(!r.ok)throw new Error();window.dispatchEvent(new Event("staycraft-stays-changed"));onReviewed()}catch{setError(true)}finally{lock.current=false;setBusy(false)}}
+ return <section className="cancellation-review"><h3>{t("Cancellation request","取消申请")}</h3><p>{t("Approving cancels this booking and releases the room. Rejecting keeps the booking.","批准后取消订单并释放房量，拒绝则保留预订。")}</p><div><button className="native-primary" type="button" disabled={busy} onClick={()=>void review("approve")}>{busy?t("Saving…","正在保存…"):t("Approve cancellation","批准取消")}</button><button className="inventory-soft" type="button" disabled={busy} onClick={()=>void review("reject")}>{t("Reject request","拒绝申请")}</button></div>{error&&<p role="alert">{t("Not saved. The request may have changed; refresh to check before retrying.","未能保存，申请可能已更新。请刷新核对后再试。")}</p>}</section>
+}
