@@ -10,7 +10,7 @@ module.exports=function conversationFixture(sample,getProfile){
   const json=(body,status=200)=>new Response(JSON.stringify(body),{status,headers:{'Content-Type':'application/json'}});
   if(['/rest/v1/reply_automation_settings','/rest/v1/reply_automation_events'].includes(url.pathname)){
    if(!identity||identity.index===2||url.searchParams.get('property_id')!=='eq.'+propertyId)return json({message:'property_not_owned'},403);
-   return json(url.pathname.endsWith('settings')?(settings.has(propertyId)?[settings.get(propertyId)]:[]):[...events.values()].filter(e=>e.property_id===propertyId).sort((a,b)=>b.created_at.localeCompare(a.created_at)).map(({claim,version,...event})=>event));
+   return json(url.pathname.endsWith('settings')?(settings.has(propertyId)?[settings.get(propertyId)]:[]):[...events.values()].filter(e=>e.property_id===propertyId&&(!url.searchParams.has('state')||['replied','handoff'].includes(e.state))).sort((a,b)=>b.created_at.localeCompare(a.created_at)).map(({claim,version,...event})=>event));
   }
   if(url.pathname==='/rest/v1/rpc/control_reply_automation'){
    if(!identity||identity.index===2||body.p_property!==propertyId)return json({message:'property_not_owned'},403);

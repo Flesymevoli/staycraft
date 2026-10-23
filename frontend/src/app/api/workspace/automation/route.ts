@@ -3,8 +3,10 @@ import {boundedBody,requireSameOrigin,verifiedProperty,WorkspaceError,workspaceF
 export const dynamic="force-dynamic";
 export async function GET(){try{
  const {supabase,propertyId}=await verifiedProperty();const {data,error}=await supabase.from("reply_automation_settings").select("enabled,revision").eq("property_id",propertyId).maybeSingle();if(error)throw error;
- const history=await supabase.from("reply_automation_events").select("id,conversation_id,state,reason,engine,citation_key,citation_value,created_at").eq("property_id",propertyId).order("created_at",{ascending:false}).order("id").limit(30);if(history.error)throw history.error;
- return Response.json({enabled:data?.enabled||false,revision:data?.revision||null,available:automaticDeliveryAvailable(),events:history.data},{headers:{"Cache-Control":"no-store"}});
+ const history=await supabase.from("reply_automation_events").select("id,conversation_id,message_id,state,reason,engine,citation_key,citation_value,created_at").eq("property_id",propertyId).order("created_at",{ascending:false}).order("id").limit(30);if(history.error)throw history.error;
+ const inbox=await supabase.rpc("get_conversations",{p_property:propertyId});if(inbox.error||!Array.isArray(inbox.data))throw new Error();
+ const events=history.data.map(event=>({...event,active:inbox.data.some((thread:{id:string;latest?:{id:string;sender:string}})=>thread.id===event.conversation_id&&thread.latest?.id===event.message_id&&thread.latest?.sender==="guest")}));
+ return Response.json({enabled:data?.enabled||false,revision:data?.revision||null,available:automaticDeliveryAvailable(),events},{headers:{"Cache-Control":"no-store"}});
 }catch(error){return workspaceFailure(error)}}
 export async function POST(request:Request){try{
  requireSameOrigin(request);const {supabase,propertyId}=await verifiedProperty();let body;

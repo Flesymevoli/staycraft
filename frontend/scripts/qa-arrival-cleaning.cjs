@@ -21,7 +21,7 @@ mode='clean';await page.getByRole('button',{name:'刷新待办',exact:true}).cli
 mode='dirty';await page.getByRole('button',{name:'刷新待办',exact:true}).click();await urgent.waitFor();
 for(const next of ['cancelled','checked-in','completed']){mode=next;await visit();assert.equal(await urgent.count(),0);assert.equal(await page.locator('.home-todo-arrival').count(),0);}
 for(const next of ['inventory-error','booking-error','stays-error']){mode=next;await visit();await page.locator('.home-todos').getByRole('alert').waitFor();assert.equal(await urgent.count(),0);}
-mode='dirty';await page.getByRole('button',{name:'刷新待办',exact:true}).click();await urgent.waitFor();assert.deepEqual(errors,[]);
+mode='dirty';await page.getByRole('button',{name:'刷新待办',exact:true}).click();await urgent.waitFor();await page.goto(base+'/app/work');await page.getByRole('region',{name:'需优先处理',exact:true}).locator('.home-todo-prepare').waitFor();mode='clean';await page.getByRole('button',{name:'刷新待办',exact:true}).click();await page.getByRole('region',{name:'需优先处理',exact:true}).waitFor({state:'detached'});assert.deepEqual(errors,[]);
 console.log('PASS linked arrival/cleaning to-do: priority, deduplication, counts, room destination, languages, widths, cleaning refresh, cancellation/stay suppression, failures and retry. Isolated fixtures only.');
 }finally{if(browser)await browser.close();child.kill()}})().catch(error=>{console.error(error);process.exitCode=1});
 

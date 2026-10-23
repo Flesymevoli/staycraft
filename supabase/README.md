@@ -39,3 +39,5 @@ supabase/tests为事务回滚夹具，原验证结果见docs/DEVELOPMENT_STATUS.
 代码可回退Git检查点；数据库不自动降级。先导出备份，保留订单与图片，用增量前向修复。营业额仍未连接正式订单，不启用真实模型调用。部署步骤见docs/DEPLOYMENT.md。
 
 2026-10-23自动化增量：本地20261023093119_reply_automation对应远端20261023093937；另有reply_automation_fact_gate加数据库敏感请求硬校验。新增reply_automation_settings（默认false）、reply_automation_events（owner RLS、claim不授予读取），conversations人工接管字段与messages自动来源字段。匿名RPC仅凭客人自己的会话能力处理最新问题，回复由数据库当前时间事实构造，不接收任意文案。public包装函数为invoker，受限definer在private；SQL验证supabase/tests/reply_automation.sql始终rollback。不盲目重复旧迁移。
+
+后续增量booking_amounts扩展同一stable invoker指标RPC的金额/均价字段；operation_activity由private受限trigger记录真实事务结果，authenticated仅SELECT+owner RLS，无写入授权，无历史回填。验证脚本booking_amounts.sql、booking_amount_cents.sql、operation_activity.sql均为虚构事务回滚。

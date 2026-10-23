@@ -7,7 +7,8 @@ if (process.env.STAYCRAFT_QA_AUTH_FIXTURES === '1') {
   const originalFetch = globalThis.fetch;
   const profiles = new Map();
   const inventories = new Map();
-  const photos = new Map();
+  const photos = new Map();const activity=new Map();
+  const record=(property,kind,resource,room,automatic=false,completed=true)=>{const items=activity.get(property)||[];items.unshift({id:require('node:crypto').randomUUID(),kind,resource_id:resource,room_number:room,automatic,completed,created_at:new Date().toISOString()});activity.set(property,items)};
   const properties=new Map([['bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',{id:'dddddddd-dddd-4ddd-8ddd-dddddddddddd',name:'Account B private property'}]]);
   const propertyFor=index=>index===1?'dddddddd-dddd-4ddd-8ddd-dddddddddddd':index===0?'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee':'ffffffff-ffff-4fff-8fff-ffffffffffff';
   const ids = ['aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb', 'cccccccc-cccc-4ccc-8ccc-cccccccccccc', 'dddddddd-dddd-4ddd-8ddd-dddddddddddd'];
@@ -41,6 +42,7 @@ if (process.env.STAYCRAFT_QA_AUTH_FIXTURES === '1') {
       return json({access_token:token,refresh_token:'sample-only',token_type:'bearer',expires_in:3600,expires_at:4102444800,user:{id:sample.ownerId,email:'demo@example.invalid',aud:'authenticated',role:'authenticated',app_metadata:{},user_metadata:{},identities:[],created_at:'2026-01-01T00:00:00Z'}});
     }
     if (!identity) return json({ message: 'Invalid session' }, 401);
+    if(url.pathname==='/rest/v1/operation_activity'){const p=propertyFor(identity.index);return identity.index===2||url.searchParams.get('property_id')!=='eq.'+p?json({message:'Forbidden'},403):json(activity.get(p)||[])}
     if (url.pathname === '/auth/v1/user') return json({ id: identity.id, email: `account-${identity.index}@example.invalid`, aud: 'authenticated', role: 'authenticated', app_metadata: {}, user_metadata: {}, identities: [], created_at: '2026-01-01T00:00:00Z' });
     if (url.pathname === '/auth/v1/logout') return json({});
     if(url.pathname==='/rest/v1/rpc/review_booking_cancellation'){
@@ -49,7 +51,7 @@ if (process.env.STAYCRAFT_QA_AUTH_FIXTURES === '1') {
       if(!b||!['approve','reject'].includes(body.p_decision))return json({message:'review_changed'},409);
       if(b.refund_result===result)return json({id:b.id,status:b.status,refund_result:result});
       if(b.refund_result!=='review_pending'||b.status!=='confirmed'||stays.get(b.id)&&stays.get(b.id)!=='pending')return json({message:'review_changed'},409);
-      b.refund_result=result;b.status=body.p_decision==='approve'?'cancelled':'confirmed';return json({id:b.id,status:b.status,refund_result:result});
+      b.refund_result=result;b.status=body.p_decision==='approve'?'cancelled':'confirmed';record(sample.propertyId,body.p_decision==='approve'?'cancellation_approved':'cancellation_rejected',b.id,b.room_number);if(body.p_decision==='approve')record(sample.propertyId,'booking_cancelled',b.id,b.room_number);return json({id:b.id,status:b.status,refund_result:result});
     }
     if(['/rest/v1/rpc/sample_stays','/rest/v1/rpc/get_booking_stays','/rest/v1/rpc/change_booking_stay'].includes(url.pathname)){
       if(!sample)return json({bookings:[]});
@@ -60,10 +62,10 @@ if (process.env.STAYCRAFT_QA_AUTH_FIXTURES === '1') {
        if(!b||!room||b.status!=='confirmed'||b.refund_result==='review_pending')return json({message:'stay_changed'},409);
        if(body.p_action==='checkin'&&state!=='checked_in'){
         if(state!=='pending'||!room.active||room.housekeeping!=='clean'||b.arrival>sample.anchor||b.departure<=sample.anchor||sample.bookings.some(other=>other.room_id===b.room_id&&stays.get(other.id)==='checked_in'))return json({message:'stay_changed'},409);
-        stays.set(b.id,'checked_in');
+        stays.set(b.id,'checked_in');record(sample.propertyId,'checked_in',b.id,b.room_number);
        }else if(body.p_action==='checkout'&&state!=='completed'){
         if(state!=='checked_in')return json({message:'stay_changed'},409);
-        const previous=inventories.get(sample.propertyId);inventories.set(sample.propertyId,{inventory:{...previous.inventory,rooms:previous.inventory.rooms.map(r=>r.id===room.id?{...r,housekeeping:'dirty'}:r)},revision:require('node:crypto').randomUUID()});stays.set(b.id,'completed');
+        const previous=inventories.get(sample.propertyId);inventories.set(sample.propertyId,{inventory:{...previous.inventory,rooms:previous.inventory.rooms.map(r=>r.id===room.id?{...r,housekeeping:'dirty'}:r)},revision:require('node:crypto').randomUUID()});stays.set(b.id,'completed');record(sample.propertyId,'checked_out',b.id,b.room_number);if(room.housekeeping!=='dirty')record(sample.propertyId,'room_dirty',room.id,room.number);
        }
       }
       return json({bookings:sample.bookings.map(b=>({...b,stay_state:stays.get(b.id)||'pending'}))});
@@ -89,6 +91,7 @@ if (process.env.STAYCRAFT_QA_AUTH_FIXTURES === '1') {
       if(body.p_inventory?.types[0]?.name==='QA_SAVE_FAILURE')return json({message:'save_unavailable'},500);
       if((previous?.revision||null)!==body.p_revision)return json({message:'inventory_changed'},409);
       if(previous&&previous.inventory.rooms.some(room=>!body.p_inventory.rooms.some(item=>item.id===room.id)))return json({message:'archive_room_instead'},400);
+      for(const room of body.p_inventory.rooms){const before=previous?.inventory.rooms.find(r=>r.id===room.id);if(!before)record(propertyId,'room_added',room.id,room.number);else{if(before.housekeeping!==room.housekeeping)record(propertyId,room.housekeeping==='clean'?'room_cleaned':'room_dirty',room.id,room.number);if(before.active!==room.active)record(propertyId,room.active?'room_enabled':'room_disabled',room.id,room.number)}}
       const value={inventory:body.p_inventory,revision:require('node:crypto').randomUUID()};inventories.set(propertyId,value);return json(value);
     }
     if (url.pathname === '/rest/v1/direct_bookings') {
