@@ -1,64 +1,60 @@
 # Staycraft 受控部署验收
 
-更新：2026-10-23。当前准备的是经营端v1受控验收版本；尚未公开发布。功能事实以CURRENT_BASELINE、TODO及发布检查报告为准。
+更新：2026-10-23。当前交付范围是日常运营助手与分析决策助手的自家数据基础版本。代码准备、Git同步、实际部署和模型启用分别验收；当前未公开部署。
 
 ## 发布组成
 
-Vercel项目Root Directory选`frontend`，框架Next.js，Node.js 24.x。安装`npm ci`，构建`npm run check`（已在vercel.json配置）。其他Node平台执行同样命令后`npm start`，反向代理提供HTTPS；不要公开运行开发服务器。部署产物、源码与环境变量应来自同一次版本，更新公开变量后重新构建。
+Vercel导入GitHub仓库，Root Directory选frontend、Next.js、Node.js 24.x。安装npm ci，构建npm run check（vercel.json已配置）。其他Node平台构建后npm start，使用HTTPS反向代理，不公开开发服务器。
 
-Next.js和Supabase即可运行经营资料、房型/图片、客房、预订、入住/退房、取消审核、站内消息及预订指标。FastAPI是回复草稿可选服务；未部署它时可继续人工回复。仓库内旧SQLite/native演示不是线上依赖。
+Next.js与Supabase承载核心资料/图片/客房/订单/入住退房/取消审核/站内消息、受限自动回复、聚合经营助手及指标收入。FastAPI仅为可选的旧回复草稿服务，SQLite/native不是线上依赖。
 
 ## 配置
 
 | 变量 | 线上设置 |
 |---|---|
 | NEXT_PUBLIC_SUPABASE_URL | 目标项目HTTPS地址 |
-| NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY | sb_publishable_公开key；绝不可填secret或service-role |
+| NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY | publishable公开key，绝不填secret/service-role |
 | HOMESTAY_LOCAL_DATA | 0 |
-| STAYCRAFT_HOSTED | 非Vercel平台设1；Vercel自动检测 |
-| STAYCRAFT_OPERATOR_SAMPLE / STAYCRAFT_QA_AUTH_FIXTURES / STAYCRAFT_QA_FORMAL_STAYS | 不设置；误设1会拒绝启动 |
-| WORKSPACE_BACKEND_URL | 可选；部署草稿服务后填其HTTPS地址，否则不设置 |
+| STAYCRAFT_HOSTED | 非Vercel托管设1，Vercel自动检测 |
+| STAYCRAFT_OPERATOR_SAMPLE / STAYCRAFT_QA_AUTH_FIXTURES / STAYCRAFT_QA_FORMAL_STAYS | 不设置，误设1会拒绝托管启动 |
+| FORMAL_AUTO_REPLY_ENABLED | 0；正式自动发送需另获授权 |
+| FORMAL_MODEL_ENABLED / MODEL_ENABLED | 0；正式真实资料模型调用需另获授权 |
+| MODEL_BASE_URL / MODEL_NAME / MODEL_API_KEY | 可选，仅服务端，未授权启用时不需要配置 |
+| WORKSPACE_BACKEND_URL | 可选HTTPS草稿服务地址，否则留空 |
 
-不要上传.env.local、backend/.env或本机数据。NEXT_PUBLIC_变量属于浏览器公开配置。正式模型开关保持关闭；部署草稿服务也不等于获得真实资料模型调用授权。
+不上传.env.local、backend/.env、本机数据库或测试配置。NEXT_PUBLIC变量会公开到浏览器；模型密钥绝不使用该前缀。MODEL_BASE_URL为Chat Completions基础地址（请求追加/chat/completions），是否含/v1取决于供应商。DeepSeek请求明确关闭thinking并要求JSON；不能假定其他供应商支持相同扩展。
 
-Supabase项目当前为husrpqalpjjswpvrkxet。一账号一民宿，首次登录创建自己的空容器；邮箱密码登录，尚无前端自助注册或密码找回。测试账号由管理员在Auth控制台准备；不要用本机demo@example.invalid账户尝试线上登录。
+Supabase现有项目husrpqalpjjswpvrkxet，一账号一民宿。首次登录创建空容器，专用测试账号由管理员在Auth准备。demo@example.invalid/staycraft-demo只存在本机隔离进程，不能用于线上登录。不要复制样本开关到托管环境。
 
-## 发布前统一检查
+## 发布前检查
 
 在frontend运行：
 
 ```powershell
 npm ci
 npx playwright install chromium
+npm audit --omit=dev --audit-level=high
 npm run release:check
 ```
 
-统一检查先做lint/build，再串行运行隔离QA；测试都使用虚构夹具，不运行真实订单写入脚本，也不调用模型。端口3104须空闲。结果写入被Git忽略的`frontend/qa-release-report.json`，首次失败即停止。单独执行`npm audit --omit=dev --audit-level=high`核对生产依赖；可复现计算测试与浏览器版本跟随lockfile。CI执行相同流程，但不会自动部署。
+统一检查先构建，再串行27项隔离QA，端口3104须空闲，报告写入忽略的qa-release-report.json。使用虚构夹具，不运行真实订单脚本、不消费模型、不迁移线上数据库。GitHub CI执行同样检查而不部署。
 
-发布检查不等于真实账号与域名验收。授权发布后，先创建受部署保护的预览环境，完成下面清单，再确定是否转稳定版本。
+可选接口验证：仅使用已获授权的固定虚构资料；把密钥放在本机忽略文件，设置STAYCRAFT_MODEL_ENV为该文件路径，再设置RUN_PAID_MODEL_TEST=1并运行node scripts/qa-ai-live.cjs。最多两次有输出上限的分类/排序调用，不读云端资料；不要加入默认发布检查。当前缺少配置，尚未完成该项。
 
-## 实际部署环境验收
+## 实际环境验收（待授权发布后）
 
-1. 配置HTTPS域名与访问保护；在Supabase Auth更新Site URL。当前没有OAuth/邮件回调流程，不声称注册找回已支持。
-2. 用专用虚构测试账号A登录；未登录页面与API不可访问。退出后刷新、返回工作台应要求重新登录。
-3. 保存虚构资料，上传房型图片、添加/编辑房号，刷新检查持久化。使用账号B确认看不到A的资料、图片、订单和会话。
-4. 只在专用测试民宿上创建客人预订/消息，核对经营端同步；确认入住、退房转待清洁、清洁撤销、逾期取消批准/拒绝以及重复操作。
-5. 检查7/28天预订指标、中文/英文切换及手机宽度。正式营业额仅计当前账号已完成订单；空月为0、读取失败显示重试，不得显示本机演示金额。
-6. 检查404与异常恢复、健康检查`/api/health`、禁止收录标记。健康检查只表示进程可用；数据库状态需以上业务验收确认。
+1. 先创建受保护预览，配置HTTPS与Supabase Auth Site URL；当前无OAuth/邮件回调流程。
+2. 专用虚构账号A登录、退出、刷新及返回保护；账号B不可看到A的资料/图片/订单/会话/处理记录。
+3. 保存虚构资料、上传图片、添加/编辑客房，刷新核对；通过客人入口创建订单和消息，确认同步。
+4. 验证入住、退房转待清洁、撤销清洁、取消批准/拒绝与重复操作；核对事务记录，无资金动作。
+5. 检查7/28指标、快照金额、已完成订单营业额/月历、空月和失败重试、Home/Work关联提醒、双语与手机布局。
+6. 若另获正式自动发送/模型授权，仅在测试民宿验证开关、人工接管/恢复、缺资料/敏感请求转人工、暂停与资料变化阻止在途发送，检查审计和失败恢复。不要为验证而开启所有现有账号。
+7. 检查404/恢复、禁止索引、/api/health。健康检查只代表进程可用，不替代数据库业务验收。
 
-2026-10-23只读核对：相关7张公开业务表RLS开启，6个预订/入住/审核/客人接口公开包装为security invoker；room-photos私有。当前远端有11条迁移记录，前期控制台初始化和本地迁移时间戳存在历史差异，详见supabase/README；不要盲目db push。安全扫描仍提醒Auth泄漏密码保护未启用；管理员可在账号安全设置中评估开启。
+数据库15条已应用迁移及历史版本映射见supabase/README。10张主要业务表RLS、私有图片和受限RPC已核对；Auth泄漏密码保护仍有既有提醒，可由管理员评估启用。不要重放初始化、盲目db push或清理真实数据。
 
-## 本版能力边界
+## 边界与回滚
 
-- 正式可用：资料/房型/客房、图片、直订与分房、订单、入住退房、取消审批、站内人工消息、日期待办、预订占用率/进度与规则分析。
-- 正式营业额/月历/收入结构读取当前民宿已完成订单；demo@example.invalid仍为本机隔离进程，不能打开测试开关部署。
-- 尚未完成：市场探索来源、首页问AI/完整处理记录、客人评分反馈、前端注册/密码找回。保留原任务，不暗中删除或声称实现。
-- 客人站仅为受控数据来源；尚无完整IP反滥用、订单跨设备找回与商用客服保障。无真实付款或退款，不作为面向陌生客人的商用预订平台。
+外部市场来源、反馈满意度、推广助手未完成；当前分析解释自家数据，可选模型只做受限分类或排序，不制造市场事实。正式模型和自动发送保持关闭并不妨碍人工流程和数据规则使用。
 
-## 回滚与更新
-
-发布记录绑定Git提交和环境配置。页面问题回退到前一已验证部署；代码回滚不回滚或删除订单、图片。数据库使用增量迁移、先备份、再前向修复，禁止自动降级或重新执行初始化SQL。
-
-用户允许后可从固定Git版本建立预览；目前未向GitHub推送本轮提交、未创建Vercel项目或域名、未公开发布。检查点和验证日志见DEVELOPMENT_STATUS、ROLLBACK。
-
-自动回复增量（W1b）：FORMAL_AUTO_REPLY_ENABLED=0、FORMAL_MODEL_ENABLED=0、MODEL_ENABLED=0为默认；公开部署或导入仓库不构成正式启用授权。只有另获授权并完成两个真实Auth测试账号验收后，才配置服务端MODEL_BASE_URL/MODEL_NAME/MODEL_API_KEY及启用开关；绝不使用NEXT_PUBLIC前缀。未启用时界面允许人工回复与接管，自动开关不可开启。当前仅早餐/常规入住时间自动回答，其他转人工。迁移reply_automation与reply_automation_fact_gate已应用；正式模型未调用。线上演示不能开启本机夹具。
+发布绑定Git提交与环境配置。页面问题回退已验收代码；数据库备份后用增量迁移前向修复，保留订单/图片/审计，不自动降级。Git同步不构成公开发布授权。详情见RELEASE_READINESS、ROLLBACK和TODO。

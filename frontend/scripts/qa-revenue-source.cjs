@@ -15,5 +15,6 @@ new Function('exports','require',ts.transpileModule(fs.readFileSync('src/app/api
 (async()=>{
  const many=Array.from({length:1000},(_,i)=>({...row,id:'order-'+i}));pages=[{data:many,count:1001},{data:[{...row,id:'last'}],count:1001}];let response=await routeModule.exports.GET(new Request('http://localhost/api/workspace/revenue?month=2026-10'));assert.equal(response.status,200);assert.equal((await response.json()).orders.length,1001);assert(calls.some(call=>call[0]==='eq'&&call[1]==='property_id'&&call[2]==='owned'));assert(calls.some(call=>call[0]==='range'&&call[1]===1000));
  for(const invalid of [{data:[row],count:2},{data:[row],count:null},{data:[row,row],count:2},{data:[],count:10001}]){pages=[invalid];response=await routeModule.exports.GET(new Request('http://localhost/api/workspace/revenue?month=2026-10'));assert.equal(response.status,503)}
+ const huge=Array.from({length:10},(_,page)=>({count:10000,data:Array.from({length:1000},(_,i)=>({...row,id:'big-'+page+'-'+i,total:'9999999999.99'}))}));pages=huge;response=await routeModule.exports.GET(new Request('http://localhost/api/workspace/revenue?month=2026-10'));assert.equal(response.status,503);
  console.log('PASS formal revenue pagination: 1001 orders, owned-property filter, truncated/unknown/duplicate/oversized result fails closed.');
 })().catch(error=>{console.error(error);process.exitCode=1});

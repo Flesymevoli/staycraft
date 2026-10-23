@@ -15,5 +15,6 @@ export async function GET(request:Request){try{
  }
  if(rows.length!==expected||new Set(rows.map(row=>row.id)).size!==rows.length)throw new WorkspaceError("revenue_unavailable",503);
  const orders=rows.map(completedRevenueOrder);
+ if(!Number.isSafeInteger(orders.reduce((sum,order)=>sum+order.totalCents,0)))throw new WorkspaceError("revenue_unavailable",503);
  return Response.json({month,orders},{headers:{"Cache-Control":"no-store"}});
 }catch(error){return workspaceFailure(error);}}

@@ -1,4 +1,10 @@
-# Backend
+# 可选旧草稿后端
+
+当前正式经营链路已在Next服务端及Supabase实现；此FastAPI/SQLite目录保留旧草稿和本机历史演示，不是部署核心依赖。以下历史接口说明不覆盖docs/CURRENT_BASELINE.md。正式自动回复/聚合分析使用frontend中的受保护路由，配置见docs/DEPLOYMENT.md。
+
+本轮75项单元测试使用Python3.12及已有.vendor通过；该.vendor包含对应ABI的本机扩展，不能直接用Python3.13/3.14加载。使用独立虚拟环境时按requirements安装兼容依赖，不提交.vendor。关闭MODEL_ENABLED和FORMAL_MODEL_ENABLED后在backend运行python -m unittest discover -s tests。
+
+## 历史服务说明
 
 This FastAPI service decides whether a new guest question can use a **confirmed** property fact. It returns a draft and its citation, or a review reason. `auto_reply_ready` means eligible for a future send flow; `sent` is always `false`. The standalone rules endpoint remains a conservative baseline. The localhost-only application endpoints now load confirmed facts from SQLite and optionally call a configured model; saved owner replies are local demonstrations, never channel sends.
 
