@@ -62,3 +62,7 @@ reply_drafts按民宿/会话/消息/资料版本/语言/模式去重。草稿生
 get_booking_metrics(property, days) 是仅认证owner可执行的只读RPC，保留现有RLS；days仅允许7/28。以服务器北京时间今日起算，统计区间含今日、离店日不计。只统计confirmed订单，取消待审核仍占预订，cancelled排除；同一房间同一天去重。
 
 启用库存间夜=当前启用客房数×天数；预订占用率=启用客房已订间夜/启用库存间夜，四舍五入一位小数。无启用客房返回null，不伪造0%。停用客房未结束预订单独返回inactive_booked_room_nights并提醒核对。每日明细与总数同口径；基础房价为当前启用房型设置范围，不是成交均价或收入。没有新增指标表、历史容量快照或实际入住记录。
+
+## 2026-10-23入住状态
+
+direct_bookings.stay_state为pending/checked_in/completed，与status预订确认/取消分开；checked_in_at/checked_out_at为timestamptz。唯一部分索引(property_id,room_id)限制checked_in最多一条；时间一致性约束。现有业主RLS继续保护读取，authenticated无直接写权限，通过get_booking_stays/change_booking_stay操作。迁移20261023023304_booking_stays已应用；测试全部在事务回滚。

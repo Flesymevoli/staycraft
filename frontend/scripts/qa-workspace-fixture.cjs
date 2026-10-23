@@ -2,7 +2,7 @@
 if (process.env.STAYCRAFT_QA_AUTH_FIXTURES === '1') {
   const sampleMode=process.env.STAYCRAFT_OPERATOR_SAMPLE==='1';
   if(sampleMode&&(process.env.VERCEL==='1'||process.env.STAYCRAFT_HOSTED==='1'||!process.argv.includes('127.0.0.1')))throw new Error('Samples require a separate loopback-only server');
-  const sample=sampleMode?require('./operator-sample-data.cjs').createSample(process.env.STAYCRAFT_SAMPLE_DATE||undefined):null;
+  const sample=(sampleMode||process.env.STAYCRAFT_QA_FORMAL_STAYS==='1')?require('./operator-sample-data.cjs').createSample(process.env.STAYCRAFT_SAMPLE_DATE||undefined):null;
   const conversations=require('./conversation-fixture.cjs')(sample,propertyId=>profiles.get(propertyId));
   const originalFetch = globalThis.fetch;
   const profiles = new Map();
@@ -43,7 +43,8 @@ if (process.env.STAYCRAFT_QA_AUTH_FIXTURES === '1') {
     if (!identity) return json({ message: 'Invalid session' }, 401);
     if (url.pathname === '/auth/v1/user') return json({ id: identity.id, email: `account-${identity.index}@example.invalid`, aud: 'authenticated', role: 'authenticated', app_metadata: {}, user_metadata: {}, identities: [], created_at: '2026-01-01T00:00:00Z' });
     if (url.pathname === '/auth/v1/logout') return json({});
-    if(url.pathname==='/rest/v1/rpc/sample_stays'){
+    if(['/rest/v1/rpc/sample_stays','/rest/v1/rpc/get_booking_stays','/rest/v1/rpc/change_booking_stay'].includes(url.pathname)){
+      if(!sample)return json({bookings:[]});
       const body=JSON.parse(init.body||'{}');
       if(!sample||identity.id!==sample.ownerId||body.p_property!==sample.propertyId)return json({message:'property_not_owned'},403);
       if(body.p_action){

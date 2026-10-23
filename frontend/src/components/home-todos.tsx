@@ -1,12 +1,12 @@
 "use client";
 import {useEffect,useRef,useState} from "react";
 import Link from "next/link";
-import {useSampleStays} from "./sample-stays";
+import {useBookingStays} from "./booking-stays";
 import {ArrowUpRight,Broom,LogIn,LogOut} from "lucide-react";
 import {useRoomPreview} from "./room-preview-store";
 type Booking={id:string;room_id:string;room_number:string;arrival:string;departure:string;expected_arrival:string;status:string};
 export function HomeTodos({date,today,scope,zh}:{date:string;today:string;scope:string;zh:boolean}){
- const stays=useSampleStays();const stayFor=(id:string)=>stays.sample?stays.bookings.find(b=>b.id===id)?.stay_state:undefined;
+ const stays=useBookingStays();const stayFor=(id:string)=>stays.ready?stays.bookings.find(b=>b.id===id)?.stay_state:undefined;
  const inventory=useRoomPreview(scope);const [bookings,setBookings]=useState<Booking[]>([]),[state,setState]=useState("loading"),[retry,setRetry]=useState(0),[expanded,setExpanded]=useState(false);const sequence=useRef(0);
  const t=(en:string,cn:string)=>zh?cn:en;
  useEffect(()=>{const controller=new AbortController();async function load(){const current=++sequence.current;try{const response=await fetch(`/api/workspace/bookings?date=${date}`,{cache:"no-store",signal:controller.signal});const body=await response.json();if(!response.ok||!Array.isArray(body.bookings))throw new Error();if(!controller.signal.aborted&&current===sequence.current){setBookings(body.bookings);setState("ready");}}catch{if(!controller.signal.aborted&&current===sequence.current)setState("error");}}

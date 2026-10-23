@@ -1,11 +1,11 @@
 "use client";
 import {useEffect,useRef,useState} from "react";
 import Link from "next/link";
-import {useSampleStays} from "./sample-stays";
+import {useBookingStays} from "./booking-stays";
 import {ChevronRight,ArrowLeft} from "lucide-react";
 type Booking={id:string;room_number:string;type_name:string;arrival:string;departure:string;guest_name:string;expected_arrival:string;total:number;status:string;refund_result?:string;created_at?:string};
 export function WorkspaceBookings({date,zh,propertyId,roomId,bookingId}:{date?:string;zh:boolean;propertyId?:string;roomId?:string;bookingId?:string}){
- const stays=useSampleStays();const stateFor=(id:string)=>stays.sample?stays.bookings.find(b=>b.id===id)?.stay_state:undefined;
+ const stays=useBookingStays();const stateFor=(id:string)=>stays.ready?stays.bookings.find(b=>b.id===id)?.stay_state:undefined;
  const sequence=useRef(0);const [items,setItems]=useState<Booking[]>([]);const [state,setState]=useState("loading");const [retry,setRetry]=useState(0);const t=(en:string,cn:string)=>zh?cn:en;
  useEffect(()=>{const controller=new AbortController();async function load(){const current=++sequence.current;setState("loading");try{const response=await fetch(`/api/workspace/bookings?${date?`date=${date}`:""}${roomId?`&room=${roomId}`:""}`,{cache:"no-store",signal:controller.signal});const body=await response.json();if(!response.ok)throw new Error();if(!controller.signal.aborted&&current===sequence.current){setItems(body.bookings);setState("ready");}}catch{if(!controller.signal.aborted&&current===sequence.current)setState("error");}}void load();const focus=()=>void load();window.addEventListener("focus",focus);return()=>{controller.abort();window.removeEventListener("focus",focus);};},[date,roomId,retry]);
  const visible=bookingId?items.filter(item=>item.id===bookingId):date?items.filter(item=>item.status!=="cancelled"):items;
