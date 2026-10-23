@@ -37,7 +37,7 @@ npm audit --omit=dev --audit-level=high
 npm run release:check
 ```
 
-统一检查先构建，再串行27项隔离QA，端口3104须空闲，报告写入忽略的qa-release-report.json。使用虚构夹具，不运行真实订单脚本、不消费模型、不迁移线上数据库。GitHub CI执行同样检查而不部署。
+统一检查先构建，再串行28项隔离QA，端口3104须空闲，报告写入忽略的qa-release-report.json。使用虚构夹具，不运行真实订单脚本、不消费模型、不迁移线上数据库。GitHub CI执行同样检查而不部署。
 
 可选接口验证：仅使用已获授权的固定虚构资料；把密钥放在本机忽略文件，设置STAYCRAFT_MODEL_ENV为该文件路径，再设置RUN_PAID_MODEL_TEST=1并运行node scripts/qa-ai-live.cjs。最多两次有输出上限的分类/排序调用，不读云端资料；不要加入默认发布检查。扩展评估node scripts/qa-ai-evaluation.cjs同样须RUN_PAID_MODEL_TEST=1，最多8次请求，11个固定虚构场景；报告qa-ai-evaluation-report.json由Git忽略，不能当全面质量分数。node scripts/qa-ai-workspace-live.cjs为同样opt-in的隔离Next页面链路检查：3104端口，虚构内存适配器，最多两次模型请求，外网仅放行所配置模型接口；不改变3101/3106或真实账号设置。2026-10-23已使用DeepSeek deepseek-flash完成两次固定虚构资料请求，分类/排序结果均有效；正式模型与发送开关保持0。模型名与基础地址按[官方接入文档](https://api-docs.deepseek.com/quick_start)配置，换供应商需重验。
 
@@ -51,7 +51,7 @@ npm run release:check
 6. 若另获正式自动发送/模型授权，仅在测试民宿验证开关、人工接管/恢复、缺资料/敏感请求转人工、暂停与资料变化阻止在途发送，检查审计和失败恢复。不要为验证而开启所有现有账号。
 7. 检查404/恢复、禁止索引、/api/health。健康检查只代表进程可用，不替代数据库业务验收。
 
-数据库15条已应用迁移及历史版本映射见supabase/README。10张主要业务表RLS、私有图片和受限RPC已核对；Auth泄漏密码保护仍有既有提醒，可由管理员评估启用。不要重放初始化、盲目db push或清理真实数据。
+数据库16条已应用迁移及历史版本映射见supabase/README。10张主要业务表RLS、私有图片和受限RPC已核对；Auth泄漏密码保护仍有既有提醒，可由管理员评估启用。不要重放初始化、盲目db push或清理真实数据。
 
 ## 边界与回滚
 

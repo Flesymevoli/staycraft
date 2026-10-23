@@ -8,6 +8,6 @@ Next.js App Router / React / TypeScript，Node.js24。npm ci后npm run dev开发
 
 构建后npm run sample在127.0.0.1:3106运行隔离虚构演示，账号demo@example.invalid/staycraft-demo，重启还原、不接云端或模型。不要把测试开关部署上线。
 
-npx playwright install chromium安装浏览器；npm run release:check执行27项隔离检查。qa-ai-live.cjs是需明确启用的固定虚构资料付费测试，不在默认检查内。旧native/后端专用QA不是正式链路；涉及真实数据库的旧脚本不能自动运行或指向用户民宿。
+npx playwright install chromium安装浏览器；npm run release:check执行28项隔离检查。qa-ai-live.cjs是需明确启用的固定虚构资料付费测试，不在默认检查内。旧native/后端专用QA不是正式链路；涉及真实数据库的旧脚本不能自动运行或指向用户民宿。
 
 [部署配置与验收](../docs/DEPLOYMENT.md) · [当前基线](../docs/CURRENT_BASELINE.md) · [当前任务](../TODO.md)

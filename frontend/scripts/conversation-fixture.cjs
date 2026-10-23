@@ -80,7 +80,8 @@ module.exports=function conversationFixture(sample,getProfile){
    if(url.pathname.endsWith('/conversations'))return json([...threads.values()].filter(t=>t.property_id===propertyId&&'eq.'+t.id===url.searchParams.get('id')).map(t=>({id:t.id,guest_name:t.guest_name,manual_control:!!t.manual_control,handoff_reason:t.handoff_reason})));
    const thread=[...threads.values()].find(t=>t.property_id===propertyId&&'eq.'+t.id===url.searchParams.get('conversation_id'));return json(thread?.messages||[]);
   }
-  if(sample&&url.pathname==='/rest/v1/rpc/direct_booking_api'&&body.p_action==='catalog')return json({name:sample.profile.name,types:sample.inventory.types.map(t=>({...t,available:1}))});
+  if(sample&&url.pathname==='/rest/v1/rpc/guest_property_profile'){const profile=getProfile(body.p_property)?.profile||{};return json({location:profile.location||'',breakfast:profile.breakfast||'',checkin:profile.checkin||'',notes:profile.guestNotes||''})}
+  if(sample&&url.pathname==='/rest/v1/rpc/direct_booking_api'&&body.p_action==='catalog')return json({name:getProfile(body.p_property)?.profile.name||sample.profile.name,types:sample.inventory.types.map(t=>({...t,available:1}))});
   return null;
  };
 };

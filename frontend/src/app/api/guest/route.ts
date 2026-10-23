@@ -29,6 +29,11 @@ async function handle(request:Request,write:boolean){try{
    const fresh=await client.rpc("guest_message_api",{p_property:property,p_action:"messages",p_token:token,p_data:{}});if(!fresh.error&&fresh.data)return Response.json(fresh.data,{headers:{"Cache-Control":"no-store"}});
   }catch{/* The saved guest message remains available for manual handling. */}
  }
+ if(action==="catalog"){
+  const details=await client.rpc("guest_property_profile",{p_property:property});
+  if(details.error||!details.data)throw new WorkspaceError("property_unavailable",503);
+  return Response.json({...result,profile:details.data},{headers:{"Cache-Control":"no-store"}});
+ }
  return Response.json(result,{headers:{"Cache-Control":"no-store"}});
 }catch(error){return workspaceFailure(error);}}
 export async function GET(request:Request){return handle(request,false);}

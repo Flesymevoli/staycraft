@@ -1,5 +1,5 @@
-export type PropertyProfile = { name: string; location: string; roomCount: string; breakfast: string; checkin: string; notes: string };
-export const blankProfile: PropertyProfile = { name: "", location: "", roomCount: "", breakfast: "", checkin: "", notes: "" };
+export type PropertyProfile = { name: string; location: string; roomCount: string; breakfast: string; checkin: string; notes: string; guestNotes?: string };
+export const blankProfile: PropertyProfile = { name: "", location: "", roomCount: "", breakfast: "", checkin: "", notes: "", guestNotes: "" };
 export const profileFields = [
   { key: "name", en: "Property name", zh: "民宿名称", max: 120 },
   { key: "location", en: "Location", zh: "位置", max: 300 },
@@ -7,6 +7,7 @@ export const profileFields = [
   { key: "breakfast", en: "Breakfast hours", zh: "早餐时间", max: 11 },
   { key: "checkin", en: "Check-in time", zh: "入住时间", max: 5 },
   { key: "notes", en: "House rules & guest information", zh: "入住规则与客人须知", max: 2000 },
+  { key: "guestNotes", en: "Guest website information (public)", zh: "客人端入住须知（公开）", max: 2000 },
 ] as const;
 
 export function validateProfile(input: unknown): PropertyProfile | null {
@@ -15,6 +16,7 @@ export function validateProfile(input: unknown): PropertyProfile | null {
   if (Object.keys(values).some(key => !Object.hasOwn(blankProfile, key))) return null;
   const result = { ...blankProfile };
   for (const { key, max } of profileFields) {
+    if (key === "guestNotes" && values[key] === undefined) { result[key] = ""; continue; }
     if (typeof values[key] !== "string") return null;
     result[key] = values[key].trim();
     if (result[key].length > max || /\u0000/.test(result[key])) return null;

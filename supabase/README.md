@@ -48,3 +48,5 @@ supabase/tests为事务回滚夹具，原验证结果见docs/DEVELOPMENT_STATUS.
 
 
 新增迁移本地→远端映射：20261023093119→20261023093937（reply_automation）、20261023094052→20261023094124（fact_gate）、20261023094403→20261023094716（booking_amounts）、20261023095440→20261023095944（operation_activity）。当前15条远端记录；本地与远端名称/结构需一起核对，时间戳差异不表示待执行。新增设置/自动事件/操作记录均启用owner RLS，审计不能由普通客户端伪造。真实账号自动设置保持关闭。
+
+新增guest_property_profile迁移：本地20261023155131，扩展profile可选guestNotes且保留旧约束；公开RPC仅投影location/breakfast/checkin/guestNotes为notes，绝不返回旧notes、owner或房间数。虚构事务回滚及匿名权限测试通过，远端现16条记录。
