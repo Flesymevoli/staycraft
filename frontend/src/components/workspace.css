@@ -132,3 +132,10 @@
 .room-action-details { display:flex; align-items:center; min-height:44px; margin-top:14px; color:var(--blue); font-size:13px; }
 .room-cleaned-notice,.room-cleaned-notice span { display:flex; align-items:center; gap:8px; }
 .room-cleaned-notice { justify-content:space-between; font-size:13px; }
+
+@media(max-width:767px) {
+ .workspace-work .room-grid { grid-template-columns:none; grid-auto-flow:column; grid-auto-columns:calc((100% - 20px)/3); overflow-x:auto; overscroll-behavior-x:contain; scroll-snap-type:x proximity; scrollbar-width:thin; scrollbar-color:#c8d3df transparent; padding:3px 0 8px; }
+ .workspace-work .room-grid .inventory-room { scroll-snap-align:start; }
+ .workspace-work .room-grid:focus-visible { outline:2px solid var(--blue); outline-offset:3px; border-radius:10px; }
+}
+@media(max-width:359px) { .workspace-work .room-grid { grid-auto-columns:calc((100% - 14px)/3); } }
