@@ -253,3 +253,6 @@ lint/build、qa-ui-parity、qa-workspace-bookings、qa-conversation-drafts、qa-
 
 ## 2026-10-23 经营状况分析实质改写
 新增纯前端确定性分布分析，替换数字复述；保留日期行动入口。npm run check通过（首次受限环境TypeScript spawn EPERM，获准环境重跑通过）；qa-business-analysis涵盖7类分布/风险与双语；qa-booking-next-steps涵盖页面判断、日期动作、锚点、零/满/失败及双语宽度。检查390px截图。未接收入后端或模型，无云端写入。回滚到7a86910；只撤销本轮列明文件，保留用户未跟踪草稿。
+
+## 2026-10-23 收入分析前端
+在营业额月历内增加房型贡献与日期集中判断，保留完成订单口径。qa-revenue-insights验证跨月分摊、金额守恒、取消/未完成排除、并列与空月份；qa-revenue-preview验证峰值日期定位、切月空态、双语与宽度，截图已查。npm run check通过。无云端或模型调用。回滚基点4fbfd9c。

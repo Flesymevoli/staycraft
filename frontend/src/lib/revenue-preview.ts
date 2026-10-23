@@ -22,3 +22,16 @@ export function revenueDays(month:string,orders:RevenueOrder[]){
  return {date,entries,cents:entries.reduce((sum,entry)=>sum+entry.cents,0)};
  });
 }
+
+export function revenueInsights(days:ReturnType<typeof revenueDays>){
+ const total=days.reduce((sum,day)=>sum+day.cents,0);
+ const types=new Map<string,{name:string;nameEn:string;cents:number;nights:number}>();
+ for(const day of days)for(const entry of day.entries){
+  const row=types.get(entry.type)??{name:entry.type,nameEn:entry.typeEn,cents:0,nights:0};
+  row.cents+=entry.cents;row.nights++;types.set(entry.type,row);
+ }
+ const ranked=[...types.values()].sort((a,b)=>b.cents-a.cents||a.name.localeCompare(b.name));
+ const leaders=ranked.filter(row=>row.cents===ranked[0]?.cents);
+ const peaks=days.filter(day=>day.cents>0).sort((a,b)=>b.cents-a.cents||a.date.localeCompare(b.date));
+ return {total,ranked,leaders,topThree:peaks.slice(0,3),earningDays:peaks.length};
+}
