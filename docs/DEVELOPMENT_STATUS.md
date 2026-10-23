@@ -275,3 +275,6 @@ lint/build、qa-ui-parity、qa-workspace-bookings、qa-conversation-drafts、qa-
 - 回滚基点c43b6df；先关闭FORMAL_AUTO_REPLY_ENABLED并暂停设置，代码可revert；已应用迁移不删除审计表/列，保留新增结构默认关闭，避免丢记录。
 
 W1b整套回归结果：npm run release:check全部23项通过（含既有资料/客房/订单/取消/入住退房/双语/恢复/托管隔离）；测试报告位于忽略的frontend/qa-release-report.json。安全顾问无新增数据库告警，仅原有Auth泄露密码保护未开启提示。
+
+## 2026-10-23 W2b预订金额
+同一stable invoker指标RPC增量加入7/28金额、订单间夜均价、每可售间夜金额和日明细；保持原图表与新增两张紧凑指标卡。SQL两份虚构回滚测试验证精确分摊、跨期、取消/完成/停用排除、待审保留、重复占用提示及权限；隔离UI验证修改当前房价不改变订单快照，中英文/320–1280通过。npm run check通过。回滚基点b53de11，数据库若需回滚用前一函数定义新迁移恢复，不删历史迁移。
