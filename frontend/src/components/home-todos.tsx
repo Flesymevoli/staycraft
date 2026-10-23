@@ -7,20 +7,23 @@ import {useRoomPreview} from "./room-preview-store";
 type Booking={id:string;room_id:string;room_number:string;arrival:string;departure:string;expected_arrival:string;status:string};
 export function HomeTodos({date,today,scope,zh}:{date:string;today:string;scope:string;zh:boolean}){
  const stays=useBookingStays();const stayFor=(id:string)=>stays.ready?stays.bookings.find(b=>b.id===id)?.stay_state:undefined;
- const inventory=useRoomPreview(scope);const [bookings,setBookings]=useState<Booking[]>([]),[state,setState]=useState("loading"),[retry,setRetry]=useState(0),[expanded,setExpanded]=useState(false);const sequence=useRef(0);
+ const inventory=useRoomPreview(scope);const [result,setResult]=useState<{date:string;bookings:Booking[]}|null>(null),[state,setState]=useState("loading"),[retry,setRetry]=useState(0),[expanded,setExpanded]=useState(false);const sequence=useRef(0);
  const t=(en:string,cn:string)=>zh?cn:en;
- useEffect(()=>{const controller=new AbortController();async function load(){const current=++sequence.current;try{const response=await fetch(`/api/workspace/bookings?date=${date}`,{cache:"no-store",signal:controller.signal});const body=await response.json();if(!response.ok||!Array.isArray(body.bookings))throw new Error();if(!controller.signal.aborted&&current===sequence.current){setBookings(body.bookings);setState("ready");}}catch{if(!controller.signal.aborted&&current===sequence.current)setState("error");}}
-  void load();const focus=()=>void load();window.addEventListener("focus",focus);return()=>{controller.abort();window.removeEventListener("focus",focus);};
+ useEffect(()=>{const controller=new AbortController();async function load(){const current=++sequence.current;try{const response=await fetch(`/api/workspace/bookings?date=${date}`,{cache:"no-store",signal:controller.signal});const body=await response.json();if(!response.ok||!Array.isArray(body.bookings))throw new Error();if(!controller.signal.aborted&&current===sequence.current){setResult({date,bookings:body.bookings});setState("ready");}}catch{if(!controller.signal.aborted&&current===sequence.current)setState("error");}}
+  void load();const focus=()=>void load();window.addEventListener("focus",focus);window.addEventListener("staycraft-stays-changed",focus);return()=>{controller.abort();window.removeEventListener("focus",focus);window.removeEventListener("staycraft-stays-changed",focus);};
  },[date,retry]);
  const cleanRooms=date===today&&inventory.ready&&!inventory.unavailable?inventory.data.inventory.rooms.filter(room=>room.active&&room.housekeeping==="dirty"):[];
- const confirmed=state==="ready"&&stays.ready?bookings.filter(booking=>booking.status==="confirmed"&&stayFor(booking.id)!=="completed"):[];
+ const confirmed=state==="ready"&&stays.ready?(result?.date===date?result.bookings:[]).filter(booking=>booking.status==="confirmed"&&stayFor(booking.id)!=="completed"):[];
  const arrivals=confirmed.filter(booking=>booking.arrival===date&&stayFor(booking.id)!=="checked_in"),departures=confirmed.filter(booking=>booking.departure===date);
+ const urgent=arrivals.filter(booking=>date===today&&cleanRooms.some(room=>room.id===booking.room_id)&&stayFor(booking.id)==="pending");
+ const urgentRoomIds=new Set(urgent.map(booking=>booking.room_id));
  const rows=[
-  ...cleanRooms.map(room=>({key:`clean-${room.id}`,room:room.number,label:t("To clean","待清洁"),kind:"clean",Icon:Broom,href:`/app/rooms/${room.id}`})),
-  ...arrivals.map(booking=>({key:`arrival-${booking.id}`,room:booking.room_number,label:booking.expected_arrival?t(`Expected arrival · ${booking.expected_arrival}`,`预计到店 · ${booking.expected_arrival}`):t("Expected arrival · time not recorded","预计到店 · 时间未记录"),kind:"arrival",Icon:LogIn,href:`/app/work#booking-${booking.id}`})),
+  ...urgent.map(booking=>({key:`prepare-${booking.id}`,room:booking.room_number,label:booking.expected_arrival?t(`Arriving · ${booking.expected_arrival} · cleaning needed`,`到店 · ${booking.expected_arrival} · 待清洁`):t("Arriving today · cleaning needed","今日到店 · 待清洁"),kind:"prepare",Icon:Broom,href:`/app/rooms/${booking.room_id}`})),
+  ...cleanRooms.filter(room=>!urgentRoomIds.has(room.id)).map(room=>({key:`clean-${room.id}`,room:room.number,label:t("To clean","待清洁"),kind:"clean",Icon:Broom,href:`/app/rooms/${room.id}`})),
+  ...arrivals.filter(booking=>!urgentRoomIds.has(booking.room_id)).map(booking=>({key:`arrival-${booking.id}`,room:booking.room_number,label:booking.expected_arrival?t(`Expected arrival · ${booking.expected_arrival}`,`预计到店 · ${booking.expected_arrival}`):t("Expected arrival · time not recorded","预计到店 · 时间未记录"),kind:"arrival",Icon:LogIn,href:`/app/work#booking-${booking.id}`})),
   ...departures.map(booking=>({key:`departure-${booking.id}`,room:booking.room_number,label:t("Departure scheduled","计划离店"),kind:"departure",Icon:LogOut,href:`/app/work#booking-${booking.id}`})),
  ];
- const loading=state==="loading"||(!stays.ready&&!stays.failed)||(date===today&&!inventory.ready),failed=state==="error"||stays.failed||(date===today&&inventory.unavailable);
+ const loading=(state!=="error"&&result?.date!==date)||state==="loading"||(!stays.ready&&!stays.failed)||(date===today&&!inventory.ready),failed=state==="error"||stays.failed||(date===today&&inventory.unavailable);
  return <section className="home-schedule-preview home-todos" aria-label={t("Daily to-dos","当日待办")}>
   <div className="native-section-head"><h2>{t("Daily to-dos","当日待办")}</h2><button className="inventory-text" aria-label={t("Refresh to-dos","刷新待办")} type="button" onClick={()=>{setState("loading");setRetry(v=>v+1);stays.retry();void inventory.reload();}}>{t("Refresh","刷新")}</button></div>
   {loading?<p className="home-todos-feedback" role="status">{t("Loading to-dos…","正在读取待办…")}</p>:<>

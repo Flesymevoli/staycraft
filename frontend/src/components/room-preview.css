@@ -9,3 +9,5 @@
 .home-todo-row{display:flex;gap:10px;align-items:center;min-height:52px;padding:9px 0;border-bottom:1px solid var(--hairline);color:var(--ink);text-decoration:none}.home-todo-row:last-child{border:0}
 .home-todo-row>svg:first-child{flex-shrink:0;color:var(--muted)}.home-todo-clean>svg:first-child{color:var(--blue)}.home-todo-row>strong{font-size:14px;font-weight:500;overflow-wrap:anywhere}.home-todo-row>span{flex:1;min-width:0;color:var(--muted);font-size:12px;line-height:1.5}.home-todo-row>svg:last-child{flex-shrink:0;color:var(--muted)}
 .home-todos-more{width:100%;min-height:44px;padding:8px 0 0;border:0;background:none;color:var(--blue);font:inherit;font-size:12px;cursor:pointer}.home-todos-feedback{color:var(--muted);font-size:13px;line-height:1.6;margin:14px 0 4px}
+
+.home-todo-prepare>svg:first-child{color:var(--blue)}.home-todo-prepare>span{color:var(--ink)}

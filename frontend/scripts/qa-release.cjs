@@ -6,7 +6,7 @@ const checks=[
  ['qa-business-analysis.cjs'],['qa-revenue-insights.cjs'],['qa-release-config.cjs'],
  ['qa-workspace.cjs'],['qa-property-profile.cjs'],['qa-room-cloud.cjs'],['qa-booking-metrics.cjs'],
  ['qa-booking-details.cjs'],['qa-room-actions.cjs'],['qa-room-scroll.cjs'],
- ['qa-formal-stays.cjs'],['qa-cancellation-review.cjs','approve'],['qa-cancellation-review.cjs','reject'],
+ ['qa-formal-stays.cjs'],['qa-arrival-cleaning.cjs'],['qa-cancellation-review.cjs','approve'],['qa-cancellation-review.cjs','reject'],
  ['qa-booking-next-steps.cjs'],['qa-revenue-preview.cjs'],['qa-ui-parity.cjs'],
  ['qa-recovery.cjs'],['qa-hosted.cjs'],
 ];
