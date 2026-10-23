@@ -236,3 +236,5 @@ lint/build、qa-ui-parity、qa-workspace-bookings、qa-conversation-drafts、qa-
 2026-10-23营业额前端：卡片/热力日历/切月/日期明细/空月/英文及320–1280宽度通过，lint/build通过；计算验证完成状态过滤、跨月分摊、分币余数与离店日排除。仅前端夹具，未接营业额后端。前轮面板实色修正一并保存。
 
 2026-10-23横滑客房：lint/build、qa-room-scroll（15房同层，320/390/658单行、114px、无页面溢出、最后客房键盘与清洁面板、1280桌面换行）、qa-room-actions通过；已查看截图。隔离测试不改正式客房。
+
+2026-10-23清洁图标纠正：房卡与清洁操作统一使用lucide Broom扫帚，替换误用Brush画笔；lint/build通过。

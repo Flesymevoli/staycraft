@@ -1,7 +1,7 @@
 "use client";
 import {useEffect,useRef,useState} from "react";
 import Link from "next/link";
-import {X,Brush,Check} from "lucide-react";
+import {X,Broom,Check} from "lucide-react";
 import {useRoomPreview} from "./room-preview-store";
 import type {PropertyInventory} from "@/lib/property-inventory";
 export function RoomActions({scope,roomId,zh,reserved,onClose}:{scope:string;roomId:string;zh:boolean;reserved:boolean|null;onClose:()=>void}){
@@ -17,7 +17,7 @@ export function RoomActions({scope,roomId,zh,reserved,onClose}:{scope:string;roo
  }
  return <dialog ref={dialog} className="room-action-sheet" aria-labelledby="room-action-title" onCancel={onClose} onClick={e=>{if(e.target===e.currentTarget)onClose()}}><div className="room-action-content"><header><div><h2 id="room-action-title">{room?.number||t("Room","客房")}</h2><p>{type?.name}</p></div><button type="button" className="inventory-text" aria-label={t("Close","关闭")} onClick={onClose}><X size={20}/></button></header>
  {room?<><p>{!room.active?t("Inactive","停用"):reserved?t("Reserved","已预订"):room.housekeeping==="dirty"?t("To clean","待清洁"):reserved===null?t("Cleaned","已清洁"):t("Available","空闲")}</p>
- {room.active&&room.housekeeping==="dirty"&&<button type="button" className="native-primary" disabled={writing||unavailable} onClick={()=>void clean()}><Brush size={17}/>{writing?t("Saving…","正在保存…"):t("Mark as cleaned","完成清洁")}</button>}
+ {room.active&&room.housekeeping==="dirty"&&<button type="button" className="native-primary" disabled={writing||unavailable} onClick={()=>void clean()}><Broom size={17}/>{writing?t("Saving…","正在保存…"):t("Mark as cleaned","完成清洁")}</button>}
  {undo&&<div className="room-cleaned-notice" role="status"><span><Check size={16}/>{t("Marked as cleaned","已完成清洁")}</span><button type="button" className="inventory-text" disabled={writing} onClick={()=>void clean(true)}>{t("Undo","撤销")}</button></div>}
  <Link className="room-action-details" href={`/app/rooms/${roomId}`}>{t("Room details","查看客房详情")} →</Link></>:<p>{t("Room no longer available.","该客房已不存在。")}</p>}
  {error&&<p role="alert">{t("Could not save. Reopen the room to check its latest status.","保存未成功，请重新打开客房核对最新状态。")}</p>}
