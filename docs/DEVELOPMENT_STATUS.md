@@ -343,3 +343,13 @@ Git提交7710fed已触发自动生产部署staycraft-dg87uuw2d-yuuno.vercel.app�
 ## 2026-10-24 后四页标题区收起
 
 Work/Analysis/Explore/Mine的语义h1变为1px裁切、不占可见布局，介绍段不渲染；原顶部小标签/语言按钮保留。Home、房间/订单/会话详情及历史页可见标题不变。npm run check通过；qa-ui-parity、qa-booking-details、qa-work-booking-history三组隔离回归通过，中英320/390/658/1280与图表、详情返回、历史分组无回退；本轮未重跑整套29项，上一模块29项通过记录保留。查看390pxWork截图，内容已上移，无数据变更。回滚点a8135b4，可按模块revert，无迁移/环境配置变化。
+
+上线补记：产品提交cfc05e7推送后，Vercel部署dpl_EhNvzR7jaCLNUQSonwaCW5EcpLdj Ready，主域名正常Auth读取Work/Analysis/Explore/Mine均200，隐藏标题class与语言按钮存在，介绍段已移除。此处是认证HTML检查，不是生产浏览器视觉检查。
+
+## 2026-10-24 接续文档整理
+
+用户要求更新规范与进展，减少上下文压缩后重复恢复。新增SESSION_HANDOFF快速入口，AGENTS明确分层阅读、已有授权持续有效、检查证据需区分版本与环境；TODO修正A3部署完成状态和最新检查范围，记录双向入口尚未实现但不自动扩展范围。CURRENT_BASELINE补当前验收优先级。仅文档修改，检查差异与引用，不重跑业务测试、不调用模型、不写云端业务数据、不触发部署；产品检查点仍为cfc05e7。回滚仅还原本轮文档，不涉及产品或数据库。
+
+## 2026-10-24 工作页消息与订单归并
+
+移除预订页入口，历史入口放到订单列表底部；客人消息置于订单之前，自动回复开关嵌入消息区，隐藏重复自动化事件列表并保留错误重试。npm run check及qa-reply-automation、qa-work-booking-history通过，覆盖开关/转人工/失败重试/历史返回及中英320–1280；查看390px隔离截图。未重跑完整29项，无真实模型调用或数据库修改。第一次构建沙箱spawn EPERM，授权子进程后成功；一次辅助编辑路径错误未写入，随后正确路径完成并重新构建回归。回滚基点cfc05e7。
