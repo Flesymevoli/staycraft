@@ -23,3 +23,5 @@
 在frontend运行npm run release:check，报告frontend/qa-release-report.json由Git忽略。付费模型脚本不在默认检查中。GitHub CI配置执行相同检查，不执行部署或SQL迁移。部署按DEPLOYMENT，回滚按ROLLBACK；代码回滚保留订单、图片与审计，数据库前向修复。
 
 2026-10-24部署前再次运行npm run release:check，生产构建与28项隔离检查全部通过。Vercel项目yuuno/staycraft、frontend/Node24、Git main自动部署；模型Secret与线上两项能力已获单独明确授权。正式域名实测健康200、业务匿名401、演示普通会话6房/初始14单/9完成，随后两笔真实接口验收使当前16单/10完成/5680元；AI排序和咨询分类均model_v1，需判断请求转人工。首次版本dpl_8XWhknLuUmRJqTs3eZMgcdA7qqWB，含模型配置版本dpl_q3aAPrKPbLu7hUcqVYmMvsNAmL1D，均Ready，源代码2bf5f44。
+
+浏览器补验：生产普通登录、工作数据、独立订单详情、英文跨页、月历/每日收入明细与中文恢复通过，保存并查看线上截图。旧版本登录动作在切部署后曾过期，现有恢复页刷新后通过；双账号浏览器与完整现场按钮仍保留待验收。
