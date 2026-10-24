@@ -6,7 +6,7 @@
 
 ## 定位、交付与授权
 
-2026-10-25新增授权：Cloudflare并行部署并保留Vercel。已部署staycraft.staycraft-yuuno.workers.dev，共用原数据库；Cloudflare AI Secret许可仍待回复，模型与自动回复全局开关当前关闭。部署与验收范围见CLOUDFLARE_DEPLOYMENT.md，不宣称已解决所有大陆网络访问问题。
+2026-10-25新增授权：Cloudflare并行部署并保留Vercel。已部署staycraft.staycraft-yuuno.workers.dev，共用原数据库；用户已明确授权Cloudflare AI Secret及启用两项能力；密钥已存服务端，三个全局开关为1，每民宿开关保持原值。Cloudflare实际模型响应仍待验收。部署与验收范围见CLOUDFLARE_DEPLOYMENT.md，不宣称已解决所有大陆网络访问问题。
 
 Staycraft面向独立经营单家小型民宿的老板/店长，一账号拥有一个民宿及其资料、房型、客房、订单与会话。核心是减少重复录入、查看、判断和处理，将日常事务自动流转，并在需要经营者判断时转人工。
 

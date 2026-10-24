@@ -55,4 +55,4 @@
 
 - [x] W5 工作页信息归并：工作页顺序为客房概览→需优先处理→客人消息（列表上方自动回复开关）→预订订单；移除独立自动化处理/重复转人工列表，历史订单入口在订单列表底部。移除工作页客人预订链接，预订端作为独立关联网页保留，新入口待确定。
 
-- [ ] A3c Cloudflare并行部署（2026-10-25授权）：已上线，普通登录及Home/Work/Analysis读取通过；Vercel保留。尚待Cloudflare密钥许可、完整业务验收和关闭VPN网络实测，详见docs/CLOUDFLARE_DEPLOYMENT.md。
+- [ ] A3c Cloudflare并行部署（2026-10-25授权）：已上线，普通登录及Home/Work/Analysis读取通过；Vercel保留。Cloudflare AI Secret及启用已获授权并发布；尚待实际模型响应、完整业务验收和关闭VPN网络实测，详见docs/CLOUDFLARE_DEPLOYMENT.md。

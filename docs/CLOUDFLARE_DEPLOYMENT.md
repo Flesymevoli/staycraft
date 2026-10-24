@@ -2,7 +2,7 @@
 
 更新：2026-10-25。用户授权新增 Cloudflare 部署，同时保留 Vercel。已上线：https://staycraft.staycraft-yuuno.workers.dev 。
 
-Worker：staycraft；当前版本：3c737077-f19a-4fb6-8360-663a39ca2c3d。普通演示账号登录、Home/Work数据读取、Analysis营业额5680元和月历及预订指标已在真实浏览器验证。两站共用原数据库，未重跑种子或修改业务数据。
+Worker：staycraft；当前版本：2c56e430-a54c-4834-958c-1273205fae56。普通演示账号登录、Home/Work数据读取、Analysis营业额5680元和月历及预订指标已在真实浏览器验证。两站共用原数据库，未重跑种子或修改业务数据。
 
 ## 当前准备
 
@@ -16,7 +16,7 @@ Worker：staycraft；当前版本：3c737077-f19a-4fb6-8360-663a39ca2c3d。普�
 ## 待完成
 
 1. 官方设备码授权已完成，CLI已登录。不要再次发送旧链接或设备码。仅部署所需权限已能完成发布，无需补齐CLI提示的全部默认权限。
-2. Worker已配置公开Supabase连接；模型三个开关为0。迁移DeepSeek Secret的异步确认仍待用户回复，不复用仅对Vercel的Secret许可。
+2. 用户已明确授权Cloudflare保存现有DeepSeek密钥并启用能力；MODEL_API_KEY已存服务端Secret，模型三个开关已设1，deepseek-flash配置已发布。Vercel设置保留。启用后浏览器连续两次连接超时，尚未验证Cloudflare真实模型响应；不要把发布成功当调用验收。
 3. 仍需完整订单/消息操作、图片、跨账号隔离及关闭VPN实测。当前浏览器成功不等于大陆全网络可达；本机命令行TLS失败也不能据此认定浏览器不可用。
 4. 当前手动CLI部署，未配置Cloudflare Git自动构建。main推送仍会触发Vercel更新，不改DNS/删服务/重跑种子。
 
