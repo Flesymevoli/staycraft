@@ -1,6 +1,6 @@
 # Staycraft 受控部署验收
 
-更新：2026-10-24。当前交付范围是日常运营助手与分析决策助手的自家数据基础版本。代码准备、Git同步、实际部署和模型启用分别验收；当前未公开部署；用户已授权完成Vercel部署和验收，仅必要登录验证交由用户。
+更新：2026-10-24。当前交付范围是日常运营助手与分析决策助手的自家数据基础版本。代码准备、Git同步、实际部署和模型启用分别验收；已部署至https://staycraft-teal.vercel.app；用户已完成CLI登录验证，并明确授权线上DeepSeek Secret、分析与自动回复。
 
 ## 发布组成
 
@@ -41,7 +41,7 @@ npm run release:check
 
 可选接口验证：仅使用已获授权的固定虚构资料；把密钥放在本机忽略文件，设置STAYCRAFT_MODEL_ENV为该文件路径，再设置RUN_PAID_MODEL_TEST=1并运行node scripts/qa-ai-live.cjs。最多两次有输出上限的分类/排序调用，不读云端资料；不要加入默认发布检查。扩展评估node scripts/qa-ai-evaluation.cjs同样须RUN_PAID_MODEL_TEST=1，最多8次请求，11个固定虚构场景；报告qa-ai-evaluation-report.json由Git忽略，不能当全面质量分数。node scripts/qa-ai-workspace-live.cjs为同样opt-in的隔离Next页面链路检查：3104端口，虚构内存适配器，最多两次模型请求，外网仅放行所配置模型接口；不改变3101/3106或真实账号设置。2026-10-23已使用DeepSeek deepseek-flash完成两次固定虚构资料请求，分类/排序结果均有效；该次基础烟测当时正式开关为0；后续已获用户授权启用，当前状态见CURRENT_BASELINE。模型名与基础地址按[官方接入文档](https://api-docs.deepseek.com/quick_start)配置，换供应商需重验。
 
-## 实际环境验收（已授权，待实际部署）
+## 实际环境验收
 
 1. 先创建受保护预览，配置HTTPS与Supabase Auth Site URL；当前无OAuth/邮件回调流程。
 2. 专用虚构账号A登录、退出、刷新及返回保护；账号B不可看到A的资料/图片/订单/会话/处理记录。
@@ -55,6 +55,14 @@ npm run release:check
 
 ## 边界与回滚
 
-外部市场来源、反馈满意度、推广助手未完成；当前分析解释自家数据，可选模型只做受限分类或排序，不制造市场事实。示例配置仍默认关闭模型与发送。用户已授权当前账号本机3101启用两项能力，实际密钥仅在忽略的.env.local；Vercel配置不会因此自动变化，2026-10-24用户进一步授权Vercel部署与上线检查，当前仍待Vercel登录及实际验收。
+外部市场来源、反馈满意度、推广助手未完成；当前分析解释自家数据，可选模型只做受限分类或排序，不制造市场事实。示例配置仍默认关闭模型与发送。用户已授权当前账号本机3101启用两项能力，实际密钥仅在忽略的.env.local；Vercel配置不会因此自动变化，2026-10-24用户进一步授权Vercel部署与上线检查，已完成Vercel登录与部署；生产接口和模型链路通过，浏览器完整操作仍待完成。
 
 发布绑定Git提交与环境配置。页面问题回退已验收代码；数据库备份后用增量迁移前向修复，保留订单/图片/审计，不自动降级。Git同步不构成公开发布授权。详情见RELEASE_READINESS、ROLLBACK和TODO。
+
+## 2026-10-24 部署记录
+
+项目yuuno/staycraft，绑定Flesymevoli/staycraft的main，Root Directory=frontend、Node24、Next.js，构建由vercel.json指定npm ci/npm run check。应用代码提交2bf5f44；带模型配置的部署dpl_q3aAPrKPbLu7hUcqVYmMvsNAmL1D已Ready。正式入口https://staycraft-teal.vercel.app/login；项目/分支别名保留平台默认保护，不关闭保护。首次部署自动成为production，并非preview。
+
+MODEL_API_KEY存为Vercel Secret（不可读），production/preview使用独立环境配置，模型及自动发送开关为1；民宿开关仍按账号独立控制。模型密钥、CLI登录会话与OIDC文件均不提交。CLI通过正常device flow登录，不提取Edge凭据。Git连接已启用，后续main提交会触发自动部署，提交前应检查运行配置和范围。
+
+生产验证：/api/health=200，未登录业务接口401；普通演示Auth会话读取库存/订单/指标/完成收入/自动化/审计与四页HTML成功，客人公开资料/房型成功。已执行一次实际排序和一次同义问句分类，均model_v1；早餐事实回复正确，提前入住转人工。浏览器外网页面连接超时，视觉/双账号切换不算通过。Auth Site URL尚未修改，当前密码登录无回调依赖；没有邮件重置/OAuth流程。

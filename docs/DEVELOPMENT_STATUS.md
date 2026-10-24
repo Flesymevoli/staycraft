@@ -319,3 +319,13 @@ Edge管理控制仍超时且普通注册拒绝.invalid邮箱；改用已授权�
 ## 2026-10-24 云端事务复验
 
 在当前远端迁移状态顺序执行booking_stays、cancellation_review、booking_amounts、operation_activity四组既有SQL套件，全部通过并ROLLBACK。覆盖入住/退房转脏及版本递增、重复操作、脏房/双重入住/已入住取消拒绝、取消审批与占用指标、金额/间夜边界、事务审计和跨账号/匿名隔离。复核临时用户/民宿均为0，云端演示仍6房14单。没有产品代码、迁移或模型调用变更。此为数据库事务验证，不代表正常登录页面完整流程或Vercel域名验收；A2b/A3继续保留未完成。回滚点7be5486。
+
+## 2026-10-24 Vercel部署与生产接口验收
+
+用户授权完整部署，并通过Vercel官方device login验证。项目yuuno/staycraft绑定GitHub main，Root frontend/Node24/Next；不上传本地未跟踪文件。首次dpl_8XWhknLuUmRJqTs3eZMgcdA7qqWB自动为production，2bf5f44构建成功；主域名staycraft-teal.vercel.app公开可达，其他别名保留默认平台保护。一次模型密钥上传被自动审批拒绝且未执行，用户随后明确批准具体Secret目的地与线上两项能力，才配置MODEL_API_KEY Secret。批量JSON被CLI拒绝400，改单项成功，临时密钥文件已移除；模型版本dpl_q3aAPrKPbLu7hUcqVYmMvsNAmL1D Ready。发布前28项隔离检查再次全部通过。
+
+实际HTTPS正常Auth会话读取库存6房、初始14单、9完成、5/35间夜/预订3140元；四页HTML返回200、匿名业务401、健康200，公开资料白名单正确。实际AI排序一次、同义早餐分类一次均model_v1；提前入住转人工，新增虚构会话d98e19c1-38ef-4bc3-8002-99229f721493。无其他真实资料调用。
+
+正式接口创建两笔虚构验收单：bf1874b7-d92c-42fe-a7af-e84299ba98eb完成，381e78d4-dbf2-4cba-9cd6-ead0a0ea1b19取消。验证脏房入住409、清洁后入住/重复安全、退房转脏/重复安全、收入增加完成单、清洁及撤销、取消释放间夜；比对原14单无修改，房102恢复脏。最终审计断言误写kind=stay_checkout失败；核对既有契约为checked_out，再查询确认仅1条真实退房审计，不重跑有写入的流程。现16单/10完成/5680元。没有产品逻辑修复需求。
+
+Edge debugger未连接，IAB外网建页超时；不将HTTP或隔离截图标为生产浏览器验收。Windows官方curl遇证书吊销服务离线，未禁用TLS/吊销验证，改用正常证书验证的urllib访问主域名成功；没有关闭平台保护。Auth Site URL尚未改，无回调流程。待补真实浏览器视觉与双账号切换。README依要求仅简短背景；根.vercel/保持忽略。回滚基点2bf5f44，配置和数据单独处理。
