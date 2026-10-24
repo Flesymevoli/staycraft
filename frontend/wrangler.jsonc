@@ -1,0 +1,31 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "staycraft",
+  "main": ".open-next/worker.js",
+  "compatibility_date": "2026-10-24",
+  "compatibility_flags": [
+    "nodejs_compat",
+    "global_fetch_strictly_public"
+  ],
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS",
+    "run_worker_first": true
+  },
+  "services": [
+    {
+      "binding": "WORKER_SELF_REFERENCE",
+      "service": "staycraft"
+    }
+  ],
+  "vars": {
+    "STAYCRAFT_HOSTED": "1",
+    "HOMESTAY_LOCAL_DATA": "0",
+    "MODEL_ENABLED": "0",
+    "FORMAL_MODEL_ENABLED": "0",
+    "FORMAL_AUTO_REPLY_ENABLED": "0",
+    "NEXT_PUBLIC_SUPABASE_URL": "https://husrpqalpjjswpvrkxet.supabase.co",
+    "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY": "sb_publishable_ZqdrN-2yYsMPsYm-RvYr7w_tr50ju3f"
+  },
+  "account_id": "b67f83a25ab379983489fe89319e55ea"
+}

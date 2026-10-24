@@ -4,6 +4,8 @@
 
 ## 当前停在哪里
 
+- 2026-10-25：Cloudflare已并行部署至https://staycraft.staycraft-yuuno.workers.dev，Vercel保留。CLI授权成功；普通演示登录、Home/Work及Analysis数据/月历已验证。AI三个开关仍0，等待新目的地Secret许可；无需重新登录授权。完整验收及关闭VPN实测未完成，见CLOUDFLARE_DEPLOYMENT.md。
+
 - 本轮落实工作页入口和区块调整：工作页顺序为客房概览→需优先处理→客人消息（列表上方自动回复开关）→预订订单；移除独立自动化处理/重复转人工列表，历史订单入口在订单列表底部。移除工作页客人预订链接，预订端作为独立关联网页保留，新入口待确定。
 - 本轮修改基点：`cfc05e7`；上线状态需以最新Git/Vercel检查为准。线上：https://staycraft-teal.vercel.app。
 - Work客房概览置顶，主订单仅未入住/待处理；已入住、完成、取消进入`/app/bookings/history`。取消待审核留主列表，未知状态不误归历史。

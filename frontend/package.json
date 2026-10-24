@@ -10,7 +10,10 @@
     "lint": "eslint src",
     "sync:prototype": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/sync-prototype.ps1",
     "check": "npm run lint && npm run build",
-    "release:check": "npm run check && node scripts/qa-release.cjs"
+    "release:check": "npm run check && node scripts/qa-release.cjs",
+    "cf:build": "node scripts/cloudflare.cjs build",
+    "cf:preview": "node scripts/cloudflare.cjs preview",
+    "cf:deploy": "node scripts/cloudflare.cjs deploy"
   },
   "dependencies": {
     "@supabase/ssr": "0.12.7",
@@ -23,6 +26,7 @@
     "unpdf": "1.9.1"
   },
   "devDependencies": {
+    "@opennextjs/cloudflare": "1.20.13",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
@@ -31,9 +35,18 @@
     "eslint-config-next": "16.4.2",
     "playwright": "1.62.1",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "wrangler": "4.152.0"
   },
   "engines": {
     "node": "24.x"
+  },
+  "overrides": {
+    "@node-minify/core": {
+      "glob": "10.5.0"
+    },
+    "miniflare": {
+      "undici": "7.30.1"
+    }
   }
 }

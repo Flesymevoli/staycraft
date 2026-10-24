@@ -43,3 +43,8 @@ next-env.d.ts
 
 # Temporary dependency downloads used during release maintenance
 /.release-cache/
+
+# Cloudflare build output and local secrets
+/.open-next/
+/.wrangler/
+.dev.vars*
