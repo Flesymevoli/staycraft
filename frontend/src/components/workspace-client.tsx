@@ -40,14 +40,15 @@ export function WorkspaceClient({ section, userId, roomId, bookingId, bookingHis
   const router = useRouter();
   const t = (en: string, cn: string) => zh ? cn : en;
   const current = sections.find(item => item.id === section)!;
+  const compactHeading = section !== "home" && !roomId && !bookingId && !threadId && !bookingHistory;
   const toMine = <Link className="native-primary" href="/app/mine">{t("Set up property", "设置民宿资料")}<ArrowRight size={16} aria-hidden="true" /></Link>;
 
 
   return <OperatorSampleContext value={sample}><div className="native-shell workspace-shell">
     <main className={`native-page workspace-page workspace-${section}${section === "home" ? " native-home-page" : ""}`}>
       <header className="native-header"><div className="workspace-header-label"><span className="native-kicker">{t(current.en.toUpperCase(), current.zh)}</span>{sample&&<details className="workspace-sample" aria-label={t("Fictional sample environment","虚构演示环境")}><summary>{t("Demo", "演示")}</summary><aside>{t("Fictional local sample · edits reset on restart · no cloud or AI requests","本机虚构演示 · 修改重启即还原 · 不连接云端或 AI")}</aside></details>}</div><button className="native-language" type="button" onClick={() => setLanguage(zh ? "en" : "zh")}>{zh ? "EN" : "中文"}</button></header>
-      <h1>{bookingHistory?t("Booking history","历史订单"):bookingId?t("Booking details","订单详情"):threadId?t("Guest conversation","客人会话"):roomId ? roomId==="new"?t("Add room","添加客房"):t("Room details","客房详情") : section === "home" ? t("Welcome.", "你好。") : section === "mine" && connection.status === "linked" ? connection.propertyName : t(current.en, current.zh)}</h1>
-      <p className="workspace-intro">{bookingId||threadId||bookingHistory?"":roomId?t("Your room, at a glance.","查看和维护这间客房的信息。"):section === "home" ? t("A little clarity for your day.", "让经营的每一天，更清晰。") : section === "mine" ? t("The information your workspace works from.", "从你的民宿资料开始。") : section === "analysis" ? t("Select a metric to view its details below", "点选指标，在下方查看详情") : section === "work" ? t("Rooms, bookings and guest conversations.", "客房、订单与客人消息。") : t("Discover opportunities around your stay.", "发现民宿周边的经营机会。")}</p>
+      <h1 className={compactHeading?"workspace-sr-heading":undefined}>{bookingHistory?t("Booking history","历史订单"):bookingId?t("Booking details","订单详情"):threadId?t("Guest conversation","客人会话"):roomId ? roomId==="new"?t("Add room","添加客房"):t("Room details","客房详情") : section === "home" ? t("Welcome.", "你好。") : section === "mine" && connection.status === "linked" ? connection.propertyName : t(current.en, current.zh)}</h1>
+      {!compactHeading&&<p className="workspace-intro">{bookingId||threadId||bookingHistory?"":roomId?t("Your room, at a glance.","查看和维护这间客房的信息。"):section === "home" ? t("A little clarity for your day.", "让经营的每一天，更清晰。") : section === "mine" ? t("The information your workspace works from.", "从你的民宿资料开始。") : section === "analysis" ? t("Select a metric to view its details below", "点选指标，在下方查看详情") : section === "work" ? t("Rooms, bookings and guest conversations.", "客房、订单与客人消息。") : t("Discover opportunities around your stay.", "发现民宿周边的经营机会。")}</p>}
 
       {!roomId && connection.status === "unavailable" && <div className="workspace-notice" role="status"><span>{t("Property details are unavailable. Please try again.", "暂时无法读取民宿资料，请稍后重试。")}</span><button type="button" disabled={refreshing} onClick={() => startRefresh(() => router.refresh())}><RefreshCw size={15} aria-hidden="true" />{refreshing ? t("Retrying…", "正在重试…") : t("Retry", "重试")}</button></div>}
 

@@ -220,3 +220,5 @@ Work视觉调整（2026-10-23）：revert对应提交并重建恢复旧房态网
 Vercel部署（2026-10-24）：项目yuuno/staycraft，生产staycraft-teal.vercel.app；代码源2bf5f44，初始无模型部署dpl_8XWhknLuUmRJqTs3eZMgcdA7qqWB，模型配置部署dpl_q3aAPrKPbLu7hUcqVYmMvsNAmL1D。先暂停民宿自动回复/将Vercel三项模型发送开关改0并重新部署即可停用，不删订单或审计。恢复初始无模型版本也会恢复其环境快照，须重新核对。main推送自动部署，回退应绑定已验证提交；数据库无新迁移。线上验收新增2笔标记订单与1条会话保留，不能把代码回退当数据重置。
 
 工作页置顶与历史订单（2026-10-24）：前置cfc2ad0。按本模块提交revert可恢复原顺序/完整主订单列表，删除新增history页面并还原组件/相关QA；无数据库迁移、无订单/房态/资料写入。Git main会自动触发Vercel构建，回退后核对页面与环境配置，保留历史业务和审计。
+
+后四页紧凑标题（2026-10-24）前置a8135b4：还原WorkspaceClient的标题class/介绍条件及workspace-sr-heading样式和相应布局断言即可恢复；不改订单、房态或环境变量。
