@@ -1,5 +1,10 @@
-# Course hand-in files are kept locally, outside the code history.
+# Local reference materials stay outside the product repository.
 /deliverables/
+/课程背景.md
+/AGENTS.md
+/TODO.md
+/docs/
+/archive/
 
 # Generated visual checks and reference renders
 /frontend/qa-*
