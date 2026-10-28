@@ -9,5 +9,6 @@ const fetcher=async(url,init)=>{const payload=JSON.parse(init.body);assert.equal
 const ranked=await prioritiseInsights(items,{model:true,fetcher});assert.equal(ranked.engine,'model_v1');assert.equal(ranked.items[0].id,'inactive');assert.deepEqual(new Set(ranked.items.map(i=>i.evidence)),new Set(items.map(i=>i.evidence)));
 const invalid=await prioritiseInsights(items,{model:true,fetcher:async()=>new Response(JSON.stringify({choices:[{finish_reason:'stop',message:{content:'{"priorities":["invented"]}'}}]}))});assert.equal(invalid.fallback,true);assert.equal(invalid.engine,'rules_v1');
 assert.equal((await prioritiseInsights(items,{model:false,fetcher:()=>{throw new Error('must not call')}})).engine,'rules_v1');
+process.env.MODEL_AUTH_MODE='api-key';const gateway=await prioritiseInsights(items,{model:true,fetcher:async(url,init)=>{assert.equal(init.headers['api-key'],'fixture-only');assert.equal(init.headers.Authorization,'Bearer fixture-only');return fetcher(url,init)}});assert.equal(gateway.engine,'model_v1');
 console.log('PASS grounded assistance: operational evidence, completed-vs-booked distinction, capped inbox scope, model ranking only, risk cannot be demoted, invalid/disabled model fallback. Mock provider only.');
 })().catch(error=>{console.error(error);process.exitCode=1});

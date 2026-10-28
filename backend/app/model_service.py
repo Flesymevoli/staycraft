@@ -9,6 +9,7 @@ import httpx
 
 from .contracts import ReplyDecision, ReplyDecisionRequest
 from .reply_service import decide_reply
+from .model_headers import model_headers
 
 
 async def generate_reply(request: ReplyDecisionRequest, transport=None) -> ReplyDecision:
@@ -45,13 +46,13 @@ async def generate_reply(request: ReplyDecisionRequest, transport=None) -> Reply
         "max_tokens": 256,
         "stream": False,
     }
-    # Provider-specific optional field is isolated here; school APIs can use the
+    # Provider-specific optional field is isolated here; compatible APIs use the
     # standard payload without accepting DeepSeek extensions.
     if urlparse(base).hostname == "api.deepseek.com":
         payload["thinking"] = {"type": "disabled"}
     try:
         async with httpx.AsyncClient(timeout=20, transport=transport, follow_redirects=False) as client:
-            response = await asyncio.wait_for(client.post(base + "/chat/completions", headers={"Authorization": "Bearer " + key}, json=payload), timeout=20)
+            response = await asyncio.wait_for(client.post(base + "/chat/completions", headers=model_headers(key), json=payload), timeout=20)
             response.raise_for_status()
             choice = response.json()["choices"][0]
             if choice.get("finish_reason") != "stop":

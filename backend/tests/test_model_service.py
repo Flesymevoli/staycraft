@@ -74,11 +74,12 @@ class ModelTests(unittest.TestCase):
         result=self.run_model(lambda request:self.fail('Unexpected paid call while paused'),request)
         self.assertEqual(result.reason_code,'auto_reply_off')
 
-    def test_school_compatible_endpoint_without_deepseek_extension(self):
+    def test_compatible_endpoint_without_deepseek_extension(self):
         def handler(request):
-            self.assertEqual(str(request.url),'https://school.example/v1/chat/completions')
+            self.assertEqual(str(request.url),'https://gateway.example/v1/chat/completions')
+            self.assertEqual(request.headers['api-key'],'test-only')
             self.assertNotIn('thinking',json.loads(request.content))
             return httpx.Response(429,json={})
-        with patch.dict(os.environ,{**CONFIG,'MODEL_BASE_URL':'https://school.example/v1'}):
+        with patch.dict(os.environ,{**CONFIG,'MODEL_BASE_URL':'https://gateway.example/v1','MODEL_AUTH_MODE':'api-key'}):
             result=asyncio.run(generate_reply(self.request(),httpx.MockTransport(handler)))
             self.assertEqual(result.reason_code,'model_unavailable')
