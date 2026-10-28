@@ -3,6 +3,7 @@ import asyncio
 import hashlib
 import json
 import os
+from .model_headers import model_headers
 import re
 from datetime import datetime, timezone
 from typing import Literal
@@ -75,7 +76,7 @@ async def build_summary(store, days, language, transport=None):
         payload["thinking"]={"type":"disabled"}
     try:
         async with httpx.AsyncClient(timeout=20,transport=transport,follow_redirects=False) as client:
-            response=await asyncio.wait_for(client.post(base+"/chat/completions",headers={"Authorization":"Bearer "+key},json=payload),timeout=20)
+            response=await asyncio.wait_for(client.post(base+"/chat/completions",headers=model_headers(key),json=payload),timeout=20)
             response.raise_for_status()
             choice=response.json()["choices"][0]
             content=json.loads(choice["message"]["content"])
