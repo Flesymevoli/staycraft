@@ -1,4 +1,5 @@
 import {groundedInsights,prioritiseInsights} from "@/lib/business-assistant";
+import {bookingPeriod} from "@/lib/booking-period";
 import {operatorSample} from "@/lib/operator-sample";
 import {validateInventory} from "@/lib/property-inventory";
 import {boundedBody,requireSameOrigin,verifiedProperty,WorkspaceError,workspaceFailure} from "@/lib/workspace-access";
@@ -6,11 +7,12 @@ export const dynamic="force-dynamic";
 export async function POST(request:Request){try{
  requireSameOrigin(request);const {supabase,propertyId}=await verifiedProperty();let body;
  try{body=JSON.parse(new TextDecoder().decode(await boundedBody(request,2500)))}catch{throw new WorkspaceError("invalid_request",400)}
- if(!["en","zh"].includes(body?.language)||![7,28].includes(body?.days)||typeof body?.question!=="string"||body.question.length>500||Object.keys(body).some(k=>!["language","days","question"].includes(k)))throw new WorkspaceError("invalid_request",400);
+ const period=bookingPeriod(body||{});
+ if(!period||!["en","zh"].includes(body?.language)||typeof body?.question!=="string"||body.question.length>500||Object.keys(body).some(k=>!["language","days","question","start","end"].includes(k)))throw new WorkspaceError("invalid_request",400);
  const question=body.question.trim().toLowerCase(),topic=/attention|pending|处理|待办|注意/.test(question)?"attention":/week|business|booking|analysis|经营|预订|分析|本周|这周/.test(question)?"week":null;
  if(!topic)return Response.json({unsupported:true,language:body.language},{headers:{"Cache-Control":"no-store"}});
- const metrics=await supabase.rpc("get_booking_metrics",{p_property:propertyId,p_days:body.days});const data=metrics.data;
- if(metrics.error||!data||data.period_days!==body.days||!Array.isArray(data.daily)||data.daily.length!==body.days)throw new WorkspaceError("analysis_unavailable",503);
+ const metrics=await supabase.rpc(period.rpc,{p_property:propertyId,...period.args});const data=metrics.data;
+ if(metrics.error||!data||data.period_days!==period.days||!Array.isArray(data.daily)||data.daily.length!==period.days||(period.start&&(data.period_start!==period.start||data.period_end!==period.end)))throw new WorkspaceError("analysis_unavailable",503);
  let attention;
  if(topic==="attention"){
   const [inventory,inbox]=await Promise.all([supabase.rpc("get_room_inventory",{p_property:propertyId}),supabase.rpc("get_conversations",{p_property:propertyId})]);

@@ -4,11 +4,11 @@ import Link from "next/link";
 import {Sparkles,X} from "lucide-react";
 import type {Insight} from "@/lib/business-assistant";
 export type AssistantAnswer={language:string;unsupported?:boolean;engine:string;fallback:boolean;items:Insight[];period_start:string;period_end:string};
-export function WorkspaceAssistant({zh,days=7,analysis=false,onAnswer}:{zh:boolean;days?:7|28;analysis?:boolean;onAnswer?:(answer:AssistantAnswer)=>void}){
+export function WorkspaceAssistant({zh,days=7,range,analysis=false,onAnswer}:{zh:boolean;days?:7|28;range?:{start:string;end:string};analysis?:boolean;onAnswer?:(answer:AssistantAnswer)=>void}){
  const [open,setOpen]=useState(analysis),[draft,setDraft]=useState(""),[answer,setAnswer]=useState<AssistantAnswer|null>(null),[busy,setBusy]=useState(false),[failed,setFailed]=useState(false);
  const pending=useRef<AbortController|null>(null),t=(en:string,cn:string)=>zh?cn:en,language=zh?"zh":"en";
  useEffect(()=>()=>pending.current?.abort(),[]);
- async function ask(question:string){pending.current?.abort();const controller=new AbortController();pending.current=controller;setBusy(true);setFailed(false);setAnswer(null);try{const response=await fetch("/api/workspace/assistant",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({question,days,language}),signal:controller.signal});const body=await response.json();if(!response.ok)throw new Error();if(!controller.signal.aborted){setAnswer(body);onAnswer?.(body)}}catch{if(!controller.signal.aborted)setFailed(true)}finally{if(!controller.signal.aborted)setBusy(false)}}
+ async function ask(question:string){pending.current?.abort();const controller=new AbortController();pending.current=controller;setBusy(true);setFailed(false);setAnswer(null);try{const response=await fetch("/api/workspace/assistant",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({question,days,language,...range}),signal:controller.signal});const body=await response.json();if(!response.ok)throw new Error();if(!controller.signal.aborted){setAnswer(body);onAnswer?.(body)}}catch{if(!controller.signal.aborted)setFailed(true)}finally{if(!controller.signal.aborted)setBusy(false)}}
  if(!open)return <button className="native-primary native-ask" type="button" onClick={()=>setOpen(true)}><Sparkles size={16}/>{t("Ask AI","问问 AI")}</button>;
  const current=answer?.language===language?answer:null;
  if(analysis)return <div className="business-priority-review"><button type="button" className="inventory-text" disabled={busy} onClick={()=>void ask(t("Business analysis","经营分析"))}>{busy?t("Checking…","正在核对…"):t("Review priorities and actions","梳理重点与行动")}</button>{failed&&<p role="alert">{t("Review unavailable. Please retry.","暂时无法梳理，请重试。")}</p>}</div>;
