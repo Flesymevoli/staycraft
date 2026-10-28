@@ -70,11 +70,11 @@ if (process.env.STAYCRAFT_QA_AUTH_FIXTURES === '1') {
       }
       return json({bookings:sample.bookings.map(b=>({...b,stay_state:stays.get(b.id)||'pending'}))});
     }
-    if(url.pathname==='/rest/v1/rpc/get_booking_metrics'){
+    if(['/rest/v1/rpc/get_booking_metrics','/rest/v1/rpc/get_booking_metrics_range'].includes(url.pathname)){
       const body=JSON.parse(init.body),propertyId=propertyFor(identity.index);
       if(identity.index===2||body.p_property!==propertyId)return json({message:'property_not_owned'},403);
       const inventory=inventories.get(propertyId)?.inventory||{types:[],rooms:[]};
-      return json(require('./booking-metrics-fixture.cjs')(inventory,sample?.bookings.filter(b=>stays.get(b.id)!=='completed')||[],body.p_days,sample?.anchor||new Intl.DateTimeFormat('sv-SE',{timeZone:'Asia/Shanghai',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date())));
+      return json(require('./booking-metrics-fixture.cjs')(inventory,sample?.bookings.filter(b=>stays.get(b.id)!=='completed')||[],body.p_start?Math.round((Date.parse(body.p_end)-Date.parse(body.p_start))/86400000)+1:body.p_days,body.p_start||sample?.anchor||new Intl.DateTimeFormat('sv-SE',{timeZone:'Asia/Shanghai',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date())));
     }
     if (url.pathname.includes('/storage/v1/object/') && url.pathname.includes('/room-photos/')) {
       if(identity.index===2)return json({message:'Forbidden'},403);

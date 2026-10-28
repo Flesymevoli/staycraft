@@ -3,7 +3,7 @@ const fs=require('node:fs');
 const path=require('node:path');
 process.chdir(path.resolve(__dirname,'..'));
 const checks=[
- ['qa-business-analysis.cjs'],['qa-business-assistant.cjs'],['qa-reply-plan.cjs'],['qa-revenue-insights.cjs'],['qa-revenue-source.cjs'],['qa-release-config.cjs'],
+ ['qa-booking-period.cjs'],['qa-business-analysis.cjs'],['qa-business-assistant.cjs'],['qa-reply-plan.cjs'],['qa-revenue-insights.cjs'],['qa-revenue-source.cjs'],['qa-release-config.cjs'],
  ['qa-workspace.cjs'],['qa-workspace-assistant.cjs'],['qa-property-profile.cjs'],['qa-guest-profile.cjs'],['qa-room-cloud.cjs'],['qa-booking-metrics.cjs'],['qa-booking-amounts.cjs'],
  ['qa-booking-details.cjs'],['qa-work-booking-history.cjs'],['qa-room-actions.cjs'],['qa-room-scroll.cjs'],
  ['qa-formal-stays.cjs'],['qa-operation-activity.cjs'],['qa-arrival-cleaning.cjs'],['qa-reply-automation.cjs'],['qa-cancellation-review.cjs','approve'],['qa-cancellation-review.cjs','reject'],
