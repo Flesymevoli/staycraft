@@ -5,7 +5,7 @@ import Link from "next/link";
 import {useOperatorLanguage} from "./operator-language";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { ArrowRight, Compass, RefreshCw } from "lucide-react";
+import { RefreshCw } from "lucide-react";
 import "./native-home.css";
 import "./workspace.css";
 import { PropertyProfileEditor } from "./property-profile-editor";
@@ -18,6 +18,7 @@ import {OperationActivity} from "./operation-activity";
 import {WorkBookingInsight} from "./booking-insight";
 import {HomeBookingOverview,WorkspaceAnalysis} from "./workspace-analysis";
 import {OperatorSampleContext} from "./operator-sample-context";
+import {WorkspaceExplore} from "./workspace-explore";
 
 export type WorkspaceSection = "home" | "work" | "analysis" | "explore" | "mine";
 export type WorkspaceConnection = { status: "unavailable" | "unassigned" } | { status: "linked"; propertyName: string;propertyId:string };
@@ -40,7 +41,6 @@ export function WorkspaceClient({ section, userId, roomId, bookingId, bookingHis
   const t = (en: string, cn: string) => zh ? cn : en;
   const current = sections.find(item => item.id === section)!;
   const compactHeading = section !== "home" && !roomId && !bookingId && !threadId && !bookingHistory;
-  const toMine = <Link className="native-primary" href="/app/mine">{t("Set up property", "设置民宿资料")}<ArrowRight size={16} aria-hidden="true" /></Link>;
 
 
   return <OperatorSampleContext value={sample}><div className="native-shell workspace-shell">
@@ -59,7 +59,7 @@ export function WorkspaceClient({ section, userId, roomId, bookingId, bookingHis
       {bookingHistory&&<WorkspaceBookings zh={zh} history/>}{bookingId&&<WorkspaceBookings zh={zh} bookingId={bookingId}/>}{threadId&&<WorkspaceConversation zh={zh} threadId={threadId}/>}
       {section === "work" && !roomId && !bookingId && !threadId && !bookingHistory && <><RoomPreviewBoard scope={userId} zh={zh}/><WorkUrgentTodos scope={userId} zh={zh}/><WorkspaceInbox zh={zh}/><WorkspaceBookings pendingOnly zh={zh}/><WorkBookingInsight scope={userId} zh={zh}/><div id="operation-activity"><OperationActivity zh={zh}/></div></>}
       {section === "analysis" && <WorkspaceAnalysis key={userId} scope={userId} zh={zh}/>}
-      {section === "explore" && <section className="workspace-empty"><span className="workspace-symbol"><Compass size={28} strokeWidth={1.4} aria-hidden="true" /></span><h2>{t("Discover what is around you.", "从民宿所在的位置开始。")}</h2><p>{t("Local demand and opportunities need a property location and reliable sources. There are no connected signals yet.", "周边需求和推广机会需要民宿位置及可靠的信息来源，目前尚未接入相关数据。")}</p>{toMine}</section>}
+      {section === "explore" && <WorkspaceExplore key={userId} zh={zh}/>}
       {section === "mine" && <>
         <PropertyProfileEditor zh={zh} />
         <RoomTypesPreview scope={userId} zh={zh}/>

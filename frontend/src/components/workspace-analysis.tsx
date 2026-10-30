@@ -8,6 +8,7 @@ import {WorkspaceAssistant,type AssistantAnswer} from "./workspace-assistant";
 import {RevenuePreview} from "./revenue-preview";
 import {useBookingMetrics} from "./booking-metrics";
 import {bookingPeriod,type BookingRange} from "@/lib/booking-period";
+import {LocalReferences} from "./local-references";
 import "./workspace-analysis.css";
 export function HomeBookingOverview({scope,zh}:{scope:string;zh:boolean}){
  const {data,status,retry}=useBookingMetrics(7,scope);const t=(en:string,cn:string)=>zh?cn:en;
@@ -43,5 +44,6 @@ export function WorkspaceAnalysis({scope,zh}:{scope:string;zh:boolean}){
  {analysis&&<section className="booking-analysis-panel business-analysis"><h2>{t("Business analysis","经营状况分析")}</h2>{priority?.key===analysisKey?<><small>{priority.answer.engine==="model_v1"?t("AI-assisted priorities","AI 辅助重点梳理"):t("Based on current operating data","依据当前经营数据")}</small>{priority.answer.fallback&&<p>{t("AI review unavailable; using data-based priorities.","AI 梳理暂不可用，当前展示数据分析重点。")}</p>}{priority.answer.items.map(item=><article key={item.id}><h3>{item.title}</h3><p>{item.evidence}</p><p>{item.action}</p><Link className="inventory-text" href={item.href}>{t("Review and act","查看并处理")} →</Link></article>)}</>:<><h3>{analysis.title}</h3><p>{analysis.evidence}</p>{analysis.risk&&<p className="booking-analysis-warning">{analysis.risk}</p>}<div className="business-analysis-action"><h3>{t("Recommended focus","建议重点")}</h3><p>{analysis.action}</p></div></>}<WorkspaceAssistant key={analysisKey} zh={zh} days={quickDays} range={range} analysis onAnswer={answer=>setPriority({key:analysisKey,answer})}/><details><summary>{t("Basis of analysis","分析依据")}</summary><p>{t("Based on bookings and current active inventory for the selected period. Cancelled and completed stays are excluded; cancellation requests under review still reserve rooms. This is not a forecast of final occupancy or collected revenue.","依据所选期间的预订与当前启用库存；取消和已完成住宿不计入，取消待审核仍保留房量。这是当前预订分布判断，不是最终入住率或实收收入预测。")}</p></details></section>}
 
  {data&&<BookingNextSteps data={data} zh={zh} onDate={index=>{setMetric("occupancy");setSelected(index);setShowDaily(true);document.getElementById("booking-analysis-detail")?.scrollIntoView({block:"start",behavior:"smooth"});}}/>}
+ {data&&<LocalReferences start={data.period_start} end={data.period_end} zh={zh}/>}
  </div>;
 }

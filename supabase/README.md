@@ -50,3 +50,9 @@ supabase/tests为事务回滚夹具，原验证结果见docs/DEVELOPMENT_STATUS.
 新增迁移本地→远端映射：20261023093119→20261023093937（reply_automation）、20261023094052→20261023094124（fact_gate）、20261023094403→20261023094716（booking_amounts）、20261023095440→20261023095944（operation_activity）。当前15条远端记录；本地与远端名称/结构需一起核对，时间戳差异不表示待执行。新增设置/自动事件/操作记录均启用owner RLS，审计不能由普通客户端伪造。真实账号自动设置保持关闭。
 
 新增guest_property_profile迁移：本地20261023155131→远端20261023155324，扩展profile可选guestNotes且保留旧约束；公开RPC仅投影location/breakfast/checkin/guestNotes为notes，绝不返回旧notes、owner或房间数。虚构事务回滚及匿名权限测试通过，远端现16条记录。
+
+## 2026-10-30 推广工作区
+
+已新增promotion_workspaces（owner_user_id RLS），远端与本地版本一致为20261030090350。仅当前账号可读写自己的来源和草稿，普通客户端无DELETE权限。supabase/tests/promotion_workspace.sql在正式库以虚构夹具事务回滚通过，无持久化测试用户。普通演示Auth通过本地生产UI保存/重开与退出重登验证，临时内容已还原。本地参考资料不属于产品数据；模型Secret不进入仓库。
+
+此前旧迁移时间戳差异仍需按实际schema另行对账，不盲目db push。新表已单独应用，不需要再执行。本轮只准备代码，未更新公开Worker。

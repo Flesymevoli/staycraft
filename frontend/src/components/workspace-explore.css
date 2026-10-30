@@ -1,0 +1,36 @@
+.workspace-explore-content{display:grid;gap:24px;padding-bottom:20px}
+.workspace-explore-content .native-card{margin:0;padding:22px;min-width:0;background:#fff;backdrop-filter:none}
+.workspace-explore-content h2{font-size:22px;font-weight:500;line-height:1.35;margin:0 0 16px}
+.workspace-explore-content p{line-height:1.65;overflow-wrap:anywhere}
+.promotion-eyebrow{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--native-muted,#64748b);margin-bottom:18px;letter-spacing:.04em}
+.promotion-muted,.workspace-explore-content small{color:#626c7c;font-size:12px;line-height:1.6}
+.workspace-explore-content fieldset{border:0;margin:0;padding:0;min-width:0}
+.workspace-explore-content legend{font-size:13px;margin-bottom:10px;color:#626c7c}
+.workspace-explore-content label{display:grid;gap:8px;font-size:14px;min-width:0}
+.workspace-explore-content .inventory-text{display:inline-flex;align-items:center;gap:7px;color:#0878ee;border:0;background:none;padding:0;min-height:44px;font:inherit;font-size:13px;cursor:pointer}
+.workspace-explore-content input:not([type=checkbox]),.workspace-explore-content select,.workspace-explore-content textarea{width:100%;min-width:0;box-sizing:border-box;border:1px solid #dce3ec;background:#fff;border-radius:12px;padding:12px;font:inherit;color:inherit;min-height:44px}
+.workspace-explore-content textarea{resize:vertical;line-height:1.65}
+.workspace-explore-content input[type=checkbox]{width:18px;height:18px;accent-color:#1677ff;flex-shrink:0}
+.promotion-fields,.promotion-goals{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:16px 0}
+.promotion-goals button{border:1px solid #e0e7ef;background:#f6f7f9;border-radius:14px;min-height:48px;padding:10px;font:inherit;font-size:14px;color:inherit}
+.promotion-goals button[aria-pressed=true]{border-color:#9ec5ff;background:#edf5ff;color:#1265c9}
+.promotion-brief .promotion-source-options{margin:22px 0}
+.promotion-source-options label,.promotion-confirm{display:flex!important;align-items:center;min-height:44px;gap:10px!important}
+.promotion-source-options small{display:block}
+.promotion-source-options p{font-size:13px;color:#626c7c}
+.promotion-actions{display:flex;gap:16px;align-items:center;flex-wrap:wrap;margin:16px 0}
+.workspace-explore-content details{margin-top:16px;font-size:13px;overflow-wrap:anywhere}
+.workspace-explore-content summary{min-height:44px;align-content:center;cursor:pointer;color:#626c7c}
+.workspace-explore-content details p{white-space:pre-line}
+.promotion-list-row{display:flex;align-items:center;justify-content:space-between;gap:12px;border-top:1px solid #e1e6ed;padding:18px 0;min-width:0}
+.promotion-list-row:last-child{padding-bottom:0}
+.promotion-list-row>div{min-width:0}.promotion-list-row p{font-size:13px;white-space:pre-line}
+.promotion-list-row a{display:inline;overflow-wrap:anywhere;color:#1265c9;text-decoration:none}
+.promotion-list-row .inventory-text{flex-shrink:0;min-width:44px;min-height:44px;justify-content:center}
+.promotion-source-form fieldset{display:grid;gap:14px;margin:18px 0}
+.promotion-source-form .promotion-fields{margin:0}
+.promotion-draft-open{display:grid;gap:7px;text-align:start;background:none;border:0;font:inherit;color:inherit;min-width:0;min-height:44px;cursor:pointer;padding:0}
+.promotion-draft-open strong{font-weight:500;overflow-wrap:anywhere;line-height:1.5}
+.workspace-explore-content button:disabled{opacity:.55;cursor:default}
+.workspace-explore-content :focus-visible{outline:2px solid #1677ff;outline-offset:3px}
+@media(max-width:360px){.workspace-explore-content .native-card{padding:18px}.promotion-fields{grid-template-columns:minmax(0,1fr)}}

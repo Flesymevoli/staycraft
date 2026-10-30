@@ -1,0 +1,8 @@
+.official-holiday-context{margin:18px 0;padding:18px;background:#f3f7fc;border-radius:18px;min-width:0;overflow-wrap:anywhere}
+.official-holiday-context h3{font-size:16px;font-weight:500;line-height:1.5;margin:0 0 10px}
+.official-holiday-context p{font-size:13px;line-height:1.7;color:#626c7c;margin:8px 0}
+.official-holiday-context article{margin:14px 0}
+.official-holiday-context strong{font-size:14px;font-weight:500}
+.official-holiday-context summary{cursor:pointer;min-height:44px;align-content:center;font-size:13px}
+.official-holiday-context a{color:#1265c9;font-size:13px;line-height:1.7;display:inline-block;min-height:44px}
+.official-holiday-context :focus-visible{outline:2px solid #1677ff;outline-offset:3px}
