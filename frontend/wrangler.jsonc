@@ -25,9 +25,7 @@
     "FORMAL_MODEL_ENABLED": "1",
     "FORMAL_AUTO_REPLY_ENABLED": "1",
     "NEXT_PUBLIC_SUPABASE_URL": "https://husrpqalpjjswpvrkxet.supabase.co",
-    "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY": "sb_publishable_ZqdrN-2yYsMPsYm-RvYr7w_tr50ju3f",
-    "MODEL_BASE_URL": "https://api.deepseek.com",
-    "MODEL_NAME": "deepseek-flash"
+    "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY": "sb_publishable_ZqdrN-2yYsMPsYm-RvYr7w_tr50ju3f"
   },
   "account_id": "b67f83a25ab379983489fe89319e55ea"
 }
