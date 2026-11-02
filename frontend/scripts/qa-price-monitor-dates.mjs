@@ -1,0 +1,12 @@
+import assert from 'node:assert/strict';
+import {monitorDates} from './price-monitor-dates.mjs';
+assert.deepEqual(monitorDates(null,'2026-10-31'),['2026-11-04','2026-11-07']);
+assert.deepEqual(monitorDates(['2026-11-04','2026-11-07'],'2026-11-01'),['2026-11-04','2026-11-07']);
+assert.deepEqual(monitorDates(['2026-11-04','2026-11-07'],'2026-11-04'),['2026-11-04','2026-11-07']);
+assert.deepEqual(monitorDates(['2026-11-04','2026-11-07'],'2026-11-05'),['2026-11-07','2026-11-09']);
+assert.deepEqual(monitorDates(['2026-11-04','2026-11-07'],'2026-11-08'),['2026-11-12','2026-11-15']);
+assert.deepEqual(monitorDates(['2026-11-05','2026-11-05'],'2026-11-01'),['2026-11-05','2026-11-08']);
+assert.deepEqual(monitorDates(['2026-02-30','junk','2099-01-01'],'2026-12-29'),['2027-01-02','2027-01-05']);
+assert.deepEqual(monitorDates([], '2028-02-25'),['2028-02-29','2028-03-03']);
+assert.throws(()=>monitorDates([], '2026-02-30'),/invalid_monitor_day/);
+console.log('9 monitoring date continuity and boundary checks passed');
