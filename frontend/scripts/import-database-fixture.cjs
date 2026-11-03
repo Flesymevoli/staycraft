@@ -15,7 +15,9 @@ module.exports=function createImportDb(sample,getInventory){
  create table operation_activity(property_id uuid,kind text,resource_id uuid,room_number text not null,automatic boolean default false,completed boolean default true);`);
  const base=fs.readFileSync(path.join(__dirname,'../../supabase/migrations/20261022002812_direct_bookings.sql'),'utf8');
  await db.exec(base.slice(base.indexOf('create table public.direct_bookings'),base.indexOf('create index direct_bookings_room_dates')));
- await db.exec(`alter table direct_bookings add column stay_state text not null default 'pending',add column checked_in_at timestamptz,add column checked_out_at timestamptz;
+ await db.exec(`alter table direct_bookings drop constraint direct_bookings_refund_result_check;
+ alter table direct_bookings add constraint direct_bookings_refund_result_check check(refund_result in ('auto_cancelled','review_pending','review_approved','review_rejected'));
+ alter table direct_bookings add column stay_state text not null default 'pending',add column checked_in_at timestamptz,add column checked_out_at timestamptz;
  create function private.record_operation_activity() returns trigger language plpgsql as $$begin return new;end$$;
  create trigger booking_operation_activity after insert or update on direct_bookings for each row execute function private.record_operation_activity();
  alter table properties enable row level security;alter table direct_bookings enable row level security;
@@ -26,6 +28,7 @@ module.exports=function createImportDb(sample,getInventory){
  await db.query('insert into properties(id,owner_user_id) values($1,$2)',[sample.propertyId,sample.ownerId]);
  await syncInventory();
  for(const b of sample.bookings)await db.query(`insert into direct_bookings(id,property_id,guest_hash,request_id,room_id,type_id,room_number,type_name,arrival,departure,guest_name,phone,expected_arrival,nightly_rate,total,status,refund_result) values($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,'00000000',$12,$13,$14,$15,$16)`,[b.id,sample.propertyId,'0'.repeat(64),b.id,b.room_id,b.type_id,b.room_number,b.type_name,b.arrival,b.departure,b.guest_name,b.expected_arrival,b.nightly_rate,b.total,b.status,b.refund_result]);
+ for(const b of sample.bookings)if(b.stay_state&&b.stay_state!=='pending')await db.query('update direct_bookings set stay_state=$2,checked_in_at=$3,checked_out_at=$4 where id=$1',[b.id,b.stay_state,b.checked_in_at,b.checked_out_at]);
  })();
  async function syncInventory(){
   const inv=getInventory();

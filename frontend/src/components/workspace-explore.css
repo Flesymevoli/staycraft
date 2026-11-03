@@ -92,3 +92,36 @@
 .workspace-competitor-preview .explore-footer{margin:20px 0;color:var(--muted)}
 .workspace-competitor-preview :is(button,input,summary):focus-visible{outline:2px solid var(--blue);outline-offset:3px}
 @media(max-width:359px){.workspace-competitor-preview .ob-overview,.workspace-competitor-preview .observation-page .ob-price{padding:16px}.workspace-competitor-preview .ob-summary strong{font-size:24px}.workspace-competitor-preview .ob-summary{gap:8px}.workspace-competitor-preview .ob-period button{padding:10px 6px}}
+
+.decision-bubble{margin:18px 0;padding:16px 18px;border-radius:22px 22px 22px 7px;background:var(--action-tint,#edf5ff);line-height:1.75;overflow-wrap:anywhere}
+.decision-bubble p{margin:0 0 14px;white-space:pre-line;color:var(--ink)}
+.decision-bubble p:last-child{margin-bottom:0}
+.decision-bubble p:first-child{font-weight:600}
+.local-search-controls{display:flex;align-items:center;gap:8px;margin-bottom:12px}
+.local-search-controls input{flex:1;min-width:0;border:1px solid var(--hairline);border-radius:16px;padding:12px;font:inherit;background:var(--card-surface);color:var(--ink)}
+.local-search-controls button{flex-shrink:0}
+.local-search-controls{flex-wrap:wrap}
+.local-search-controls .promotion-button{min-height:44px;padding:10px 18px;border:0;border-radius:24px;background:var(--action-tint,#edf5ff);color:var(--blue);font:inherit;font-size:14px;cursor:pointer}
+.local-search-controls .promotion-button:disabled{opacity:.6;cursor:wait}
+.local-search-controls button:focus-visible{outline:2px solid var(--blue);outline-offset:3px}
+.local-search-source{font-size:12px;color:var(--muted)}
+
+.decision-support .decision-period{margin:6px 0 14px;font-size:12px;color:var(--muted)}
+.decision-advice-item{padding:15px 0;border-bottom:1px solid var(--hairline)}
+.decision-advice-item:first-child{padding-top:0}
+.decision-advice-item:last-child{border-bottom:0}
+.decision-advice-item h3{margin:0 0 7px;font-size:15px;font-weight:600;line-height:1.5}
+.decision-advice-item p{margin:0;font-size:14px;line-height:1.7;color:var(--ink);white-space:pre-line}
+.decision-advice-item details{margin-top:8px;font-size:12px;color:var(--muted)}
+.decision-advice-item details p{padding-top:6px;color:var(--muted);font-size:12px}
+.decision-support>details{font-size:12px;margin:12px 0 0;color:var(--muted)}
+.decision-support .decision-save{margin-top:8px}
+
+.decision-price{padding:4px 0 22px;margin-bottom:5px;border-bottom:1px solid var(--hairline)}
+.decision-price h3{margin:0 0 10px;font-size:17px;font-weight:600}
+.decision-price .decision-price-value{margin:0;font-size:28px;line-height:1.25;letter-spacing:normal;font-weight:450;font-variant-numeric:tabular-nums;color:var(--ink)}
+.decision-price .decision-price-change{margin:10px 0 6px;font-size:14px;color:var(--ink)}
+.decision-price .decision-price-current,.decision-price details{font-size:12px;color:var(--muted);line-height:1.6}
+.decision-price details{margin-top:12px}
+.decision-price details p{margin:8px 0 0}
+

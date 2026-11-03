@@ -23,5 +23,5 @@ export default async function LoginPage() {
   }
   if (authenticated) redirect("/app");
 
-  return <div className="auth-shell"><LoginForm configured={hasSupabaseConfig()} sample={operatorSample()} prototypeAvailable={!isHosted()&&!operatorSample()} /></div>;
+  return <div className="auth-shell"><LoginForm configured={hasSupabaseConfig()} sample={operatorSample()} demoAvailable={operatorSample()||Boolean(process.env.DEMO_LOGIN_EMAIL&&process.env.DEMO_LOGIN_PASSWORD)} prototypeAvailable={!isHosted()&&!operatorSample()} /></div>;
 }

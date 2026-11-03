@@ -1,0 +1,31 @@
+"use client";
+import {useEffect,useState} from 'react';
+import Link from 'next/link';
+import type {LocalSearchResult} from '@/lib/local-discovery';
+import type {NearbyPlace} from '@/lib/amap-nearby';
+import {useBookingMetrics} from './booking-metrics';
+type Discovery={places?:NearbyPlace[];provider?:string;results?:LocalSearchResult[];searchedAt?:string;location?:string;start?:string;end?:string;error?:string};
+export function NearbyDiscovery({zh,start,end}:{zh:boolean;start:string;end:string}){
+ const t=(en:string,cn:string)=>zh?cn:en;
+ const {data:metrics}=useBookingMetrics(7,'nearby-opportunity',{start,end});
+ const [busy,setBusy]=useState(true),[data,setData]=useState<Discovery|null>(null),[retry,setRetry]=useState(0);
+ const [coordinates,setCoordinates]=useState<{latitude:number;longitude:number}|undefined>(),[locating,setLocating]=useState(false),[locationError,setLocationError]=useState('');
+ function locate(){setLocationError('');if(!navigator.geolocation){setLocationError(t('Location is unavailable in this browser.','此浏览器不支持定位，可继续使用民宿地址。'));return}setLocating(true);navigator.geolocation.getCurrentPosition(p=>{setCoordinates({latitude:p.coords.latitude,longitude:p.coords.longitude});setLocating(false)},()=>{setLocationError(t('Location permission denied or timed out. You can use the property address.','未获得定位权限或定位超时，可继续使用民宿地址。'));setLocating(false)},{enableHighAccuracy:true,timeout:12000,maximumAge:60000})}
+ useEffect(()=>{const controller=new AbortController();async function load(){setBusy(true);setData(null);try{const response=await fetch('/api/workspace/discovery',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({start,end,coordinates}),signal:controller.signal});const body=await response.json();if(!controller.signal.aborted)setData(response.ok?body:{...body,error:body.error||'search_unavailable'})}catch{if(!controller.signal.aborted)setData({error:'search_unavailable'})}finally{if(!controller.signal.aborted)setBusy(false)}}void load();return()=>controller.abort()},[start,end,retry,coordinates]);
+ return <div className="nearby-discovery"><h2>{t('Nearby demand opportunities','周边住宿机会')}</h2><p className="promotion-muted">{t('Identify potential guest segments around the property. A place alone does not establish upcoming demand.','以民宿为中心关注潜在客源；周边地点不代表近期一定有住宿需求。')}</p>
+ <div className="local-search-controls"><button className="promotion-button" disabled={locating} onClick={locate}>{locating?t('Locating…','正在定位…'):t('Use my location','使用我的位置')}</button>{coordinates&&<button className="inventory-text" onClick={()=>{setCoordinates(undefined);setLocationError('')}}>{t('Use property address','使用民宿地址')}</button>}</div>
+ <p className="promotion-muted">{t('Location is used only for this query and sent to AMap; it is not saved to your profile.','定位仅用于本次查询并发送给高德，不保存到民宿资料。')}</p>{locationError&&<p role="status" className="promotion-muted">{locationError}</p>}
+ {data?.location&&<p className="local-search-source">{t('Around','以此为中心')}：{data.location}</p>}
+ {busy?<p role="status" className="promotion-muted">{t('Loading nearby places…','正在发现周边…')}</p>:data?.error==='search_not_configured'?<p role="status" className="promotion-muted">{t('Nearby services are not connected yet.','周边查询服务尚未接通。')}</p>:data?.error==='property_location_required'?<p className="promotion-muted">{t('Use your location or save a property address.','请使用当前位置，或先保存民宿地址。')} <Link href="/app/mine">{t('Property settings','前往民宿资料')} →</Link></p>:data?.error?<p role="status" className="promotion-muted">{t('Nearby places are temporarily unavailable.','暂时无法查询周边，请重试或更换位置。')} <button className="inventory-text" onClick={()=>setRetry(v=>v+1)}>{t('Retry','重试')}</button></p>:data?.provider==='amap'?<>
+ <section className="native-card"><h3>{t('Upcoming events','近期活动')}</h3><p className="promotion-muted">{t('No verified event dates and source links are connected yet. No events or demand peaks are inferred from map places.','近期活动搜索尚未接通，暂无同时核实举办日期和来源的活动；不能据普通地点推断音乐节、展览或需求高峰。')}</p></section>
+ {!data.places?.length&&<p className="promotion-muted">{t('No relevant demand anchors returned in this area.','本次范围内未返回符合筛选条件的客源地点。')}</p>}{data.places?.map(p=><article key={p.id} className="native-card promotion-list-row"><div><a href={p.url} target="_blank" rel="noopener noreferrer">{p.name} ↗</a><p>{p.address}</p><small>{t('AMap · potential guest segment','高德 · 潜在客群')} {p.category}</small><p className="promotion-muted">{t('Validate visit timing and overnight-stay needs before targeting this segment.','需进一步确认到访日期和过夜需求，再决定是否定向推广。')}</p></div></article>)}
+ {!coordinates&&metrics&&!metrics.historical_inventory_unknown&&metrics.available_room_nights>0&&<section className="native-card"><h3>{t('Dates to focus on','值得关注的推广日期')}</h3><p>{metrics.daily.filter(d=>d.available>0).slice().sort((a,b)=>b.available-a.available).slice(0,3).map(d=>`${d.date} · ${d.available}${zh?' 间空房':' rooms open'}`).join('；')}</p><p className="promotion-muted">{t('These dates have the most recorded vacancies. Prepare a short-stay draft for relevant guest segments, then check event dates before publishing. This is not a demand forecast.','以上日期在当前记录中空房较多。可先为相关客群准备短住文案，核实活动日程后再决定投放日期；不据此认定市场需求正在上涨。')}</p></section>}
+ <p className="promotion-muted">{t('Within a 5 km search radius; not a walking distance. These places do not establish current events.','搜索半径 5 公里，非步行距离。这里是地点信息，近期展览、节庆仍需另行核实。')}</p>
+ </>:<>
+ <p className="local-search-source">{data?.start} — {data?.end}{data?.searchedAt&&<> · {t('Updated','更新于')} {new Date(data.searchedAt).toLocaleString(zh?'zh-CN':'en-GB')}</>}</p>
+ {!data?.results?.length&&<p className="promotion-muted">{t('No relevant activities were found for these dates.','本次没有找到这些日期的相关活动。')}</p>}
+ {data?.results?.map(item=><article className="native-card promotion-list-row" key={item.url}><div><a href={item.url} target="_blank" rel="noopener noreferrer">{item.title} ↗</a><p>{item.snippet}</p><small>{item.site} · {item.publishedAt?new Date(item.publishedAt).toLocaleDateString():t('Publication date unknown','发布日期未知')}</small></div></article>)}
+ <p className="promotion-muted">{t('Check activity dates and admission conditions in the original source; the address does not establish a walking distance.','活动日期与开放条件以原始来源为准，不根据地址直接推断步行距离。')}</p>
+ </>}
+ </div>;
+}

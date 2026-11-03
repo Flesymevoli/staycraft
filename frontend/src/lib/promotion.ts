@@ -41,10 +41,15 @@ export async function arrangePromotion(factIds:string[],brief:PromotionBrief,opt
 }
 
 export function promotionCopy(brief:PromotionBrief,name:string,facts:{id:string;text:string}[],ordered:string[]){
- const zh=brief.language==="zh",local=brief.goal==="local";
- const title=zh?(local?`住进${name}，把周边加入旅行计划`:`在${name}，安排一段小住`):(local?`Stay at ${name}, explore nearby`:`Plan a stay at ${name}`);
- const body=ordered.map(v=>facts.find(f=>f.id===v)?.text).filter(Boolean).join("\n\n");
- const dates=zh?`计划出行：${brief.start} — ${brief.end}`:`Travel dates: ${brief.start} — ${brief.end}`;
- const cta=zh?"想了解房型和入住安排，欢迎联系民宿。具体房态、价格及周边开放安排请在预订前核实。":"Contact the property for room types and stay arrangements. Confirm availability, prices and local opening arrangements before booking.";
- return [title,dates,body,cta,brief.channel==="xiaohongshu"?(zh?"#民宿旅行 #周边游":"#Homestay #LocalTravel"):""].filter(Boolean).join("\n\n");
+ const zh=brief.language==="zh",local=brief.goal==="local",red=brief.channel==="xiaohongshu";
+ const get=(id:string)=>facts.find(f=>f.id===id)?.text||"";
+ const location=get('location').replace(/^(位置|Location)[:：]\s*/,""),rooms=ordered.filter(id=>id.startsWith('room_')).map(get).filter(Boolean);
+ const references=ordered.filter(id=>id.startsWith('source_')).map(get).filter(Boolean);
+ const title=zh?(red?(local?`出门的理由，就藏在下一段小住里｜${name}`:`给自己留一晚，把日程放一放｜${name}`):`给自己安排一段小住，来${name}坐坐`):(red?(local?`A little exploring, a place to call it a day | ${name}`:`Leave a little room between plans | ${name}`):`Make time for a small getaway at ${name}`);
+ const opening=zh?(local?"不用把旅行写成一张赶路清单。先找一个想去的地方，再给这段出游留一个落脚点。":"忙完这一阵，先别急着安排下一个任务。留一段不用赶路的时间，认真休息，也是一件值得计划的小事。"):local?"Pick something you would like to explore, then leave space for the rest of the day. A small trip does not need a packed itinerary.":"Not every break needs a packed itinerary. Leave a little time between plans, and make room for a stay that is simply yours.";
+ const home=zh?`这次的小住，可以从${name}开始。${location?`位置在${location}，`:' '}${rooms.length?`按同行人数看看这些选择：${rooms.map(v=>v.replace(/^房型[:：]\s*/," ").replace(/。$/,'')).join('；')}。`:''}`:`Make ${name} your starting point${location?` in ${location}`:''}. ${rooms.length?`Choose a room to suit your group: ${rooms.map(v=>v.replace(/^Room type:\s*/,"").replace(/\.$/,'')).join('; ')}.`:''}`;
+ const inspiration=references.length?(zh?'给这趟出游加一点灵感，资料中有这些线索：\n':'A few ideas from the selected sources:\n')+references.join('\n\n'):'';
+ const dates=zh?`想在 ${brief.start}${brief.end!==brief.start?` 至 ${brief.end}`:''} 出发？${red?'先收藏这份小住灵感，想好同行的人，再来问问适合的房型。':'欢迎留言聊聊你的出行日期和同行人数，一起看看合适的入住安排。'}`:`Thinking of ${brief.start}${brief.end!==brief.start?` through ${brief.end}`:''}? ${red?'Save this idea for your next break, then ask us which room would suit your trip.':'Send us your dates and group size, and we can talk through your stay.'}`;
+ const note=zh?'房态、价格与周边开放安排，请在预订前核实。':'Confirm room availability, rates and local opening arrangements before booking.';
+ return [title,opening,home,inspiration,dates,note,red?(zh?'#民宿小住 #周边游 #给自己放个假':'#SmallGetaway #Homestay #SlowTravel'):''].filter(Boolean).join('\n\n');
 }

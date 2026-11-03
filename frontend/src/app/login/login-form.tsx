@@ -2,7 +2,7 @@
 
 import { useActionState } from "react";
 import { useOperatorLanguage } from "@/components/operator-language";
-import { signIn, type LoginState } from "./actions";
+import { signIn, signInDemo, type LoginState } from "./actions";
 
 const messages = {
   en: {
@@ -31,9 +31,10 @@ const messages = {
   },
 } as const;
 
-export function LoginForm({ configured,prototypeAvailable=true,sample=false }: { configured: boolean;prototypeAvailable?:boolean;sample?:boolean }) {
+export function LoginForm({ configured,prototypeAvailable=true,sample=false,demoAvailable=false }: { configured: boolean;prototypeAvailable?:boolean;sample?:boolean;demoAvailable?:boolean }) {
   const {language, setLanguage} = useOperatorLanguage();
   const [state, action, pending] = useActionState<LoginState, FormData>(signIn, undefined);
+  const [demoState,demoAction,demoPending]=useActionState<LoginState,FormData>(signInDemo,undefined);
   const t = messages[language];
 
   return <div className="auth-page">
@@ -44,7 +45,7 @@ export function LoginForm({ configured,prototypeAvailable=true,sample=false }: {
     <main className="auth-main">
       <h1>{t.title}</h1>
       <p className="auth-subtitle">{t.subtitle}</p>
-      {sample&&<p className="auth-subtitle">本机虚构演示<br/>demo@example.invalid / staycraft-demo<br/>修改重启即还原，不连接云端。</p>}
+      {demoAvailable&&<form action={demoAction} className="auth-card"><button className="auth-submit" disabled={demoPending||pending}>{demoPending?(language==='zh'?'正在进入…':'Opening…'):(language==='zh'?'体验演示 · Try StayCraft':'Try StayCraft')}</button><p className="auth-setup">{language==='zh'?'一键进入演示账号，体验完整工作台。演示账号仅含虚构数据。':'Enter the full workspace with a fictional demo account.'}{sample&&(language==='zh'?' 本机修改重启还原。':' Local changes reset on restart.')}</p>{demoState?.error&&<p role="alert" className="auth-error">{t.unavailable}</p>}</form>}
       <form action={action} className="auth-card">
         <label htmlFor="email">{t.email}</label>
         <input id="email" name="email" type="email" autoComplete="email" required />

@@ -2,7 +2,7 @@
 if (process.env.STAYCRAFT_QA_AUTH_FIXTURES === '1') {
   const sampleMode=process.env.STAYCRAFT_OPERATOR_SAMPLE==='1';
   if(sampleMode&&(process.env.VERCEL==='1'||process.env.STAYCRAFT_HOSTED==='1'||!process.argv.includes('127.0.0.1')))throw new Error('Samples require a separate loopback-only server');
-  const sample=(sampleMode||process.env.STAYCRAFT_QA_FORMAL_STAYS==='1')?require('./operator-sample-data.cjs').createSample(process.env.STAYCRAFT_SAMPLE_DATE||undefined):null;
+  const sample=(sampleMode||process.env.STAYCRAFT_QA_FORMAL_STAYS==='1')?require('./operator-sample-data.cjs').createSample(process.env.STAYCRAFT_SAMPLE_DATE||undefined,{rich:process.env.STAYCRAFT_SAMPLE_RICH==='1'}):null;
   const conversations=require('./conversation-fixture.cjs')(sample,propertyId=>profiles.get(propertyId));
   const originalFetch = globalThis.fetch;
   const profiles = new Map();
@@ -23,14 +23,16 @@ if (process.env.STAYCRAFT_QA_AUTH_FIXTURES === '1') {
     profiles.set(sample.propertyId,{property_id:sample.propertyId,profile:sample.profile,revision:'20000000-0000-4000-8000-000000000001'});
     inventories.set(sample.propertyId,{inventory:sample.inventory,revision:'20000000-0000-4000-8000-000000000002'});
   }
-  const stays=new Map(sample?sample.bookings.filter(b=>b.arrival<sample.anchor&&b.departure===sample.anchor&&b.status==='confirmed').map(b=>[b.id,'checked_in']):[]);
+  const stays=new Map(sample?sample.bookings.filter(b=>b.stay_state&&b.stay_state!=='pending'||b.arrival<sample.anchor&&b.departure===sample.anchor&&b.status==='confirmed').map(b=>[b.id,b.stay_state||'checked_in']):[]);
   const importDb=process.env.STAYCRAFT_QA_IMPORT_DB==='1'?require('./import-database-fixture.cjs')(sample,()=>inventories.get(sample.propertyId).inventory):null;
   globalThis.fetch = async (input, init) => {
     const url = new URL(typeof input === 'string' ? input : input instanceof URL ? input.href : input.url);
     const headers = new Headers(init?.headers || (input instanceof Request ? input.headers : undefined));
     const identity = tokens.get((headers.get('authorization') || '').replace(/^Bearer /, ''));
     if (url.hostname !== 'husrpqalpjjswpvrkxet.supabase.co') {
-      if(sampleMode&&!['127.0.0.1','localhost','[::1]'].includes(url.hostname))throw new Error('External network disabled in sample');
+      const amapRead=process.env.STAYCRAFT_SAMPLE_LIVE_AMAP==='1'&&url.protocol==='https:'&&url.hostname==='mcp.amap.com'&&url.pathname==='/mcp'&&init?.method==='POST'&&['maps_geo','maps_around_search'].includes(JSON.parse(init.body||'{}').params?.name);
+      const marketRead=process.env.STAYCRAFT_SAMPLE_LIVE_AMAP==='1'&&url.protocol==='https:'&&url.hostname==='mcp.rollinggo.cn'&&url.pathname==='/mcp'&&init?.method==='POST'&&JSON.parse(init.body||'{}').params?.name==='searchHotels';
+      if(sampleMode&&!amapRead&&!marketRead&&!['127.0.0.1','localhost','[::1]'].includes(url.hostname))throw new Error('External network disabled in sample');
       if(sampleMode&&/\/v1\/properties\/[^/]+\/conversations\/[^/]+\/draft$/.test(url.pathname))return conversations(url,JSON.parse(init?.body||'{}'),identity,identity?propertyFor(identity.index):null);
       return originalFetch(input, init);
     }
