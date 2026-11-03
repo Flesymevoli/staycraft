@@ -1,33 +1,14 @@
 "use client";
-
 import { useRef, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { ArrowRight, ChevronLeft, ChevronRight, X } from "lucide-react";
-import { exploreDays } from "./explore-data";
+import { ArrowRight, ChevronLeft, ChevronRight, MapPin, Check, SlidersHorizontal } from "lucide-react";
 import { useDemoStorage } from "./demo-storage";
-import { PromotionEditor } from "./promotion-editor";
+import { LivePriceWatch } from "./live-price-watch";
 import "./native-home.css";
 import "./native-explore.css";
-
+import "./explore-observation.css";
 type Language = "en" | "zh";
-
-
-
-const plotX = (index: number) => 8 + index * 344 / 29;
-const plotY = (score: number) => 168 - score * 1.36;
-function pulsePath() {
-  return exploreDays.map((entry, index) => {
-    const x = plotX(index), y = plotY(entry.score);
-    if (index === 0) return "M " + x + " " + y;
-    const previous = exploreDays[index - 1];
-    const previousX = plotX(index - 1), previousY = plotY(previous.score);
-    const mid = (previousX + x) / 2;
-    return " C " + mid + " " + previousY + ", " + mid + " " + y + ", " + x + " " + y;
-  }).join("");
-}
-const linePath = pulsePath();
-
 function TabBar({ language }: { language: Language }) {
   const zh = language === "zh";
   const tabs = [
@@ -45,114 +26,81 @@ function TabBar({ language }: { language: Language }) {
   </nav>;
 }
 
-export function ExploreClient() {
-  const [language, setLanguage] = useDemoStorage<Language>("language", "en");
-  const [day, setDay] = useState(26);
 
-  const [stay, setStay] = useState(0);
-  const [dayExpanded, setDayExpanded] = useState(false);
-  const [channel, setChannel] = useState("xiaohongshu");
-  const [promotionContext, setPromotionContext] = useState("market");
-  const stayRef = useRef<HTMLDivElement>(null);
-  const pulseRef = useRef<HTMLDivElement>(null);
+const stays = [
+  { cn: "青禾庭院", en: "Qinghe Courtyard", image: "courtyard-stay-sample", distance: "0.8", price: 468, room: 498, breakfast: true },
+  { cn: "山间小住", en: "Hill House", image: "garden-house-sample", distance: "1.2", price: 498, room: 558, breakfast: true },
+  { cn: "溪畔花园", en: "Riverside Garden", image: "garden-stay-sample", distance: "2.1", price: null, room: null, breakfast: false },
+];
+export function ExploreClient({embedded=false, language:providedLanguage}:{embedded?:boolean;language?:Language}={}) {
+  const [savedLanguage, setLanguage] = useDemoStorage<Language>("language", "zh");
+  const language=providedLanguage??savedLanguage;
+  const Container=embedded?"div":"main";
   const zh = language === "zh";
-  const t = (en: string, cn: string) => (zh ? cn : en);
-  const selected = exploreDays[day - 1];
-
-  const dateLabel = (value: number) => new Date(2026, 8, value).toLocaleDateString(zh ? "zh-CN" : "en-US", { month: "short", day: "numeric" });
-  const signal = (score: number) => score >= 70 ? t("Higher demand than usual", "需求高于平常") : score >= 48 ? t("Typical demand", "需求处于常态") : t("Quieter than usual", "需求低于平常");
-  const marketPosition = Math.max(5, Math.min(95, 25 + (selected.rate - selected.low) / (selected.high - selected.low) * 50));
-
-  const selectStay = (index: number) => {
-    const next = Math.max(0, Math.min(2, index));
-    setStay(next);
-    const target = stayRef.current?.children[next] as HTMLElement | undefined;
-    target?.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "start" });
-  };
-  const scrubPulse = (clientX: number) => {
-    const bounds = pulseRef.current?.getBoundingClientRect();
-    if (!bounds) return;
-    setDay(Math.max(1, Math.min(30, Math.round(((clientX - bounds.left) / bounds.width * 360 - 8) / 344 * 29) + 1)));
-  };
-
-  return <div className="native-shell">
-    <div className="native-page native-explore-page">
-      <header className="native-header"><span className="native-kicker">{t("EXPLORE", "探索")}</span><button type="button" className="native-language" onClick={() => setLanguage(zh ? "en" : "zh")}>{zh ? "EN" : "中文"}</button></header>
-
-      <section className="explore-pulse">
-        <div className="explore-section-head"><h2>{t("Market pulse", "市场脉动")}</h2><span className="explore-live-dot" aria-hidden="true" /></div>
-        <p className="explore-pulse-headline">{t("Demand appears to be rising this weekend.", "这个周末，需求似乎正在升温。")}</p>
-        <div className="explore-pulse-chart" ref={pulseRef} role="slider" tabIndex={0} aria-label={t("Select demand date", "选择需求日期")} aria-valuemin={1} aria-valuemax={30} aria-valuenow={day} aria-valuetext={dateLabel(day) + " · " + signal(selected.score)} onKeyDown={event => { if (["ArrowLeft", "ArrowDown", "ArrowRight", "ArrowUp", "Home", "End"].includes(event.key)) { event.preventDefault(); setDay(current => event.key === "Home" ? 1 : event.key === "End" ? 30 : Math.max(1, Math.min(30, current + (["ArrowRight", "ArrowUp"].includes(event.key) ? 1 : -1)))); } }} onPointerDown={event => { event.currentTarget.setPointerCapture(event.pointerId); scrubPulse(event.clientX); }} onPointerMove={event => { if (event.currentTarget.hasPointerCapture(event.pointerId)) scrubPulse(event.clientX); }} onPointerUp={event => { if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId); }}>
-          <svg viewBox="0 0 360 190" aria-hidden="true">
-            <defs>
-              <linearGradient id="explore-line-spectrum" x1="0%" y1="0%" x2="100%" y2="0%"><stop stopColor="#d79992" /><stop offset=".5" stopColor="#efc774" /><stop offset="1" stopColor="#8cbf82" /></linearGradient>
-              <linearGradient id="explore-fill-spectrum" x1="0%" y1="0%" x2="100%" y2="0%"><stop stopColor="#f9dedb" /><stop offset=".5" stopColor="#fff0cb" /><stop offset="1" stopColor="#e4f2df" /></linearGradient>
-              <linearGradient id="explore-vertical-fade" x1="0%" y1="0%" x2="0%" y2="100%"><stop stopColor="white" stopOpacity=".68" /><stop offset="1" stopColor="white" stopOpacity="0" /></linearGradient>
-              <mask id="explore-fill-mask"><rect width="360" height="190" fill="url(#explore-vertical-fade)" /></mask>
-            </defs>
-            <path d={linePath + " L 352 188 L 8 188 Z"} fill="url(#explore-fill-spectrum)" mask="url(#explore-fill-mask)" />
-            <path d={linePath} fill="none" stroke="url(#explore-line-spectrum)" strokeWidth="2.3" strokeLinecap="round" />
-            <line x1={plotX(day - 1)} x2={plotX(day - 1)} y1={plotY(selected.score)} y2="188" stroke="#928f8e" strokeWidth="1" strokeDasharray="3 5" />
-            <circle cx={plotX(day - 1)} cy={plotY(selected.score)} r="9" fill="#fff8" />
-            <circle cx={plotX(day - 1)} cy={plotY(selected.score)} r="4" fill="#fff" stroke="#8a8d88" strokeWidth="2" />
-            <text x={Math.max(32, Math.min(328, plotX(day - 1)))} y={plotY(selected.score) - 15} textAnchor="middle" fill="#61656d" fontSize="11">{dateLabel(day)}</text>
-          </svg>
-        </div>
-        <div className="explore-pulse-axis"><span>{t("Sep 1", "9 月 1 日")}</span><span>{t("Tap or drag the chart", "点选或拖动曲线")}</span><span>{t("Sep 30", "9 月 30 日")}</span></div>
+  const t = (en: string, cn: string) => zh ? cn : en;
+  const [period, setPeriod] = useState(0);
+  const [live, setLive] = useState(!embedded);
+  const [view, setView] = useState(false);
+  const [selected, setSelected] = useState([true, true, true]);
+  const [checked, setChecked] = useState<Record<string, string>>({});
+  const [reasons, setReasons] = useState<Record<string, string>>({});
+  const [logs, setLogs] = useState<string[]>([]);
+  const [context, setContext] = useState("walk");
+  const [draft, setDraft] = useState("");
+  const [saved, setSaved] = useState(false);
+  const [channel, setChannel] = useState("red");
+  const carousel = useRef<HTMLDivElement>(null);
+  const offset = period ? 60 : 0;
+  const key = (i: number) => `${period}-${i}`;
+  const valid = stays.filter((s,i) => selected[i] && s.room !== null && checked[key(i)] === "verified");
+  const date = period ? "11.07 — 11.08" : "11.04 — 11.05";
+  function review(i: number, status: string) {
+    setChecked(prev => ({...prev, [key(i)]: status}));
+    setLogs(prev => [`${new Date().toLocaleTimeString(zh ? "zh-CN" : "en-GB")} · ${date} · ${zh ? stays[i].cn : stays[i].en} · ${status === "verified" ? t("Verified", "已核验") : t("Excluded", "不纳入")} · ${reasons[key(i)] || t("Matching room conditions", "房型条件一致")}`, ...prev]);
+  }
+  const startCompare = () => { setView(true); window.scrollTo(0,0); };
+  const back = () => { setView(false); window.scrollTo(0,0); };
+  return <div className={embedded?"workspace-competitor-preview":"native-shell"}><Container className={embedded?"observation-page":"native-page native-explore-page observation-page"}>
+    {!embedded&&<header className="native-header"><span className="native-kicker">{t("EXPLORE", "探索")} · {t("LOCAL PREVIEW", "本机预览")}</span><button className="native-language" onClick={()=>setLanguage(zh ? "en" : "zh")}>{zh ? "EN" : "中文"}</button></header>}
+    {!embedded&&<div className="ob-mode" role="group" aria-label={t("Data mode","数据模式")}><button aria-pressed={live} onClick={()=>{setLive(true);setView(false)}}>{t("Collected prices","真实参考价")}</button><button aria-pressed={!live} onClick={()=>{setLive(false);setView(false)}}>{t("Layout examples","布局示例")}</button></div>}
+    {!live&&<div className="ob-demo">{t("Fictional stays & prices · Separate from collected records", "虚构住宿与报价 · 与真实采集记录隔离")}</div>}
+    {live ? <LivePriceWatch language={language}/> : view ? <>
+      <button className="ob-link" onClick={back}><ChevronLeft size={17}/>{t("Back to Explore", "返回探索")}</button>
+      <h1 className="ob-title">{t("Compare & verify", "价格对比与核验")}</h1>
+      <p className="ob-muted">{t("Ctrip scenario", "携程场景")} · 2026.{date} · {t("1 room · 2 adults · 1 night", "1 间 · 2 成人 · 1 晚")}</p>
+      <p className="ob-muted">{t("Compare a double room with breakfast and free cancellation until 18:00 the day before arrival. All amounts are sample tax-inclusive totals.", "统一口径：大床房、双早、入住前一天 18:00 前免费取消；报价为示例含税总价。")}</p>
+      {stays.map((s,i)=>selected[i] && <article className="native-card ob-review" key={i}>
+        <div className="explore-section-head"><h2>{zh ? s.cn : s.en}</h2><span className="ob-tag">{checked[key(i)] === "verified" ? t("Verified", "已核验") : checked[key(i)] === "excluded" ? t("Excluded", "不纳入") : t("Needs review", "待核验")}</span></div>
+        <dl><div><dt>{t("Starting price", "列表起价")}</dt><dd>{s.price ? `¥${s.price+offset}` : t("Unavailable", "未获取")}</dd></div><div><dt>{t("Comparable room", "同口径房型报价")}</dt><dd>{s.room ? `¥${s.room+offset}` : "—"}</dd></div><div><dt>{t("Room", "房型")}</dt><dd>{t("Garden double", "花园大床房")}</dd></div><div><dt>{t("Conditions", "早餐 / 取消")}</dt><dd>{s.breakfast ? t("Breakfast for 2 / free cancellation", "双早 / 限时免费取消") : t("Not retrieved", "未获取，待核对")}</dd></div></dl>
+        <details><summary>{t("View sample source snapshot", "查看示例来源快照")}</summary><p>{t("Fictional Ctrip listing → room details. Observed 2026-10-31 10:30. No real property page is linked.", "虚构携程列表页 → 房型详情；观察时间 2026-10-31 10:30。没有真实房源链接。")}</p></details>
+        {!s.room && <p className="ob-warning">{t("Price missing. This does not mean sold out; excluded from price range.", "价格缺失不代表满房；不计入房价区间。")}</p>}
+        <label>{t("Review note / exclusion reason", "核验备注 / 排除原因")}<input value={reasons[key(i)] || ""} onChange={e=>setReasons({...reasons,[key(i)]:e.target.value})} placeholder={t("e.g. Breakfast differs", "例如：早餐条件不同")}/></label>
+        <div className="ob-actions"><button disabled={!s.room} onClick={()=>review(i,"verified")}><Check size={15}/>{t("Mark verified", "标记已核验")}</button><button disabled={!reasons[key(i)]?.trim()} onClick={()=>review(i,"excluded")}>{t("Exclude", "不纳入比较")}</button></div>
+      </article>)}
+      {!selected.some(Boolean) && <p>{t("No stays selected. Return to choose competitors.", "尚未选入住宿，请返回选择竞品。")}</p>}
+      <section className="ob-log"><h2>{t("Review history", "本次核验记录")}</h2><p className="ob-muted">{t("Prototype only; resets on reload.", "仅供原型体验，刷新后重置。")}</p><ul aria-live="polite">{logs.map((log,i)=><li key={i}>{log}</li>)}</ul></section>
+    </> : <>
+      <section className="ob-overview"><div className="explore-section-head"><h1 className="ob-title">{t("Neighbourhood prices", "周边价格观察")}</h1><span className="ob-platform">{t("Ctrip", "携程")}</span></div>
+        <div className="ob-period"><button aria-pressed={!period} onClick={()=>setPeriod(0)}>{t("Midweek", "工作日")} <span>11.04 — 11.05</span></button><button aria-pressed={!!period} onClick={()=>setPeriod(1)}>{t("Weekend", "周末")} <span>11.07 — 11.08</span></button></div>
+        <p className="ob-muted">2026 · {t("1 night · 1 room · 2 adults", "1 晚 · 1 间 · 2 成人")}<br/>{t("Sample observed", "示例采集于")} 10.31 10:30</p>
+        <div className="ob-summary"><div><span>{t("Listed starting prices", "周边列表起价")}</span><strong>¥{468+offset}<small> — </small>¥{498+offset}</strong></div><div className="ob-missing"><b>1</b><span>{t("missing price", "家价格待核对")}</span></div></div>
+        <p className="ob-muted">{t("2 quoted stays · Starting prices are discovery clues, not comparable room rates.", "2 家有报价 · 起价仅作浏览线索，不直接判断贵或便宜。")}</p>
       </section>
-
-      <section className="explore-demand" aria-label={t("September 2026 demand calendar", "2026 年 9 月需求日历")}>
-        <div className="explore-weekdays">{(zh ? ["一","二","三","四","五","六","日"] : ["M","T","W","T","F","S","S"]).map((label, index) => <span key={index}>{label}</span>)}</div>
-        <div className="explore-heat-grid"><span aria-hidden="true" />{exploreDays.map(entry => <button type="button" key={entry.day} className={"explore-heat-day level-" + (entry.score >= 70 ? 3 : entry.score >= 48 ? 2 : 1)} aria-pressed={entry.day === day} aria-label={dateLabel(entry.day) + " · " + signal(entry.score)} aria-controls="explore-day-detail" aria-expanded={entry.day === day && dayExpanded} onClick={() => { setDay(entry.day); setDayExpanded(true); }}><span className="explore-date-number">{entry.day}</span>{entry.event && <i aria-hidden="true" />}</button>)}</div>
-        <div className="explore-heat-legend"><span>{t("Quieter", "较低")}</span><i /><i /><i /><span>{t("Higher", "较高")}</span><span className="explore-event-key">• {t("Sample event", "示例活动")}</span></div>
-        {dayExpanded && <div id="explore-day-detail" className="explore-day-detail" role="region" aria-label={t("Selected date details", "所选日期详情")} aria-live="polite">
-          <button type="button" className="explore-day-collapse" aria-label={t("Collapse date details", "收起日期详情")} onClick={() => setDayExpanded(false)}><X size={18} /></button>
-          <h2>{dateLabel(day)}</h2><p className="explore-day-signal">{signal(selected.score)}</p><p>{selected.event ? t("A nearby event is included as a sample demand signal.", "示例周边活动已计入需求信号。") : t("Demand level is estimated from a fictional scenario.", "需求等级来自虚构情景。")}</p><p>{t("Sample market range ¥" + selected.low + "–¥" + selected.high, "示例市场范围 ¥" + selected.low + "–¥" + selected.high)}</p><p className="explore-note">{t("This does not change your ¥520 rate.", "这不会修改你的 ¥520 房价。")}</p>
-        </div>}
+      <section className="ob-nearby"><div className="explore-section-head"><h2>{t("A look around", "看看附近住宿")}</h2><div className="explore-stay-controls"><button aria-label={t("Previous stays", "上一组住宿")} onClick={()=>carousel.current?.scrollBy({left:-300,behavior:"smooth"})}><ChevronLeft size={18}/></button><button aria-label={t("Next stays", "下一组住宿")} onClick={()=>carousel.current?.scrollBy({left:300,behavior:"smooth"})}><ChevronRight size={18}/></button></div></div>
+        <p className="ob-muted">{t("Similar setting · Within 3 km · Select once to compare", "相近环境 · 3 公里内 · 选入后统一对比")}</p>
+        <div className="explore-stay-carousel" ref={carousel} tabIndex={0} aria-label={t("Nearby stays", "附近住宿")}>
+          {stays.map((s,i)=><article className="explore-stay-card ob-stay" key={s.en}><div className="explore-stay-art"><Image src={`/images/${s.image}.webp`} alt={t("Sample accommodation photo", "住宿示例图片")} fill sizes="320px" className="explore-stay-photo"/><span className="explore-art-caption">{t("SAMPLE", "示例")}</span></div><div className="ob-stay-body"><div className="explore-stay-info"><h3>{zh?s.cn:s.en}</h3><strong>{s.price ? `¥${s.price+offset}` : "—"}<small>{s.price ? t("from", "起") : ""}</small></strong></div><p><MapPin size={12}/> {s.distance} km · {t("Courtyard / garden", "庭院 / 花园住宿")}</p><button aria-pressed={selected[i]} onClick={()=>setSelected(selected.map((v,j)=>i===j?!v:v))}>{selected[i] && <Check size={14}/>} {selected[i] ? t("Selected", "已选入对比") : t("Add to compare", "选入对比")}</button></div></article>)}
+        </div><button className="ob-link ob-compare" onClick={startCompare}><SlidersHorizontal size={16}/>{t("Compare & verify", "查看对比与核验")} · {selected.filter(Boolean).length}<ArrowRight size={16}/></button>
       </section>
-
-      <section className="native-card explore-promotion" id="promotion">
-        <span className="native-kicker">{t("FROM INSIGHT TO ACTION", "从发现到行动")}</span>
-        <h2>{t("Promotion opportunity", "推广机会")}</h2><p className="explore-note">{promotionContext === "market" ? t("Selected idea: lakeside weekend market · Sample", "已选线索：湖畔周末市集 · 示例") : t("Selected idea: village morning walk · Sample", "已选线索：村落晨间漫步 · 示例")}</p>
-        <p>{t("Connect a lively weekend with a quieter weekday stay.", "把热闹的周末，与安静的工作日小住连接起来。")}</p>
-        <ul><li>{t("Market: sample weekend demand is rising.", "市场信号：示例周末需求升温。")}</li><li>{t("Your availability: weekday occupancy is 64%.", "自身经营：工作日入住率 64%，仍有空房。")}</li><li>{t("Guest feedback: location is mentioned in 26 sample reviews.", "客人反馈：26 条示例评价提到位置。")}</li></ul>
-        <p className="explore-note">{t("Suggested angle: arrive early, explore locally and enjoy a quieter stay. Fictional inputs; no discount assumed.", "建议方向：提前抵达、探索周边、享受安静小住。依据虚构示例信息，未自动设定优惠。")}</p>
-        <label htmlFor="promotion-channel">{t("Content channel", "内容渠道")}</label>
-        <select id="promotion-channel" value={channel} onChange={event => { setChannel(event.target.value); }}><option value="xiaohongshu">{t("Xiaohongshu post", "小红书帖子")}</option><option value="wechat">{t("WeChat Moments", "朋友圈文案")}</option></select>
-        <PromotionEditor key={`${language}-${channel}-${promotionContext}`} language={language} channel={channel} context={promotionContext} />
+      <section className="explore-price ob-price"><div className="explore-section-head"><h2>{t("Where your rate sits", "你的房价位置")}</h2><span className="ob-tag">{t("Same conditions", "同口径比较")}</span></div><p className="explore-price-value">{t("Your double room", "本店大床房")} <strong>¥{520+offset}</strong><span>{t("/ night", "/ 晚")}</span></p>
+        {valid.length >= 2 ? <><div className="explore-spectrum"><div className="explore-market-band"/><span className="explore-rate-marker" style={{left:"43%"}}><b>{t("You", "你")}</b><i/></span></div><div className="explore-spectrum-labels"><span>¥{498+offset}</span><span>{t("Verified range", "已核验样本区间")}</span><span>¥{558+offset}</span></div><p className="ob-muted">{t("Your rate is within these 2 sample quotes. This does not establish an optimal rate.", "本店位于这 2 家样本报价之间，不能据此认定为最优价格。")}</p></> : <div className="ob-pending"><span className="ob-pending-line"/><p>{t("Verify at least 2 comparable quotes to see your position.", "核验至少 2 家同口径报价后，再看房价位置。")}</p><button className="ob-link" onClick={startCompare}>{t("Review sample quotes", "去核验示例报价")} <ArrowRight size={16}/></button></div>}
       </section>
-
-      <section className="explore-price">
-        <div className="explore-section-head"><h2>{t("Where your rate sits", "你的房价位置")}</h2><label><span className="sr-only">{t("Rate comparison date", "房价比较日期")}</span><select value={day} onChange={event => setDay(Number(event.target.value))}>{exploreDays.map(entry => <option value={entry.day} key={entry.day}>{dateLabel(entry.day)}</option>)}</select></label></div>
-        <p className="explore-price-value">{t("Your rate", "你的房价")} <strong>¥520</strong><span>{t("/ night", "/ 晚")}</span></p>
-        <div className="explore-spectrum"><div className="explore-market-band" /><span className="explore-rate-marker" style={{ left: marketPosition + "%" }}><b>{t("You", "你")}</b><i /></span></div>
-        <div className="explore-spectrum-labels"><span>{t("Lower", "较低")}</span><span>{t("Market", "市场")}</span><span>{t("Higher", "较高")}</span></div>
-        <p className="explore-market-range">{t("Sample market range ¥" + selected.low + "–¥" + selected.high, "示例市场范围 ¥" + selected.low + "–¥" + selected.high)}</p>
-        <p className="explore-note">{t("Illustrative comparable stays · Same date, per night. Rates stay unchanged.", "虚构同类住宿 · 同一天每晚房价，不会修改定价。")}</p>
+    </>}
+    {!embedded&&(!view||live)&&<><section className="explore-local"><div className="explore-section-head"><h2>{t("Around your neighbourhood", "周边活动与服务")}</h2><span className="ob-tag">{t("Ideas", "示例线索")}</span></div>
+        {[{id:"walk",cn:"村落晨间漫步",en:"A slow morning in the village",meta:t("45-minute walk · Quiet weekdays", "45 分钟步行路线 · 适合工作日")},{id:"market",cn:"湖畔周末市集",en:"Lakeside weekend market",meta:t("Weekend event · Confirm schedule", "周末活动 · 营业安排待确认")}].map((item,i)=><article className="native-card ob-local" key={item.id}><span className="ob-local-number">0{i+1}</span><div><h3>{zh?item.cn:item.en}</h3><p>{item.meta}</p><button className="ob-link" onClick={()=>{setContext(item.id);setDraft("");setSaved(false);document.getElementById("promotion")?.scrollIntoView({behavior:"smooth"});}}>{t("Use for promotion", "用于推广")} <ArrowRight size={15}/></button></div></article>)}
       </section>
-
-      <section className="explore-local">
-        <div className="explore-section-head"><h2>{t("Around your neighbourhood", "周边活动与服务")}</h2><span>{t("Sample listings", "示例信息")}</span></div>
-        <p className="explore-note">{t("Local ideas for guest recommendations and promotion.", "为客人推荐和民宿推广提供线索。")}</p>
-        {[
-          {id:"market",title:t("Lakeside weekend market", "湖畔周末市集"),meta:t("Sep 26 · 10:00–18:00 · 15 min walk", "9 月 26 日 · 10:00–18:00 · 步行 15 分钟"),note:t("A sample event linked to the demand peak. Suggest a stay before the weekend rush.", "与需求高峰关联的示例活动，可考虑提前入住的推广方向。")},
-          {id:"walk",title:t("Village morning walk", "村落晨间漫步"),meta:t("Daily · Suggested route · 45 min", "每日 · 推荐路线 · 45 分钟"),note:t("A quieter weekday experience to include in guest recommendations.", "适合工作日客人的安静体验，可作为游玩推荐。")},
-          {id:"transfer",title:t("Garden Transfer", "Garden Transfer 接送服务"),meta:t("Saved partner · Airport pickup", "已保存合作方 · 机场接送"),note:t("AI can recommend this sample service and ask for arrival details. Availability needs provider confirmation.", "AI 可推荐此示例服务并询问到达信息，可用时间需服务方确认。")},
-        ].map(item=><article key={item.id} className="native-card explore-local-card"><h3>{item.title}</h3><small>{item.meta}</small><p>{item.note}</p>{item.id === "transfer" ? <Link href="/native-work" className="work-text-action">{t("See guest messages", "查看客人消息")} <ArrowRight size={15}/></Link> : <button type="button" className="explore-local-action" onClick={()=>{setPromotionContext(item.id === "market" ? "market" : "walk");document.getElementById("promotion")?.scrollIntoView({behavior:"smooth"});}}>{t("Use for promotion", "用于推广")} <ArrowRight size={15}/></button>}</article>)}
-      </section>
-
-      <section className="explore-nearby">
-        <div className="explore-section-head"><h2>{t("A look around", "看看附近住宿")}</h2><div className="explore-stay-controls"><button type="button" aria-label={t("Previous stay", "上一家住宿")} onClick={() => selectStay(stay - 1)} disabled={stay === 0}><ChevronLeft size={18} /></button><button type="button" aria-label={t("Next stay", "下一家住宿")} onClick={() => selectStay(stay + 1)} disabled={stay === 2}><ChevronRight size={18} /></button></div></div>
-        <p className="explore-note">{t("Fictional comparable stays · Selected date", "虚构同类住宿 · 当前所选日期")} {dateLabel(day)}</p>
-        <div className="explore-stay-carousel" ref={stayRef} tabIndex={0} aria-label={t("Swipe through nearby stays", "左右滑动浏览附近住宿")} onScroll={event => { const element = event.currentTarget; setStay(Math.round(element.scrollLeft / (element.firstElementChild?.getBoundingClientRect().width || 1))); }} onKeyDown={event => { if (event.key === "ArrowRight" || event.key === "ArrowLeft") { event.preventDefault(); selectStay(stay + (event.key === "ArrowRight" ? 1 : -1)); } }}>
-          {[0,1,2].map(index => <article className="explore-stay-card" key={index}><div className="explore-stay-art"><Image src={["/images/garden-house-sample.webp", "/images/courtyard-stay-sample.webp", "/images/garden-stay-sample.webp"][index]} alt={t(["Sample photo of Garden House", "Sample photo of a courtyard stay", "Sample photo of a garden stay"][index], ["花园小屋示例照片", "庭院住宿示例照片", "花园住宿示例照片"][index])} fill sizes="(max-width: 480px) 75vw, 340px" className="explore-stay-photo" /><span className="explore-art-caption">{t("SAMPLE IMAGE", "示例图片")}</span></div><div className="explore-stay-info"><h3>{t(["You","Nearby Stay A","Nearby Stay B"][index], ["你的民宿","附近住宿 A","附近住宿 B"][index])}</h3><strong>¥{[520,selected.low + 30,selected.high - 30][index]}</strong></div><p>{t(["Your sample property","Courtyard stay · Similar size","Garden stay · Similar amenities"][index], ["你的示例民宿","庭院住宿 · 规模相似","花园住宿 · 设施相似"][index])}</p></article>)}
-        </div>
-        <p className="explore-note">{t("Compare context, not just price. No real properties or OTA reviews are shown.", "结合环境理解价格。此处没有真实房源或 OTA 评价。")}</p>
-      </section>
-      <p className="explore-footer">{t("DISCOVER → COMPARE → UNDERSTAND", "发现 → 比较 → 理解")}</p>
-    </div>
-    <TabBar language={language} />
-  </div>;
+      <section className="native-card explore-promotion ob-promotion" id="promotion"><span className="native-kicker">{t("FROM INSIGHT TO ACTION", "从发现到行动")}</span><h2>{t("Make quieter days count", "给安静的日子，一个入住理由")}</h2><p>{context==="walk" ? t("Pair a two-night weekday stay with a village walking guide.", "把工作日两晚小住，与村落漫步攻略组合起来。") : t("Pair a weekend stay with a lakeside market guide.", "把周末小住，与湖畔市集游玩攻略组合起来。")}</p><p className="ob-muted">{t("Sample availability + local idea. No price change or demand forecast.", "示例空房线索 + 周边体验；不自动降价，不推断需求。")}</p><label>{t("Content channel", "内容渠道")}<select value={channel} onChange={e=>{setChannel(e.target.value);setDraft("");setSaved(false);}}><option value="red">{t("Xiaohongshu", "小红书")}</option><option value="wechat">{t("WeChat Moments", "朋友圈")}</option></select></label><button className="native-primary" onClick={()=>{setSaved(false);setDraft(t("A slower escape: stay a little longer and explore the " + (context==="walk"?"village paths":"lakeside market") + ". Contact us for availability. [Sample draft]", "把脚步放慢，在"+(context==="walk"?"村落的小路上散散步":"湖畔市集逛一逛")+"，给自己留一段小住时光。具体房型与日期欢迎咨询。【示例文案】"));}}>{t("Preview sample copy", "预览示例文案")} <ArrowRight size={16}/></button>{draft && <div className="ob-draft"><label>{t("Edit draft", "编辑草稿")}<textarea value={draft} onChange={e=>{setDraft(e.target.value);setSaved(false);}}/></label><button className="ob-link" onClick={()=>setSaved(true)}>{t("Keep in this preview", "保留在本次预览")}</button>{saved && <p role="status">{t("Kept for this session; reload resets it.", "已保留，刷新页面后重置。")}</p>}</div>}</section>
+    </>}
+    <p className="explore-footer">{t("OBSERVE → VERIFY → COMPARE → ACT", "观察 → 核验 → 比较 → 行动")}</p>
+  </Container>{!embedded&&<TabBar language={language}/>}</div>;
 }
-
-

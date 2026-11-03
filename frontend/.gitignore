@@ -48,3 +48,6 @@ next-env.d.ts
 /.open-next/
 /.wrangler/
 .dev.vars*
+
+# Local public-price collection evidence
+/.price-monitor/

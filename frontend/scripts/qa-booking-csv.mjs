@@ -1,0 +1,18 @@
+import assert from 'node:assert/strict';
+import {bookingCsvHeader as header,previewBookingCsv as parse} from '../src/lib/booking-csv.ts';
+const row='ctrip,A1,Double,,2026-11-05,2026-11-07,confirmed,100.01,CNY,';
+const input=(...r)=>header+'\n'+r.join('\n');
+assert.equal(parse(input(row)).valid[0].booking.totalCents,10001);
+assert.equal(parse(input(row)).valid[0].booking.roomNumber,null);
+assert.equal(parse(input(row,row)).counts.duplicate,1);
+assert.equal(parse(input(row,row.replace('100.01','200'))).canCommit,false);
+assert.equal(parse(input(row,row.replace('ctrip','meituan'))).valid.length,2);
+assert.equal(parse(input(row.replace('2026-11-05','2026-02-30'))).errors[0].reason,'invalid_dates');
+assert.equal(parse(input(row.replace('100.01','-10'))).canCommit,false);
+assert.equal(parse(input(row.replace('CNY','USD'))).canCommit,false);
+assert.equal(parse(input(row.replace('Double','"Double, garden"'))).valid[0].booking.roomType,'Double, garden');
+assert.throws(()=>parse(input(row.replace('Double','"Double'))),/invalid_csv_quotes/);
+assert.throws(()=>parse('bad\n'+row),/invalid_template/);
+assert.equal(parse('\uFEFF'+input(row)+'\n').counts.valid,1);
+assert.equal(parse(input(row.replace('confirmed','completed'))).valid[0].booking.status,'completed');
+console.log('CSV fixture checks passed: identities, unassigned rooms, quotes, dates, money, duplicates and channel separation; no database writes.');

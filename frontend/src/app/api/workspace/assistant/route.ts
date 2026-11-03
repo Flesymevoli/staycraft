@@ -15,10 +15,10 @@ export async function POST(request:Request){try{
  if(metrics.error||!data||data.period_days!==period.days||!Array.isArray(data.daily)||data.daily.length!==period.days||(period.start&&(data.period_start!==period.start||data.period_end!==period.end)))throw new WorkspaceError("analysis_unavailable",503);
  let attention;
  if(topic==="attention"){
-  const [inventory,inbox]=await Promise.all([supabase.rpc("get_room_inventory",{p_property:propertyId}),supabase.rpc("get_conversations",{p_property:propertyId})]);
+  const [inventory,tasks]=await Promise.all([supabase.rpc("get_room_inventory",{p_property:propertyId}),supabase.from("booking_import_tasks").select("id").eq("property_id",propertyId).eq("withdrawn",false).is("completed_at",null).limit(200)]);
   const rooms=validateInventory(inventory.data?.inventory,propertyId);
-  if(inventory.error||!rooms||inbox.error||!Array.isArray(inbox.data))throw new WorkspaceError("analysis_unavailable",503);
-  attention={dirty:rooms.rooms.filter(room=>room.active&&room.housekeeping==="dirty").length,pendingMessages:inbox.data.filter((item:{latest?:{sender:string}})=>item.latest?.sender==="guest").length,conversationsRead:inbox.data.length};
+  if(inventory.error||!rooms||tasks.error||!Array.isArray(tasks.data))throw new WorkspaceError("analysis_unavailable",503);
+  attention={dirty:rooms.rooms.filter(room=>room.active&&room.housekeeping==="dirty").length,pendingMessages:0,conversationsRead:0,pendingTasks:tasks.data.length};
  }
  const items=groundedInsights(data,topic,body.language==="zh",attention);
  const result=await prioritiseInsights(items,{model:!operatorSample()&&process.env.FORMAL_MODEL_ENABLED==="1"&&process.env.MODEL_ENABLED==="1",signal:request.signal});

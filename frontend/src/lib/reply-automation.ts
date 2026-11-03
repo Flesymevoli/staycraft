@@ -1,5 +1,6 @@
 export type ReplyPlan={key:"breakfast"|"checkin"|null;language:"zh"|"en";engine:"rules_v1"|"model_v1";reason:"ready"|"missing_fact"|"needs_confirmation"|"sensitive_request"|"unsupported_question"|"model_unavailable"};
-export function automaticDeliveryAvailable(){return process.env.FORMAL_AUTO_REPLY_ENABLED==="1"}
+// Retired with public guest messaging; old environment flags cannot reactivate delivery.
+export function automaticDeliveryAvailable(){return false}
 export async function planReply(question:string,profile:Record<string,unknown>,options:{model?:boolean;fetcher?:typeof fetch}={}):Promise<ReplyPlan>{
  const language=/[一-鿿]/.test(question)?"zh":"en",q=question.toLowerCase();
  const plan:ReplyPlan={key:null,language,engine:"rules_v1",reason:"unsupported_question"};

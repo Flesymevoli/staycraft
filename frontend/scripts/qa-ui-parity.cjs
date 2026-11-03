@@ -6,6 +6,18 @@ await context.addCookies([{name:'staycraft-operator-sample-auth',url:base,value:
 for(const section of ['','work','analysis','explore','mine']){
  await page.goto(base+'/app'+(section?'/'+section:''));await page.locator('.native-header').waitFor();const titleBox=await page.locator('main > h1').boundingBox();assert(titleBox);if(section){assert(titleBox.width<=1&&titleBox.height<=1,section+' duplicate title area');assert.equal(await page.locator('.workspace-intro').count(),0);}else{assert(titleBox.height>30);assert.equal(await page.locator('.workspace-intro').count(),1);}
  if(section==='analysis')await page.locator('.booking-analysis-cards').getByText('14.3%',{exact:true}).waitFor();
+ if(section==='explore'){
+  await page.getByRole('heading',{name:'周边价格观察',exact:true}).waitFor();
+  assert.equal(await page.locator('.native-tabbar').count(),1);
+  assert.equal(await page.locator('.ob-mode').count(),0);
+  await page.getByRole('button',{name:/查看对比与核验/}).click();
+  const reviews=page.locator('.ob-review');
+  await reviews.nth(0).getByRole('button',{name:'标记已核验',exact:true}).click();
+  await reviews.nth(1).getByRole('button',{name:'标记已核验',exact:true}).click();
+  assert(await reviews.nth(2).getByRole('button',{name:'标记已核验',exact:true}).isDisabled());
+  await page.getByRole('button',{name:'返回探索',exact:true}).click();
+  await page.getByText('本店位于这 2 家样本报价之间，不能据此认定为最优价格。',{exact:true}).waitFor();
+ }
  if(section==='mine')await page.locator('.profile-summary dl').waitFor();
  if(section==='work')await page.locator('.inventory-room').first().waitFor();
  for(const width of [320,390,658,1280]){await page.setViewportSize({width,height:844});assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),section+' overflow '+width);}

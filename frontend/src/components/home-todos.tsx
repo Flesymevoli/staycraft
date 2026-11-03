@@ -2,9 +2,9 @@
 import {useEffect,useRef,useState} from "react";
 import Link from "next/link";
 import {useBookingStays} from "./booking-stays";
-import {ArrowUpRight,Broom,LogIn,LogOut} from "lucide-react";
+import {ArrowUpRight,ChevronRight,Broom,LogIn,LogOut} from "lucide-react";
 import {useRoomPreview} from "./room-preview-store";
-type Booking={id:string;room_id:string;room_number:string;arrival:string;departure:string;expected_arrival:string;status:string};
+type Booking={external_snapshot?:{status?:string}|null;id:string;room_id:string;room_number:string;arrival:string;departure:string;expected_arrival:string;status:string};
 export function HomeTodos({date,today,scope,zh,urgentOnly=false}:{date:string;today:string;scope:string;zh:boolean;urgentOnly?:boolean}){
  const stays=useBookingStays();const stayFor=(id:string)=>stays.ready?stays.bookings.find(b=>b.id===id)?.stay_state:undefined;
  const inventory=useRoomPreview(scope);const [result,setResult]=useState<{date:string;bookings:Booking[]}|null>(null),[state,setState]=useState("loading"),[retry,setRetry]=useState(0),[expanded,setExpanded]=useState(false);const sequence=useRef(0);
@@ -18,20 +18,22 @@ export function HomeTodos({date,today,scope,zh,urgentOnly=false}:{date:string;to
  const urgent=arrivals.filter(booking=>date===today&&cleanRooms.some(room=>room.id===booking.room_id)&&stayFor(booking.id)==="pending");
  const urgentRoomIds=new Set(urgent.map(booking=>booking.room_id));
  const rows=[
-  ...urgent.map(booking=>({key:`prepare-${booking.id}`,room:booking.room_number,label:booking.expected_arrival?t(`Arriving · ${booking.expected_arrival} · cleaning needed`,`到店 · ${booking.expected_arrival} · 待清洁`):t("Arriving today · cleaning needed","今日到店 · 待清洁"),kind:"prepare",Icon:Broom,href:`/app/rooms/${booking.room_id}`})),
+  ...urgent.map(booking=>({key:`prepare-${booking.id}`,room:booking.room_number||t("Unassigned","待分房"),label:booking.expected_arrival?t(`Arriving · ${booking.expected_arrival} · cleaning needed`,`到店 · ${booking.expected_arrival} · 待清洁`):t("Arriving today · cleaning needed","今日到店 · 待清洁"),kind:"prepare",Icon:Broom,href:`/app/rooms/${booking.room_id}`})),
   ...cleanRooms.filter(room=>!urgentRoomIds.has(room.id)).map(room=>({key:`clean-${room.id}`,room:room.number,label:t("To clean","待清洁"),kind:"clean",Icon:Broom,href:`/app/rooms/${room.id}`})),
-  ...arrivals.filter(booking=>!urgentRoomIds.has(booking.room_id)).map(booking=>({key:`arrival-${booking.id}`,room:booking.room_number,label:booking.expected_arrival?t(`Expected arrival · ${booking.expected_arrival}`,`预计到店 · ${booking.expected_arrival}`):t("Expected arrival · time not recorded","预计到店 · 时间未记录"),kind:"arrival",Icon:LogIn,href:`/app/work#booking-${booking.id}`})),
-  ...departures.map(booking=>({key:`departure-${booking.id}`,room:booking.room_number,label:t("Departure scheduled","计划离店"),kind:"departure",Icon:LogOut,href:`/app/work#booking-${booking.id}`})),
+  ...arrivals.filter(booking=>!urgentRoomIds.has(booking.room_id)).map(booking=>({key:`arrival-${booking.id}`,room:booking.room_number||t("Unassigned","待分房"),label:booking.expected_arrival?t(`Expected arrival · ${booking.expected_arrival}`,`预计到店 · ${booking.expected_arrival}`):t("Expected arrival · time not recorded","预计到店 · 时间未记录"),kind:"arrival",Icon:LogIn,href:`/app/work#booking-${booking.id}`})),
+  ...departures.map(booking=>({key:`departure-${booking.id}`,room:booking.room_number||t("Unassigned","待分房"),label:t("Departure scheduled","计划离店"),kind:"departure",Icon:LogOut,href:`/app/work#booking-${booking.id}`})),
  ];
  const visibleRows=urgentOnly?rows.filter(row=>row.kind==="prepare"):rows;
  const loading=(state!=="error"&&result?.date!==date)||state==="loading"||(!stays.ready&&!stays.failed)||(date===today&&!inventory.ready),failed=state==="error"||stays.failed||(date===today&&inventory.unavailable);
  if(urgentOnly&&!loading&&!failed&&!urgent.length)return null;
- return <section className="home-schedule-preview home-todos" aria-label={urgentOnly?t("Needs attention","需优先处理"):t("Daily to-dos","当日待办")}>
+ const taskTitle=(kind:string)=>kind==="prepare"?t("Prepare room before arrival","到店前准备客房"):kind==="clean"?t("Room needs cleaning","客房待清洁"):kind==="arrival"?(date===today?t("Guest arriving today","客人待入住"):t("Scheduled arrival","计划入住")):(date===today?t("Guest departing today","客人待退房"):t("Scheduled departure","计划退房"));
+ const taskAction=(kind:string)=>kind==="prepare"?t("Prepare","准备客房"):kind==="clean"?t("Clean","处理清洁"):date!==today?t("View booking","查看订单"):kind==="arrival"?t("Check in","办理入住"):t("Check out","办理退房");
+ return <section className={`home-schedule-preview home-todos${urgentOnly?"":" home-todos-actionable"}`} aria-label={urgentOnly?t("Needs attention","需优先处理"):t("Daily to-dos","当日待办")}>
   <div className="native-section-head"><h2>{urgentOnly?t("Needs attention","需优先处理"):t("Daily to-dos","当日待办")}</h2><button className="inventory-text" aria-label={t("Refresh to-dos","刷新待办")} type="button" onClick={()=>{setState("loading");setRetry(v=>v+1);stays.retry();void inventory.reload();}}>{t("Refresh","刷新")}</button></div>
   {loading?<p className="home-todos-feedback" role="status">{t("Loading to-dos…","正在读取待办…")}</p>:<>
    {!urgentOnly&&<div className="home-todos-counts">{date===today&&<span>{t("To clean","待清洁")} <b>{inventory.unavailable?"—":cleanRooms.length}</b></span>}<span>{t("Arrivals","到店")} <b>{state==="error"||stays.failed?"—":arrivals.length}</b></span><span>{t("Departures","离店")} <b>{state==="error"||stays.failed?"—":departures.length}</b></span></div>}
    {failed&&<p className="home-todos-feedback" role="alert">{t("Some to-dos could not be loaded. Please retry.","部分待办暂时无法读取，请刷新重试。")}</p>}
-   {!visibleRows.length&&!failed?<p className="home-todos-feedback">{t("Nothing scheduled for this day.","这一天暂无待办安排。")}</p>:<div className="home-todos-list">{(expanded?visibleRows:visibleRows.slice(0,3)).map(({key,room,label,kind,Icon,href})=><Link className={`home-todo-row home-todo-${kind}`} href={href} key={key}><Icon size={17} aria-hidden="true"/><strong>{room}</strong><span>{label}</span><ArrowUpRight size={14} aria-hidden="true"/></Link>)}</div>}
+   {!visibleRows.length&&!failed?<p className="home-todos-feedback">{t("Nothing scheduled for this day.","这一天暂无待办安排。")}</p>:<div className="home-todos-list">{(expanded?visibleRows:visibleRows.slice(0,3)).map(({key,room,label,kind,Icon,href})=><Link className={`home-todo-row home-todo-${kind}`} href={!urgentOnly&&(kind==="arrival"||kind==="departure")?`/app/bookings/${key.slice(key.indexOf("-")+1)}`:href} key={key}>{urgentOnly?<><Icon size={17} aria-hidden="true"/><strong>{room}</strong><span>{label}</span><ArrowUpRight size={14} aria-hidden="true"/></>:<><span className="home-todo-icon"><Icon size={20} aria-hidden="true"/></span><span className="home-todo-copy"><b><strong>{room}</strong><span aria-hidden="true"> · </span>{taskTitle(kind)}</b><small>{label}</small></span><span className="home-todo-action">{taskAction(kind)}<ChevronRight size={15} aria-hidden="true"/></span></>}</Link>)}</div>}
    {visibleRows.length>3&&<button type="button" className="home-todos-more" aria-expanded={expanded} onClick={()=>setExpanded(v=>!v)}>{expanded?t("Show less","收起"):t(`Show ${visibleRows.length-3} more`,`展开其余 ${visibleRows.length-3} 项`)}</button>}
   </>}
  </section>;

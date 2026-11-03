@@ -1,3 +1,24 @@
+# StayCraft 当前导入版
+
+2026-11-03：固定CSV订单导入、运营任务、历史/未来分析、AI辅助行动方案和草稿库已在本地实现。公开客人端在新代码中停用。生产迁移及部署未执行，不能将本机验收称为线上已更新。
+
+- `npm ci`：安装锁定依赖。
+- `npm run build`：生产构建。
+- `npm run sample:imports`：3114虚构隔离演示，关闭真实模型和云端写入；账号见登录页。
+- `npm run demo:imports`：生成deliverables/demo-day下的虚构CSV与演示步骤，不修改业务数据。
+- `npm run qa:imports`：当前方向的隔离PostgreSQL及浏览器验收，需先构建；使用3174临时端口并自动结束测试服务。
+- `npm run release:check`：lint、构建及当前验收。旧scripts/qa-release.cjs包含已退出的客人消息测试，是历史套件，不代表当前发布范围。
+
+测试数据库使用开发依赖PGlite，仅由显式QA脚本加载，正式应用仍使用Supabase PostgreSQL。样本/QA标记在托管环境被拒绝。
+
+模板一单一间、CNY正金额、最长30晚；房型须匹配已有名称，房号可空。支持预览/确认、重复、修改、取消、来源完成状态及未分房；无来源时间的变更须显式确认，旧来源拒绝覆盖。导入不改变人工清洁/实际入住，不会自动改OTA价格。模板没有客人姓名、电话等字段，不需为了导入补造这些资料。
+
+环境：`.env.example`为新环境默认值，不是线上状态。Cloudflare配置中的旧自动回复标记已改0，应用代码固定停用发送；实际线上变量本轮未修改。运营模型调用仍由MODEL_ENABLED与FORMAL_MODEL_ENABLED控制，本机隔离演示固定关闭。不要提交.env、Cookie、.price-monitor或课程资料。
+
+发布与数据库配套说明见 ../docs/IMPORT_RELEASE.md。以下为框架原始说明，不作为业务进度记录。
+
+---
+
 # Staycraft 前端
 
 Next.js App Router / React / TypeScript，Node.js24。npm ci后npm run dev开发；npm run check做lint/类型与生产构建，npm start运行产物。

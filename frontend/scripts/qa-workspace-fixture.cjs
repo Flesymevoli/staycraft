@@ -24,6 +24,7 @@ if (process.env.STAYCRAFT_QA_AUTH_FIXTURES === '1') {
     inventories.set(sample.propertyId,{inventory:sample.inventory,revision:'20000000-0000-4000-8000-000000000002'});
   }
   const stays=new Map(sample?sample.bookings.filter(b=>b.arrival<sample.anchor&&b.departure===sample.anchor&&b.status==='confirmed').map(b=>[b.id,'checked_in']):[]);
+  const importDb=process.env.STAYCRAFT_QA_IMPORT_DB==='1'?require('./import-database-fixture.cjs')(sample,()=>inventories.get(sample.propertyId).inventory):null;
   globalThis.fetch = async (input, init) => {
     const url = new URL(typeof input === 'string' ? input : input instanceof URL ? input.href : input.url);
     const headers = new Headers(init?.headers || (input instanceof Request ? input.headers : undefined));
@@ -43,6 +44,7 @@ if (process.env.STAYCRAFT_QA_AUTH_FIXTURES === '1') {
       return json({access_token:token,refresh_token:'sample-only',token_type:'bearer',expires_in:3600,expires_at:4102444800,user:{id:sample.ownerId,email:'demo@example.invalid',aud:'authenticated',role:'authenticated',app_metadata:{},user_metadata:{},identities:[],created_at:'2026-01-01T00:00:00Z'}});
     }
     if (!identity) return json({ message: 'Invalid session' }, 401);
+    if(importDb){const imported=await importDb.handle(url,init,identity);if(imported)return imported;}
     if(url.pathname==='/rest/v1/operation_activity'){const p=propertyFor(identity.index);return identity.index===2||url.searchParams.get('property_id')!=='eq.'+p?json({message:'Forbidden'},403):json(activity.get(p)||[])}
     if (url.pathname === '/auth/v1/user') return json({ id: identity.id, email: `account-${identity.index}@example.invalid`, aud: 'authenticated', role: 'authenticated', app_metadata: {}, user_metadata: {}, identities: [], created_at: '2026-01-01T00:00:00Z' });
     if (url.pathname === '/auth/v1/logout') return json({});
@@ -107,14 +109,15 @@ if (process.env.STAYCRAFT_QA_AUTH_FIXTURES === '1') {
       if(identity.index===2)return json({code:'42501'},403);
       if(sample){
         if(identity.id!==sample.ownerId)return json([]);
-        let rows=sample.bookings.map(item=>({...item,rooms:{number:inventories.get(sample.propertyId).inventory.rooms.find(room=>room.id===item.room_id)?.number||item.room_number}}));
+        let rows=sample.bookings.map(item=>({...item,stay_state:stays.get(item.id)||item.stay_state||'pending',rooms:{number:inventories.get(sample.propertyId).inventory.rooms.find(room=>room.id===item.room_id)?.number||item.room_number}}));
         const or=url.searchParams.get('or'),room=url.searchParams.get('room_id'),status=url.searchParams.get('status'),arrival=url.searchParams.get('arrival'),departure=url.searchParams.get('departure');
         if(or){const date=or.match(/\d{4}-\d{2}-\d{2}/)?.[0];rows=rows.filter(item=>item.arrival===date||item.departure===date)}
         if(room)rows=rows.filter(item=>'eq.'+item.room_id===room);
         if(status)rows=rows.filter(item=>'eq.'+item.status===status);
+        if(arrival?.startsWith('lt.'))rows=rows.filter(item=>item.arrival<arrival.slice(3));
         if(arrival?.startsWith('lte.'))rows=rows.filter(item=>item.arrival<=arrival.slice(4));
         if(departure?.startsWith('gt.'))rows=rows.filter(item=>item.departure>departure.slice(3));
-        return json(rows.sort((a,b)=>b.arrival.localeCompare(a.arrival)));
+        const total=rows.length,offset=Number(url.searchParams.get('offset')||0),limit=Number(url.searchParams.get('limit')||500);rows=rows.sort((a,b)=>b.arrival.localeCompare(a.arrival)).slice(offset,offset+limit);return new Response(JSON.stringify(rows),{headers:{'Content-Type':'application/json','Content-Range':rows.length?`${offset}-${offset+rows.length-1}/${total}`:`*/${total}`}});
       }
       if(process.env.STAYCRAFT_QA_BOOKINGS!=='1'||identity.index!==1)return json([]);
       const item={id:'11111111-1111-4111-8111-111111111111',room_id:'22222222-2222-4222-8222-222222222222',room_number:'OLD301',rooms:{number:'QA301'},type_name:'QA 房型',arrival:'2026-11-10',departure:'2026-11-12',guest_name:'QA 日程客人',expected_arrival:'18:00 前',total:760,status:'confirmed'};

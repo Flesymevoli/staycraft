@@ -4,3 +4,11 @@ const base={id:'a',room:'101',type:'A',typeEn:'A',arrival:'2026-09-30',departure
 const days=revenueDays('2026-10',[base,{...base,id:'b',type:'B',totalCents:10000},{...base,id:'c',totalCents:900000,status:'cancelled'},{...base,id:'d',status:'confirmed'}]);const result=revenueInsights(days);
 assert.equal(result.total,13332);assert.equal(result.leaders.length,2);assert.equal(result.ranked[0].nights,2);assert.equal(result.earningDays,2);assert.equal(days[2].cents,0);assert.equal(result.topThree.reduce((s,d)=>s+d.cents,0),13332);assert.equal(revenueInsights(revenueDays('2026-08',[])).leaders.length,0);
 console.log('PASS revenue contribution: cross-month cents, checkout exclusion, completed-only, tied leaders, empty month.');
+for(const today of ['2026-11-01','2027-01-01','2028-03-01']){
+ const orders=m.exports.demoRevenueOrders(today);
+ assert(orders.filter(o=>o.status==='completed').every(o=>o.departure<=today));
+ assert.equal(revenueInsights(revenueDays(today.slice(0,7),orders)).total,0);
+ const previous=new Date(today+'T12:00:00Z');previous.setUTCMonth(previous.getUTCMonth()-1);
+ assert(revenueInsights(revenueDays(previous.toISOString().slice(0,7),orders)).total>0);
+}
+console.log('PASS sample month boundaries: no invented current-month completed revenue on month/year/leap-month starts; prior month retained.');

@@ -13,6 +13,7 @@ import {WorkspaceBookings} from "./workspace-bookings";
 import {useOperatorSample} from "./operator-sample-context";
 import {useBookingStays} from "./booking-stays";
 import {RoomActions} from "./room-actions";
+import {BookingImport} from "./booking-import";
 import {HomeTodos} from "./home-todos";
 
 function today(){return new Intl.DateTimeFormat("sv-SE",{timeZone:"Asia/Shanghai",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());}
@@ -29,7 +30,7 @@ export function HomeSchedulePreview({zh,scope}:{zh:boolean;scope:string}){
   const days=Array.from({length:14},(_,i)=>{const d=new Date(weekStart);d.setUTCDate(weekStart.getUTCDate()+i);return d.toISOString().slice(0,10);});
   return <>
     <section className="room-preview-calendar" aria-label={t("Choose a date","选择日期")}><div className="native-section-head"><h2>{date.slice(0,4)}{zh?" 年 ":" / "}{Number(date.slice(5,7))}{zh?" 月":""}</h2><label className="room-date-picker"><CalendarDays size={18}/><span className="room-sr-only">{t("Choose date","选择日期")}</span><input aria-label={t("Choose date","选择日期")} type="date" value={date} onChange={e=>{if(/^\d{4}-\d{2}-\d{2}$/.test(e.target.value))setDate(e.target.value);}}/></label></div><div className="native-dates">{days.map(day=><div className="native-date" key={day}><span>{new Intl.DateTimeFormat(zh?"zh-CN":"en-US",{weekday:"short",timeZone:"Asia/Shanghai"}).format(new Date(day+"T12:00:00+08:00"))}</span><button type="button" className={day===date?"is-selected":""} aria-label={day} aria-pressed={day===date} onClick={()=>setDate(day)}>{Number(day.slice(8,10))}</button></div>)}</div></section>
-    <HomeTodos key={`${scope}:${date}`} date={date} today={today()} scope={scope} zh={zh}/>
+    <HomeTodos key={`${scope}:${date}`} date={date} today={today()} scope={scope} zh={zh}/><BookingImport key={`import:${scope}:${date}`} zh={zh} tasksOnly until={date}/>
   </>;
 }
 

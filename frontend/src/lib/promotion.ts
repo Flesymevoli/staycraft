@@ -2,7 +2,7 @@ import {bookingPeriod} from "./booking-period";
 
 export type PromotionSource={id:string;title:string;url:string;summary:string;start:string;end:string;checkedOn:string};
 export type PromotionBrief={language:"zh"|"en";channel:"xiaohongshu"|"wechat";goal:"rooms"|"local";start:string;end:string;sourceIds:string[]};
-export type PromotionDraft={id:string;brief:PromotionBrief;content:string;engine:"model_v1"|"rules_v1";createdAt:string;basis:{label:string;text:string;url?:string}[]};
+export type PromotionDraft={kind?:"action";id:string;brief:PromotionBrief;content:string;engine:"model_v1"|"rules_v1";createdAt:string;basis:{label:string;text:string;url?:string}[]};
 export type PromotionState={sources:PromotionSource[];drafts:PromotionDraft[]};
 export const emptyPromotion=():PromotionState=>({sources:[],drafts:[]});
 const text=(v:unknown,max:number):v is string=>typeof v==="string"&&v.length<=max&&!/[\u0000-\u0008\u000b\u000c\u000e-\u001f]/.test(v);
@@ -19,7 +19,7 @@ export function validPromotion(value:unknown):value is PromotionState{
  if(!value||typeof value!=="object")return false;const v=value as PromotionState;
  if(Object.keys(v).sort().join()!=="drafts,sources"||!Array.isArray(v.sources)||!Array.isArray(v.drafts)||v.sources.length>12||v.drafts.length>20)return false;
  const sources=v.sources.every(s=>s&&Object.keys(s).sort().join()==="checkedOn,end,id,start,summary,title,url"&&id(s.id)&&text(s.title,120)&&!!s.title.trim()&&publicSourceUrl(s.url)&&text(s.summary,600)&&!!s.summary.trim()&&!!bookingPeriod(s)&&!!bookingPeriod({start:s.checkedOn,end:s.checkedOn}));
- const drafts=v.drafts.every(d=>d&&Object.keys(d).sort().join()==="basis,brief,content,createdAt,engine,id"&&id(d.id)&&validBrief(d.brief)&&text(d.content,4000)&&!!d.content.trim()&&["model_v1","rules_v1"].includes(d.engine)&&text(d.createdAt,30)&&Number.isFinite(Date.parse(d.createdAt))&&Array.isArray(d.basis)&&d.basis.length<=12&&d.basis.every(b=>b&&Object.keys(b).every(k=>["label","text","url"].includes(k))&&text(b.label,120)&&text(b.text,1500)&&(b.url===undefined||publicSourceUrl(b.url))));
+ const drafts=v.drafts.every(d=>d&&(Object.keys(d).sort().join()==="basis,brief,content,createdAt,engine,id"||Object.keys(d).sort().join()==="basis,brief,content,createdAt,engine,id,kind"&&d.kind==="action")&&id(d.id)&&validBrief(d.brief)&&text(d.content,4000)&&!!d.content.trim()&&["model_v1","rules_v1"].includes(d.engine)&&text(d.createdAt,30)&&Number.isFinite(Date.parse(d.createdAt))&&Array.isArray(d.basis)&&d.basis.length<=12&&d.basis.every(b=>b&&Object.keys(b).every(k=>["label","text","url"].includes(k))&&text(b.label,120)&&text(b.text,1500)&&(b.url===undefined||publicSourceUrl(b.url))));
  return sources&&drafts&&new Set(v.sources.map(s=>s.id)).size===v.sources.length&&new Set(v.drafts.map(d=>d.id)).size===v.drafts.length&&new TextEncoder().encode(JSON.stringify(v)).length<=180000;
 }
 export function matchingSources(sources:PromotionSource[],brief:PromotionBrief){return sources.filter(s=>brief.sourceIds.includes(s.id)&&s.start<=brief.end&&s.end>=brief.start)}

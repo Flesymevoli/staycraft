@@ -3,6 +3,7 @@ import type {BookingMetrics} from "../components/booking-metrics";
 // Interpret the current booking distribution, without inferring demand or causality.
 export function businessAnalysis(data: BookingMetrics, zh: boolean) {
  const t=(cn:string,en:string)=>zh?cn:en;
+ if(data.historical_inventory_unknown)return {title:t('先看已记录订单，历史占用率暂不判断','Review recorded orders; historical occupancy is unknown'),evidence:t(`所选期间记录了 ${data.booked_order_room_nights||0} 个订单间夜。缺少历史房量，不能用当前房量倒推历史占用率；导入渠道也可能不完整。`,`The period contains ${data.booked_order_room_nights||0} recorded order nights. Historical inventory and full channel coverage are not established.`),action:t('核对渠道覆盖、完成与取消状态，再查看订单金额和间夜；不据此推断需求或调价。','Check channel coverage and completed/cancelled statuses before interpreting amounts; do not infer demand or change prices.')};
  const days=data.daily.filter(day=>day.capacity>0);
  const empty=days.filter(day=>day.booked===0);
  const full=days.filter(day=>day.available===0);
@@ -12,9 +13,9 @@ export function businessAnalysis(data: BookingMetrics, zh: boolean) {
   evidence=t("当前没有启用客房，无法区分尚未配置库存与没有预订；此时占用率不能用来评价经营好坏。","There is no active inventory. An unconfigured property cannot be distinguished from one without bookings, so occupancy cannot assess performance yet.");
   action=t("先核对房型、房号和启用状态，再观察预订分布。","Check room types, room numbers and availability before reviewing booking patterns.");
  }else if(!data.booked_room_nights){
-  title=t("所选期间尚无预订，获客转化需要先核查","No bookings yet in this period; check the booking journey");
+  title=t("所选期间暂无订单，先核对数据覆盖","No orders recorded; check data coverage first");
   evidence=t("当前可售间夜均未被预订覆盖，但仅凭零订单，无法判断是曝光不足、预订入口不畅还是价格原因。","None of the available room nights are booked. This alone cannot identify low exposure, booking friction or pricing as the cause.");
-  action=t("先检查官网预订入口、房型图片与可订日期是否正常，再针对空房日期安排推广；暂不直接降价。","Check the booking entry, room photos and available dates, then target open dates in promotion. Avoid a price cut without further evidence.");
+  action=t("先核对导入渠道、文件覆盖和更新时间，再检查房型展示与可订日期；数据完整后再评估推广，暂不直接降价。","Check imported channels, file coverage and update time before reviewing listings or planning promotion. Avoid a price cut without further evidence.");
  }else if(!data.available_room_nights){
   title=t("所选期间已订满，重点转向履约准备","This period is fully booked; focus on stay preparation");
   evidence=t("当前启用客房已无可订间夜，继续为这些日期引流也无法增加现有库存的预订。","No active room nights remain available, so attracting more bookings for these dates cannot fill additional existing capacity.");

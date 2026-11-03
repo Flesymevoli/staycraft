@@ -1,3 +1,5 @@
+> 2026-11-03：下方为早期技术选择记录，不定义当前产品或部署状态。当前采用Next.js/React/TypeScript、Supabase/PostgreSQL与Cloudflare；新方向为CSV订单导入、运营任务、分析与AI决策。PGlite仅为隔离测试开发依赖，不是正式运行数据库。以docs/CURRENT_BASELINE.md为准。
+
 # Homestay AI 前端技术方案
 
 开发方案：**Next.js + React + TypeScript + Tailwind CSS 4** 前端，**FastAPI + Pydantic** 后端，**Supabase PostgreSQL + Auth** 负责持久数据与登录。shadcn/ui 按需用于基础组件；MVP 不加 Redis 或 LangChain。部署目标是前端 Vercel、FastAPI Render、数据与认证 Supabase。后端、数据库和部署目前都还只是选定方案，尚未在仓库实现或上线。

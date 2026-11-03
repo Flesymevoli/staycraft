@@ -23,7 +23,7 @@
     "HOMESTAY_LOCAL_DATA": "0",
     "MODEL_ENABLED": "1",
     "FORMAL_MODEL_ENABLED": "1",
-    "FORMAL_AUTO_REPLY_ENABLED": "1",
+    "FORMAL_AUTO_REPLY_ENABLED": "0",
     "NEXT_PUBLIC_SUPABASE_URL": "https://husrpqalpjjswpvrkxet.supabase.co",
     "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY": "sb_publishable_ZqdrN-2yYsMPsYm-RvYr7w_tr50ju3f"
   },

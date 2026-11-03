@@ -1,8 +1,10 @@
 import {NextResponse,type NextRequest} from "next/server";
 import {updateSession} from "@/lib/supabase/proxy";
 import {isHosted} from "@/lib/deployment";
+import {retiredGuestPath} from "@/lib/retired-guest";
 export async function proxy(request:NextRequest){
  const path=request.nextUrl.pathname;
+ if(retiredGuestPath(path))return new NextResponse(null,{status:410,headers:{"Cache-Control":"no-store"}});
  if(isHosted()){
   const prototype=path.startsWith("/native-")||path==="/legacy"||path.endsWith(".html")||path.startsWith("/api/demo/")||path.startsWith("/api/local/");
   const guest=path==="/guest"||path.startsWith("/guest/");const property=request.nextUrl.searchParams.get("property")||"";

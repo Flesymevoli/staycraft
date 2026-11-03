@@ -1,0 +1,36 @@
+/* Shared operator theme: original pale surfaces, with clear iOS-style actions. */
+.workspace-shell {
+  --blue: #0878ee;
+  --blue-hover: #006bdc;
+  --action-tint: #edf5ff;
+  --card-radius: 24px;
+  --card-shadow: 0 5px 18px rgba(30,44,65,.045);
+}
+.workspace-shell .workspace-page :is(.native-primary,.inventory-soft,.room-add-link,.profile-summary-head .profile-text-button){display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:44px;padding:10px 17px;border:0;border-radius:999px;font-size:13px;font-weight:500;line-height:1.4;text-align:center;background:var(--action-tint);color:var(--blue);box-shadow:none}
+.workspace-shell .workspace-page .native-primary.native-ask,.workspace-shell .workspace-page .native-primary,.workspace-shell .workspace-work .inventory-home .room-add-link{background:var(--blue);color:#fff;box-shadow:0 3px 9px rgba(8,105,221,.16)}
+.workspace-shell .workspace-page :is(button,a):active{filter:brightness(.96)}
+.workspace-shell .workspace-page button:disabled{opacity:.45;cursor:not-allowed;box-shadow:none}
+.workspace-shell .workspace-page .booking-period-fields>button[type=submit]{min-height:44px;padding:0 15px;border-radius:999px;background:var(--blue);color:#fff;font-weight:500}
+.workspace-shell .workspace-page .booking-period-fields{row-gap:12px}
+.workspace-shell .workspace-page .booking-period-fields label{flex-basis:100px}
+.workspace-shell .workspace-page .booking-analysis-cards>button{border-radius:24px;padding:18px 15px;gap:9px}
+.workspace-shell .workspace-page .booking-analysis-cards>button[aria-pressed=true]{background:var(--action-tint);border-color:#b8d5fa}
+.workspace-shell .workspace-page .booking-analysis-cards>button[aria-pressed=true] .booking-analysis-card-title svg{color:var(--blue)}
+.workspace-shell .workspace-page .booking-analysis-cards strong{font-weight:500;font-variant-numeric:tabular-nums}
+.workspace-shell .workspace-page .booking-analysis-cards>button>span:last-child{color:var(--blue);font-weight:500}
+.workspace-shell .workspace-page .promotion-goals button{border-radius:20px;background:#f3f5f8}
+.workspace-shell .workspace-page .promotion-goals button[aria-pressed=true]{background:var(--action-tint);border-color:#b8d5fa;color:var(--blue)}
+.workspace-shell .workspace-page .home-todos-actionable .home-todo-action{max-width:90px;min-height:44px;padding:9px 12px;border-radius:999px;background:var(--action-tint);color:var(--blue);text-align:center;justify-content:center;font-size:12px;font-weight:500}
+.workspace-shell .workspace-page .home-todos-actionable .home-todo-action svg{display:none}
+.workspace-shell .workspace-page .home-todo-copy b{font-size:14px;font-weight:500}
+.workspace-shell .workspace-page .home-todos-counts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;padding:0 0 14px}
+.workspace-shell .workspace-page .home-todos-counts>span{display:flex;flex-direction:column-reverse;align-items:center;gap:5px;padding:12px 4px;border-radius:18px;background:var(--card-surface);color:var(--muted)}
+.workspace-shell .workspace-page .home-todos-counts b{font-size:23px;line-height:1.2;font-weight:500;font-variant-numeric:tabular-nums;margin:0;color:var(--ink)}
+.workspace-shell .native-tabbar{border:1px solid rgba(255,255,255,.85);background:rgba(255,255,255,.9);box-shadow:0 5px 24px rgba(30,44,65,.09);backdrop-filter:blur(18px)}
+.workspace-shell .native-tabbar a.is-active{background:var(--action-tint)}
+@media(max-width:359px){
+  .workspace-shell .workspace-page .home-todos-actionable .home-todo-row{grid-template-columns:30px minmax(0,1fr) auto;gap:7px}
+  .workspace-shell .workspace-page .home-todos-actionable .home-todo-action{max-width:58px;padding:8px;font-size:11px}
+  .workspace-shell .workspace-page .home-todo-copy b{font-size:13px}
+  .workspace-shell .workspace-page .booking-analysis-cards>button{padding:15px 11px}
+}

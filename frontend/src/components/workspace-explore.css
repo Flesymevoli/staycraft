@@ -34,3 +34,61 @@
 .workspace-explore-content button:disabled{opacity:.55;cursor:default}
 .workspace-explore-content :focus-visible{outline:2px solid #1677ff;outline-offset:3px}
 @media(max-width:360px){.workspace-explore-content .native-card{padding:18px}.promotion-fields{grid-template-columns:minmax(0,1fr)}}
+
+/* Keep the prototype's quiet discovery rhythm; editing stays on demand. */
+.workspace-explore-content{gap:32px}
+.workspace-explore-content h2{font-weight:500;letter-spacing:-.025em}
+.workspace-explore-content h3{font-size:18px;font-weight:400;line-height:1.4;margin:12px 0 8px}
+.promotion-sources>.native-section-head{align-items:center}
+.promotion-sources>.native-section-head h2{margin:0}
+.workspace-explore-content .promotion-source-help{margin:0 0 12px;font-size:12px}
+.promotion-sources .promotion-list-row{margin-top:14px;border:0;align-items:flex-start}
+.promotion-list-row>div>.inventory-text{display:flex;justify-content:flex-start;margin-top:10px}
+.workspace-explore-content .explore-discovery-empty{padding:26px}
+.explore-discovery-empty>svg{color:#6f8e83}
+.explore-discovery-empty p{font-size:14px;color:#626c7c}
+.explore-discovery-empty small{display:block;margin-top:12px}
+.explore-season>p{margin:-6px 0 18px}
+.explore-season-cards{display:flex;gap:14px;overflow-x:auto;scroll-snap-type:x mandatory;padding-bottom:12px}
+.explore-season-cards article{flex:0 0 82%;scroll-snap-align:start;border-radius:26px;padding:24px;background:#edf2ed;box-sizing:border-box}
+.explore-season-cards article+article{background:#f6efe3}
+.explore-season-cards small{display:block;margin-top:18px;letter-spacing:.09em}
+.explore-season-cards p{font-size:14px;color:#59616b;min-height:66px}
+.promotion-brief{scroll-margin-top:24px}
+.promotion-brief>p{font-size:14px;color:#626c7c}
+.promotion-settings{border-top:1px solid #e1e6ed;padding-top:4px;margin-bottom:18px}
+.promotion-source-form{background:white;padding:20px;border-radius:24px}
+.workspace-explore-content>div:empty{display:none}
+@media(min-width:760px){.explore-season-cards article{flex:1 1 0;min-width:0}}
+
+.promotion-selected{display:flex;gap:8px;flex-wrap:wrap}.promotion-selected:empty{display:none}.promotion-selected span{display:inline-flex;align-items:center;gap:6px;padding:8px 12px;border-radius:14px;background:#edf2ed;font-size:13px;overflow-wrap:anywhere;max-width:100%}
+
+.workspace-competitor-preview { min-width:0; margin-bottom:32px; }
+.workspace-competitor-preview .observation-page { padding:0; background:transparent; }
+.workspace-competitor-preview .ob-demo { padding:10px 14px; border-radius:14px; background:#edf5ff; }
+/* Compact iOS-style comparison surfaces; keep the original typeface and blue. */
+.workspace-competitor-preview .observation-page{--ob-blue:var(--blue)}
+.workspace-competitor-preview .ob-overview{padding:20px;background:var(--card-surface);border-radius:24px;box-shadow:var(--card-shadow)}
+.workspace-competitor-preview .ob-period{padding:4px;gap:4px;border-radius:18px;background:#eef0f3;margin-top:18px}
+.workspace-competitor-preview .ob-period button{padding:10px 12px;border:0;border-radius:14px;background:transparent;text-align:center;min-height:58px}
+.workspace-competitor-preview .ob-period button[aria-pressed=true]{background:#fff;box-shadow:0 2px 7px #2021240c;color:var(--ink)}
+.workspace-competitor-preview .ob-summary{margin-top:20px}
+.workspace-competitor-preview .ob-summary strong{font-size:28px;font-variant-numeric:tabular-nums}
+.workspace-competitor-preview .ob-missing b{color:var(--ink)}
+.workspace-competitor-preview .ob-overview>.ob-muted:last-child{margin-bottom:0}
+.workspace-competitor-preview .explore-stay-controls{display:flex;gap:6px}
+.workspace-competitor-preview .explore-stay-controls button{background:var(--card-surface);color:var(--blue)}
+.workspace-competitor-preview .ob-stay{box-shadow:var(--card-shadow)}
+.workspace-competitor-preview .ob-stay-body{padding:4px 16px 18px}
+.workspace-competitor-preview .ob-stay-body button,.workspace-competitor-preview .ob-actions button{border-radius:999px;background:var(--action-tint);color:var(--blue)}
+.workspace-competitor-preview .ob-stay-body button[aria-pressed=false]{background:#f1f3f5;color:var(--muted)}
+.workspace-competitor-preview .observation-page .ob-compare{border:0;border-radius:999px;padding:12px 16px;margin-top:16px;background:var(--blue);color:#fff;min-height:48px}
+.workspace-competitor-preview .observation-page .ob-price{padding:20px;margin-top:24px;border:0;border-radius:24px;background:var(--card-surface);box-shadow:var(--card-shadow)}
+.workspace-competitor-preview .ob-pending{background:#f3f5f8;padding:14px}
+.workspace-competitor-preview .ob-pending-line{background:#dce9f8}
+.workspace-competitor-preview .ob-review{box-shadow:var(--card-shadow)}
+.workspace-competitor-preview .ob-review input{background:#f4f5f7;border-color:transparent;border-radius:14px}
+.workspace-competitor-preview .ob-actions button:disabled{color:var(--muted);background:#f1f3f5}
+.workspace-competitor-preview .explore-footer{margin:20px 0;color:var(--muted)}
+.workspace-competitor-preview :is(button,input,summary):focus-visible{outline:2px solid var(--blue);outline-offset:3px}
+@media(max-width:359px){.workspace-competitor-preview .ob-overview,.workspace-competitor-preview .observation-page .ob-price{padding:16px}.workspace-competitor-preview .ob-summary strong{font-size:24px}.workspace-competitor-preview .ob-summary{gap:8px}.workspace-competitor-preview .ob-period button{padding:10px 6px}}

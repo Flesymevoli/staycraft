@@ -1,0 +1,30 @@
+.booking-import-panel .native-card{min-width:0}
+.booking-import-panel p,.decision-support p{overflow-wrap:anywhere}
+.booking-import-panel label{display:block;margin:14px 0;font:inherit;line-height:1.6}
+.booking-import-panel input:not([type=checkbox]){display:block;width:100%;max-width:100%;min-width:0;box-sizing:border-box;margin-top:6px;font:inherit}
+.booking-import-panel input[type=file]{font-size:14px}
+.booking-import-panel input[type=checkbox]{margin-right:8px;accent-color:var(--blue)}
+.booking-import-panel button,.booking-import-panel a{min-height:44px}
+.booking-import-panel button:focus-visible,.booking-import-panel input:focus-visible,.decision-support :is(button,textarea):focus-visible{outline:2px solid var(--blue);outline-offset:3px}
+.decision-support label{display:block;margin:16px 0;line-height:1.6}
+.decision-support textarea{width:100%;min-width:0;box-sizing:border-box;font:inherit}
+
+.booking-import-panel>h2{font-size:20px;margin-bottom:12px}
+.booking-import-panel .native-card{padding:16px}
+.booking-import-disclosure>summary{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:44px;cursor:pointer;color:var(--blue);font-weight:600;list-style:none}
+.booking-import-disclosure>summary::-webkit-details-marker{display:none}
+.booking-import-disclosure-hint{font-size:13px;font-weight:400}
+.booking-import-disclosure-hint::after{content:' ⌄'}
+.booking-import-disclosure[open] .booking-import-disclosure-hint::after{content:' ⌃'}
+.booking-import-form{padding-top:4px;border-top:1px solid rgba(128,128,128,.15)}
+.booking-import-history{font-size:13px;margin-top:8px}
+.booking-import-history>summary,.booking-import-scope>summary{cursor:pointer;min-height:44px;align-content:center}
+.booking-import-task-heading{display:flex;align-items:center;justify-content:space-between;gap:10px;border-top:1px solid rgba(128,128,128,.15);margin-top:8px;padding-top:10px}
+.booking-import-task-heading h3{margin:0;font-size:16px;white-space:nowrap}
+.booking-import-task-heading h3 span{font-weight:400;color:var(--blue);margin-left:4px}
+.booking-import-panel .booking-import-task-heading label{margin:0;min-width:0}
+.booking-import-date-label{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
+.booking-import-panel .booking-import-task-heading input{margin:0;width:138px;min-height:44px;font-size:13px;border:0;background:transparent;color:inherit}
+.booking-import-panel .booking-import-empty{margin:8px 0 2px;font-size:13px}
+.booking-import-scope{font-size:12px}
+.booking-import-panel summary:focus-visible{outline:2px solid var(--blue);outline-offset:3px;border-radius:8px}

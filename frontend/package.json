@@ -11,10 +11,13 @@
     "lint": "eslint src",
     "sync:prototype": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/sync-prototype.ps1",
     "check": "npm run lint && npm run build",
-    "release:check": "npm run check && node scripts/qa-release.cjs",
+    "release:check": "npm run check && node scripts/qa-import-release.cjs",
     "cf:build": "node scripts/cloudflare.cjs build",
     "cf:preview": "node scripts/cloudflare.cjs preview",
-    "cf:deploy": "node scripts/cloudflare.cjs deploy"
+    "cf:deploy": "node scripts/cloudflare.cjs deploy",
+    "sample:imports": "node scripts/start-import-sample.cjs",
+    "qa:imports": "node scripts/qa-import-release.cjs",
+    "demo:imports": "node scripts/prepare-import-demo.mjs --prepare-demo"
   },
   "dependencies": {
     "@supabase/ssr": "0.12.7",
@@ -27,6 +30,7 @@
     "unpdf": "1.9.1"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "0.5.14",
     "@opennextjs/cloudflare": "1.20.13",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
