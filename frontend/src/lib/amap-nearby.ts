@@ -25,6 +25,16 @@ export async function amapTool(name:string,args:Record<string,unknown>,signal?:A
  if(!block)throw Error('amap_unavailable');const data=JSON.parse(block.text);
  if(data.status==='0')throw Error('amap_unavailable');return data;
 }
+export async function amapAddress(coordinates:{latitude:number;longitude:number},signal?:AbortSignal,fetcher:typeof fetch=fetch){
+ const key=process.env.AMAP_MAPS_API_KEY;if(!key)throw Error('amap_not_configured');
+ const url=new URL('https://restapi.amap.com/v3/geocode/regeo');
+ url.search=new URLSearchParams({key,location:amapCoordinates(coordinates.latitude,coordinates.longitude),extensions:'base',radius:'1000'}).toString();
+ const response=await fetcher(url,{redirect:'manual',cache:'no-store',signal:signal?AbortSignal.any([signal,AbortSignal.timeout(15000)]):AbortSignal.timeout(15000)});
+ if(!response.ok)throw Error('amap_location_unknown');
+ const data=await response.json();
+ if(data.status!=='1'||typeof data.regeocode?.formatted_address!=='string'||!data.regeocode.formatted_address.trim())throw Error('amap_location_unknown');
+ return data.regeocode.formatted_address.trim().slice(0,300);
+}
 export function placeResults(data:{pois?:Record<string,unknown>[]}){
  const seen=new Set<string>();
  return (Array.isArray(data.pois)?data.pois:[]).filter(p=>{if(typeof p.id!=='string'||typeof p.name!=='string')return false;const code=String(p.typecode||'');if(code.startsWith('05')||code.startsWith('15')&&!/^150[1278]/.test(code))return false;const identity=`${p.name}|${p.address||''}`;if(seen.has(p.id)||seen.has(identity))return false;seen.add(p.id);seen.add(identity);return true}).slice(0,6).map(p=>({id:String(p.id),name:String(p.name).slice(0,120),address:typeof p.address==='string'?p.address.slice(0,200):'',category:/大学|学院|高校/.test(String(p.name))?'高校访客':/会展|展览|会议/.test(String(p.name))?'会展访客':/站|机场|枢纽/.test(String(p.name))?'交通出行客群':'景区短住客群',url:`https://uri.amap.com/marker?poiid=${encodeURIComponent(String(p.id))}&name=${encodeURIComponent(String(p.name))}&src=StayCraft&callnative=0`}));

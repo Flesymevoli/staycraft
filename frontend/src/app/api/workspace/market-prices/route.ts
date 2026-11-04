@@ -1,7 +1,7 @@
 import {verifiedProperty,requireSameOrigin,boundedBody,WorkspaceError,workspaceFailure} from '@/lib/workspace-access';
 import {validateProfile} from '@/lib/property-profile';
 import {bookingPeriod} from '@/lib/booking-period';
-import {amapTool,amapCoordinates,validCoordinates} from '@/lib/amap-nearby';
+import {amapAddress,validCoordinates} from '@/lib/amap-nearby';
 import {validateInventory} from '@/lib/property-inventory';
 export const dynamic='force-dynamic';
 export async function POST(request:Request){try{
@@ -12,7 +12,7 @@ export async function POST(request:Request){try{
  if(!period||input.start<today)throw new WorkspaceError('invalid_input',400);
  const nights=Math.round((Date.parse(input.end)-Date.parse(input.start))/86400000);if(nights<1||nights>28)throw new WorkspaceError('invalid_input',400);
  let location:string|undefined;
- if(input.coordinates){const geo=await amapTool('maps_regeocode',{location:amapCoordinates(input.coordinates.latitude,input.coordinates.longitude)},request.signal);location=[...new Set([geo.province,geo.city,geo.district].filter((part:unknown)=>typeof part==='string'&&part.trim()))].join('');if(!location)throw new WorkspaceError('location_unavailable',503);}
+ if(input.coordinates){location=await amapAddress(input.coordinates,request.signal);}
  else{const {data,error}=await supabase.from('property_details').select('profile').eq('property_id',propertyId).maybeSingle();location=validateProfile(data?.profile)?.location?.replace(/（[^）]*虚构[^）]*）/g,'').replace(/周边$/,'').trim();if(error||!location)throw new WorkspaceError('property_location_required',422);}
  const key=process.env.ROLLINGGO_API_KEY;if(!key)throw new WorkspaceError('market_not_configured',503);
  const r=await fetch('https://mcp.rollinggo.cn/mcp',{method:'POST',redirect:'manual',cache:'no-store',signal:AbortSignal.any([request.signal,AbortSignal.timeout(25000)]),headers:{Authorization:`Bearer ${key}`,'Content-Type':'application/json',Accept:'application/json, text/event-stream'},body:JSON.stringify({jsonrpc:'2.0',id:1,method:'tools/call',params:{name:'searchHotels',arguments:{originQuery:`查询${location}附近酒店公开报价`,place:location,placeType:'详细地址',checkInParam:{checkInDate:input.start,stayNights:nights,adultCount:2},size:5}}})});
@@ -27,5 +27,5 @@ export async function POST(request:Request){try{
  const active=new Set(inventory?.rooms.filter(r=>r.active).map(r=>r.typeId));
  const rates=inventory?.types.filter(t=>active.has(t.id)).map(t=>t.price)||[];
  const ownRates=rates.length?{min:Math.min(...rates),max:Math.max(...rates)}:null;
- return Response.json({hotels,ownRates,location,locationPrecision:input.coordinates?'district':'property',start:input.start,end:input.end,nights,adults:2,provider:'RollingGo',checkedAt:new Date().toISOString()},{headers:{'Cache-Control':'no-store'}});
+ return Response.json({hotels,ownRates,location,locationPrecision:input.coordinates?'address':'property',start:input.start,end:input.end,nights,adults:2,provider:'RollingGo',checkedAt:new Date().toISOString()},{headers:{'Cache-Control':'no-store'}});
  }catch(e){return workspaceFailure(e)}}
