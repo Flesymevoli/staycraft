@@ -11,6 +11,8 @@ export async function modelChat(body:Record<string,unknown>,options:{fetcher?:ty
  if(options.preferOfficial||!primaryReady){const result=await send('deepseek_official');return {...result,fallback:false};}
  let result;
  try{result=await send('course')}catch(error){if(!officialKey||options.signal?.aborted)throw error;const replacement=await send('deepseek_official');return {...replacement,fallback:true};}
- if(!result.response.ok&&result.response.status!==400&&officialKey&&!options.signal?.aborted){const replacement=await send('deepseek_official');return {...replacement,fallback:true};}
+ let incomplete=false;
+ if(result.response.ok&&officialKey){try{const parsed=await result.response.clone().json(),choice=parsed.choices?.[0];incomplete=choice?.finish_reason!=='content_filter'&&(!choice||!['stop','tool_calls'].includes(choice.finish_reason)||!choice.message?.content&&!choice.message?.tool_calls?.length)}catch{incomplete=true}}
+ if((!result.response.ok&&result.response.status!==400||incomplete)&&officialKey&&!options.signal?.aborted){const replacement=await send('deepseek_official');return {...replacement,fallback:true};}
  return {...result,fallback:false};
 }

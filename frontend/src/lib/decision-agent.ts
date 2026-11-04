@@ -117,8 +117,11 @@ export async function runDecisionAgent(deps:AgentDependencies):Promise<DecisionA
   const payload={model:process.env.MODEL_NAME,stream:false,max_tokens:900,temperature:.2,messages:context,...(finish?{}:{tools:availableTools,tool_choice:'auto'})};
   const serialized=JSON.stringify(payload),chinese=(serialized.match(/[\u3400-\u9fff]/g)||[]).length;
   const estimate=Math.ceil(chinese*1.1+(serialized.length-chinese)/3.5)+900;
+  if(estimatedTokens+estimate>9000&&modelProvider==='course'&&process.env.DEEPSEEK_API_KEY){modelProvider='deepseek_official';estimatedTokens=0;addStep(t('切换备用模型服务','Switch to fallback model service'),'completed',t('课程调用预算接近上限，由官方备用服务完成汇总','Course token budget nearly used; official fallback will complete the synthesis'));}
   if(estimatedTokens+estimate>9500)throw new Error('analysis_token_budget');estimatedTokens+=estimate;
+  const previousProvider=modelProvider;
   const resultProvider=await modelChat(payload,{fetcher:deps.fetcher,signal,preferOfficial:modelProvider==='deepseek_official'}),response=resultProvider.response;
+  if(resultProvider.provider!==previousProvider)estimatedTokens=estimate;
   modelProvider=resultProvider.provider;
   if(resultProvider.fallback)addStep(t('切换备用模型服务','Switch to fallback model service'),'completed',t('课程网关暂不可用，使用 DeepSeek 官方服务继续同一调查','Course gateway unavailable; continuing the same investigation with official DeepSeek'));
   if(!response.ok)throw new Error('model_http_'+response.status);
