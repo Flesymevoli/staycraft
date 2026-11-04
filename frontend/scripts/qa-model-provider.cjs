@@ -1,0 +1,11 @@
+const fs=require('node:fs'),Module=require('node:module'),ts=require('typescript'),assert=require('node:assert/strict');
+const mod=new Module('provider-test');mod._compile(ts.transpileModule(fs.readFileSync('src/lib/model-provider.ts','utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText,'provider-test.cjs');const {modelChat}=mod.exports;
+Object.assign(process.env,{MODEL_BASE_URL:'https://course.test.invalid/v1',MODEL_API_KEY:'course-fixture',MODEL_NAME:'course-model',MODEL_AUTH_MODE:'api-key',DEEPSEEK_API_KEY:'official-fixture',DEEPSEEK_MODEL:'deepseek-flash'});
+(async()=>{const calls=[],fetcher=async(url,options)=>{calls.push({url,options});return calls.length===1?new Response('{}',{status:429}):Response.json({choices:[]})};
+ const result=await modelChat({messages:[],max_tokens:100},{fetcher});assert.equal(result.provider,'deepseek_official');assert.equal(result.fallback,true);assert.equal(calls.length,2);assert.equal(calls[1].url,'https://api.deepseek.com/chat/completions');assert.equal(calls[1].options.headers.Authorization,'Bearer official-fixture');assert.equal(calls[1].options.headers['api-key'],undefined);assert.equal(JSON.parse(calls[1].options.body).thinking.type,'disabled');assert(!JSON.stringify(result).includes('fixture'));
+ let n=0;await modelChat({messages:[]},{preferOfficial:true,fetcher:async url=>{n++;assert.equal(url,'https://api.deepseek.com/chat/completions');return Response.json({})}});assert.equal(n,1);
+ n=0;const filtered=await modelChat({messages:[]},{fetcher:async()=>{n++;return new Response('{}',{status:400})}});assert.equal(n,1);assert.equal(filtered.provider,'course');
+ n=0;const ok=await modelChat({messages:[]},{fetcher:async()=>{n++;return Response.json({})}});assert.equal(n,1);assert.equal(ok.provider,'course');
+ const controller=new AbortController();controller.abort();n=0;await assert.rejects(modelChat({},{signal:controller.signal,fetcher:async()=>{n++;throw Error('cancelled')}}));assert.equal(n,1);
+ console.log('PASS course success, 429 fallback, sticky official selection, correct credential routing, disabled thinking, no content-filter bypass or cancellation retry, and no secret in result. Mock providers only.');
+})().catch(e=>{console.error(e);process.exitCode=1});

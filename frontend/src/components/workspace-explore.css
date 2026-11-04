@@ -162,7 +162,7 @@
 .decision-price details{margin-top:12px}
 .decision-price details p{margin:8px 0 0}
 
-.native-page.workspace-explore:has(.workspace-explore-content){width:min(100%,430px);padding-inline:18px;background:#f7f8f9;color:#202124;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue","PingFang SC","Microsoft YaHei",sans-serif}
+.native-page.workspace-explore:not(.workbench-page):has(.workspace-explore-content){width:min(100%,430px);padding-inline:18px;background:#f7f8f9;color:#202124;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue","PingFang SC","Microsoft YaHei",sans-serif}
 .native-page.workspace-explore:has(.workspace-explore-content)>h1.workspace-sr-heading{position:static;width:auto;height:auto;overflow:visible;clip-path:none;white-space:normal;padding:0;margin:16px 0 12px;font-size:32px;font-weight:600;line-height:1.15;letter-spacing:-.035em}
 .workspace-explore-content .explore-intro{display:flex;align-items:center;justify-content:space-between;gap:12px;min-width:0}
 .workspace-explore-content .explore-intro>div{min-width:0}

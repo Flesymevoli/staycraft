@@ -86,7 +86,7 @@ export function PropertyProfileEditor({ zh }: { zh: boolean }) {
       const body = await response.json();
       if (!response.ok) { setError(body.error ?? "save_failed"); return; }
       const value = validateProfile(body.profile); if (!value || typeof body.revision !== "string") throw new Error();
-      setProfile(value); setRevision(body.revision); dirty.current = false; setSnapshot(value); setEditing(false); setPreview(null); setSelected([]); setSaved(true); setConfirmed(false); router.refresh();
+      setProfile(value); setRevision(body.revision); dirty.current = false; setSnapshot(value); setEditing(false); setPreview(null); setSelected([]); setSaved(true); setConfirmed(false); window.dispatchEvent(new Event('staycraft-profile-changed')); router.refresh();
     } catch { setError("save_failed"); }
     finally { setBusy(null); }
   };

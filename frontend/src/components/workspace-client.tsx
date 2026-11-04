@@ -22,7 +22,8 @@ import {OperatorSampleContext} from "./operator-sample-context";
 import {WorkspaceExplore} from "./workspace-explore";
 import "./workspace-theme.css";
 
-export type WorkspaceSection = "home" | "work" | "analysis" | "explore" | "mine";
+export type WorkspaceSection = "home" | "work" | "analysis" | "explore" | "mine" | "promotion";
+export {WorkbenchShell as WorkspaceClient} from "./workbench-shell";
 export type WorkspaceConnection = { status: "unavailable" | "unassigned" } | { status: "linked"; propertyName: string;propertyId:string };
 const sections = [
   { id: "home", en: "Home", zh: "首页", href: "/app", icon: "home-inactive", active: "home" },
@@ -32,7 +33,7 @@ const sections = [
   { id: "mine", en: "Mine", zh: "我的", href: "/app/mine", icon: "mine", active: "mine-active" },
 ] as const;
 
-export function WorkspaceClient({ section, userId, roomId, bookingId, bookingHistory=false, threadId, email, connection, sample=false, signOutAction }: {
+export function LegacyWorkspaceClient({ section, userId, roomId, bookingId, bookingHistory=false, threadId, email, connection, sample=false, signOutAction }: {
   section: WorkspaceSection; userId: string; roomId?: string; bookingId?:string; bookingHistory?:boolean; threadId?:string; email: string; connection: WorkspaceConnection; sample?:boolean; signOutAction: () => Promise<void>;
 }) {
   // Account pages do not use the prototype's shared sessionStorage or local APIs.

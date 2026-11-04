@@ -45,6 +45,7 @@ export function LoginForm({ configured,prototypeAvailable=true,demoAvailable=fal
       <span className="auth-kicker">STAYCRAFT</span>
       <button type="button" className="auth-language" onClick={() => setLanguage(language === "en" ? "zh" : "en")}>{language === "en" ? "中文" : "EN"}</button>
     </header>
+    <aside className="auth-intro"><span>STAYCRAFT / DECISION WORKBENCH</span><h2>{language==='zh'?'每一个经营判断，\n都有迹可循。':'Every decision,\nbacked by evidence.'}</h2><p>{language==='zh'?'把订单、房态和酒店市场报价连在一起。AI 主动调查，你专注于下一步。':'Connect bookings, room data and hotel market prices. AI investigates so you can focus on your next move.'}</p><ol><li>{language==='zh'?'整合你的经营数据':'Connect your business data'}</li><li>{language==='zh'?'让 AI 主动展开调查':'Let AI investigate proactively'}</li><li>{language==='zh'?'带着依据，决定下一步':'Choose your next step with evidence'}</li></ol></aside>
     <main className="auth-main">
       <h1>{register?(language==='zh'?'创建账号。':'Create an account.'):t.title}</h1>
       <p className="auth-subtitle">{register?(language==='zh'?'开始管理你的民宿。':'Start your homestay workspace.'):t.subtitle}</p>

@@ -1,12 +1,11 @@
 "use client";
 import {useEffect,useState} from "react";
 import Link from "next/link";
-import {BedDouble,CalendarDays,Banknote,Tag,TrendingUp} from "lucide-react";
+import {BedDouble,CalendarDays,Banknote,Tag,ArrowUpRight} from "lucide-react";
 import {BookingTrend} from "./booking-trend";
 import type {BookingMetric} from "@/lib/booking-chart";
 import {businessAnalysis} from "@/lib/business-analysis";
 import {BookingNextSteps} from "./booking-insight";
-import {WorkspaceAssistant,type AssistantAnswer} from "./workspace-assistant";
 import {RevenuePreview} from "./revenue-preview";
 import {useBookingMetrics} from "./booking-metrics";
 import {bookingPeriod,type BookingRange} from "@/lib/booking-period";
@@ -19,8 +18,6 @@ export function HomeBookingOverview({scope,zh}:{scope:string;zh:boolean}){
 export function WorkspaceAnalysis({scope,zh}:{scope:string;zh:boolean}){
  const defaultDays=7; const [range,setRange]=useState<BookingRange|undefined>(),[draftStart,setDraftStart]=useState(""),[draftEnd,setDraftEnd]=useState(""),[rangeError,setRangeError]=useState(false),[metric,setMetric]=useState<BookingMetric>("occupancy"),[selected,setSelected]=useState<number|null>(null),[showDaily,setShowDaily]=useState(false);const {data,status,retry}=useBookingMetrics(defaultDays,scope,range);const t=(en:string,cn:string)=>zh?cn:en;
  useEffect(()=>{if(status!=="ready"||window.location.hash!=="#booking-analysis-detail")return;const target=document.getElementById("booking-analysis-detail");target?.scrollIntoView({block:"start"});target?.focus({preventScroll:true})},[status,data]);
- const [priority,setPriority]=useState<{key:string;answer:AssistantAnswer}|null>(null);
- const analysisKey=JSON.stringify(data)+zh;
  const analysis=data?businessAnalysis(data,zh):null;
  const money=(cents:number|null|undefined)=>cents==null?"—":"¥"+(cents/100).toLocaleString(zh?"zh-CN":"en-GB",{maximumFractionDigits:2});
  const rate=data?.rate_min==null?"—":data.rate_min===data.rate_max?`¥${data.rate_min}`:`¥${data.rate_min}–${data.rate_max}`;
@@ -42,8 +39,8 @@ export function WorkspaceAnalysis({scope,zh}:{scope:string;zh:boolean}){
  <button type="button" className="inventory-text" aria-expanded={showDaily} onClick={()=>setShowDaily(v=>!v)}>{t("Daily details","每日明细")} {showDaily?"−":"+"}</button>{showDaily&&<div className="booking-analysis-table"><table><thead><tr><th>{t("Date","日期")}</th><th>{t("Booked","已订")}</th><th>{t("Unbooked","未订")}</th><th>{t("Amount","金额")}</th></tr></thead><tbody>{data.daily.map(day=><tr key={day.date}><td>{day.date}</td><td>{data.historical_inventory_unknown?day.order_room_nights:day.booked}</td><td>{data.historical_inventory_unknown?"—":day.available}</td><td>{money(day.amount_cents)}</td></tr>)}</tbody></table></div>}
  </section>}
  <p className="booking-analysis-group">{t("PROPERTY & MARKET", "房价与市场参考")}</p>
- <div className="booking-analysis-context">{[{Icon:Tag,label:t("Configured rate","设置房价"),value:rate,help:t("Current active room types","当前启用房型基础价")},{Icon:TrendingUp,label:t("Market demand","市场需求"),value:t("Not connected","尚未接入"),help:t("No reliable source connected","暂无可靠数据来源")}].map(({Icon,label,value,help})=><div key={label}><span><Icon size={16}/>{label}</span><strong>{value}</strong><small>{help}</small></div>)}</div>
- {analysis&&<section className="booking-analysis-panel business-analysis"><h2>{t("Business analysis","经营状况分析")}</h2>{priority?.key===analysisKey?<><small>{priority.answer.engine==="model_v1"?t("AI-assisted priorities","AI 辅助重点梳理"):t("Based on current operating data","依据当前经营数据")}</small>{priority.answer.fallback&&<p>{t("AI review unavailable; using data-based priorities.","AI 梳理暂不可用，当前展示数据分析重点。")}</p>}{priority.answer.items.map(item=><article key={item.id}><h3>{item.title}</h3><p>{item.evidence}</p><p>{item.action}</p><Link className="inventory-text" href={item.href}>{t("Review and act","查看并处理")} →</Link></article>)}</>:<><h3>{analysis.title}</h3><p>{analysis.evidence}</p>{analysis.risk&&<p className="booking-analysis-warning">{analysis.risk}</p>}<div className="business-analysis-action"><h3>{t("Recommended focus","建议重点")}</h3><p>{analysis.action}</p></div></>}<WorkspaceAssistant key={analysisKey} zh={zh} days={defaultDays} range={range} analysis onAnswer={answer=>setPriority({key:analysisKey,answer})}/><details><summary>{t("Basis of analysis","分析依据")}</summary><p>{t("Based on bookings and current active inventory for the selected period. Cancelled orders are excluded. Recorded completed stays remain in historical figures; current inventory is not historical inventory. This is not a forecast of final occupancy or collected revenue.","依据所选期间的预订与当前启用库存；取消订单不计入，历史完成住宿保留；当前房量不代表历史房量。这是当前预订分布判断，不是最终入住率或实收收入预测。")}</p></details></section>}
+ <div className="booking-analysis-context"><div><span><Tag size={16}/>{t('Configured rates','内部基础房价')}</span><strong>{rate}</strong><small>{t('Current active room types','当前启用房型')}</small></div><Link href="/app/explore" className="booking-market-link"><span><ArrowUpRight size={16}/>{t('Market intelligence','市场情报')}</span><strong>{t('Compare nearby stays','查看周边报价')}</strong><small>{t('Same-date supplier prices','按入住日期查询真实酒店起价')}</small></Link></div>
+ {analysis&&<section className="booking-analysis-panel business-analysis"><h2>{t('Period summary','所选期间摘要')}</h2><h3>{analysis.title}</h3><p>{analysis.evidence}</p>{analysis.risk&&<p className="booking-analysis-warning">{analysis.risk}</p>}<p>{analysis.action}</p><Link className="inventory-text" href="/app">{t('Open the AI decision workbench','前往 AI 决策工作台')} <ArrowUpRight size={15}/></Link></section>}
 
  {data&&<BookingNextSteps data={data} zh={zh} onDate={index=>{setMetric("occupancy");setSelected(index);setShowDaily(true);document.getElementById("booking-analysis-detail")?.scrollIntoView({block:"start",behavior:"smooth"});}}/>}
  {data&&<LocalReferences start={data.period_start} end={data.period_end} zh={zh}/>}

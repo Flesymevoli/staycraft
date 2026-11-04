@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Staycraft · 民宿经营工作台",
+  title: "StayCraft · AI 经营决策工作台",
   robots: { index: false, follow: false },
-  description: "民宿客房管理、直接预订和经营日程",
+  description: "为小型民宿经营者提供主动经营分析、市场价格调查与决策支持。",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

@@ -17,7 +17,7 @@
   background-color: #143c64;
   background-image:
     linear-gradient(180deg, rgba(14, 48, 80, .22) 0%, rgba(14, 48, 80, .12) 38%, rgba(10, 35, 65, .72) 100%),
-    url('/images/staycraft-landing-background.webp'),
+    radial-gradient(ellipse at 85% 20%, #547bff88, transparent 55%),
     linear-gradient(155deg, #e5f3ff 0%, #bcdcf4 38%, #6398be 68%, #153d64 100%);
   background-position: center, 64% center, center;
   background-size: cover, cover, cover;
@@ -145,6 +145,10 @@
 .landing-cta:active { transform: scale(.98); }
 .landing-cta-arrow { font-size: 18px; line-height: 1; transition: transform .16s; }
 .landing-cta:hover .landing-cta-arrow { transform: translateX(3px); }
+.landing-cta{border:0;cursor:pointer;font-family:inherit}
+.landing-cta:disabled{opacity:.7;cursor:wait}
+.landing-cta-note a{color:inherit;text-underline-offset:4px}
+.landing-actions form{margin:0}
 .landing-cta-note { max-width: 23rem; margin: 0; color: rgba(246, 251, 255, .74); font-size: 12px; line-height: 1.55; }
 .landing-values {
   display: grid;
@@ -201,3 +205,4 @@
 @media (prefers-reduced-motion: reduce) {
   .landing *, .landing *::before, .landing *::after { transition-duration: .01ms !important; animation-duration: .01ms !important; }
 }
+.landing-footer .landing-team{margin-top:14px;font-size:12px;line-height:1.8;opacity:.85}

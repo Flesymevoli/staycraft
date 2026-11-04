@@ -1,0 +1,9 @@
+export type AgentPeriod = {start:string;end:string};
+export type AgentMetrics = {bookedPct:number|null;bookedRoomNights:number;capacityRoomNights:number;availableRoomNights:number;amountCents:number|null;activeRooms:number};
+export type AgentEvidence = {id:string;kind:'metrics'|'inventory'|'market'|'bookings';title:string;source:string;capturedAt:string;period?:AgentPeriod;facts:string[];href?:string};
+export type AgentStep = {id:string;label:string;status:'completed'|'failed';tool?:string;detail:string;durationMs:number};
+export type AgentFinding = {id:string;title:string;severity:'high'|'medium'|'low';conclusion:string;action:string;reason:string;evidenceIds:string[];uncertainty:string};
+export type AgentMarket = {start:string;end:string;count:number;currency:'CNY';low:number|null;high:number|null;hotels:{name:string;price:number|null;currency:string;conditions:string}[]};
+export type DecisionAgentRun = {id:string;status:'completed'|'limited'|'unavailable';engine:'model_v1'|'rules_v1';modelProvider?:'course'|'deepseek_official';generatedAt:string;period:AgentPeriod;summary:string;metrics:AgentMetrics;findings:AgentFinding[];steps:AgentStep[];evidence:AgentEvidence[];market?:AgentMarket;limitations:string[]};
+export type DecisionAgentResponse = {run:DecisionAgentRun;cached:boolean;historyAvailable?:boolean};
+export type AgentHistoryItem={id:string;status:string;engine:string|null;createdAt:string;completedAt:string|null;period:AgentPeriod;summary:string};

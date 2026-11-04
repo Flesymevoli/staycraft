@@ -1,6 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import {useActionState} from 'react';
+import {signInDemo,type LoginState} from './login/actions';
 import { useOperatorLanguage } from "@/components/operator-language";
 
 type LandingCopy = {
@@ -18,41 +20,42 @@ type LandingCopy = {
 
 const content: Record<"zh" | "en", LandingCopy> = {
   zh: {
-    brandNote: "民宿经营工作台",
+    brandNote: "AI 经营决策工作台",
     eyebrow: "为小型民宿经营者而做",
-    title: "让民宿经营，更轻一点。",
-    subtitle: "日常运营、经营分析、周边报价与推广建议，收进一个安静的工作台。少一点来回核对，多一点留给客人和生活。",
-    valuesLabel: "核心功能",
+    title: "看清经营，决定下一步。",
+    subtitle: "连接订单与房态，按需调查周边酒店报价。StayCraft 主动发现值得关注的问题，把数据、原因和行动建议放在一起。",
+    valuesLabel: "三步开始使用",
     values: [
-      { title: "日常运营", body: "订单、房态、待办与清洁安排放在一处，减少来回翻找。" },
-      { title: "经营分析", body: "看清预订、入住与收入节奏，用当前数据做判断。" },
-      { title: "周边报价与推广", body: "参考周边住宿报价，把本地线索整理成可编辑的推广内容。" },
+      { title: "导入经营数据", body: "上传订单 CSV，补全民宿资料与房态，让分析有准确的起点。" },
+      { title: "让 AI 主动调查", body: "打开决策总览，AI 读取经营记录，按需查询真实酒店报价。" },
+      { title: "审核经营建议", body: "查看结论与数据依据，选择适合民宿的下一步行动。" },
     ],
-    cta: "开始使用",
-    ctaNote: "已有账号直接登录；新用户在同一页注册。",
-    note: "不自动同步 OTA 平台，不自动改价，也不做全市场实时竞价。建议仅供参考，决定权始终在你。",
+    cta: "体验 StayCraft",
+    ctaNote: "无需注册，先用演示数据体验完整工作台。",
+    note: "AI 负责调查与分析，经营决策由你掌握。",
     switchLabel: "Switch to English",
   },
   en: {
-    brandNote: "Homestay workspace",
+    brandNote: "AI decision workbench",
     eyebrow: "Built for independent homestays",
-    title: "Running your homestay, made lighter.",
-    subtitle: "Daily operations, business insight, and nearby pricing and promotion ideas in one calm workspace. Less admin, more time for guests.",
-    valuesLabel: "What StayCraft does",
+    title: "See your business. Know your next move.",
+    subtitle: "Connect bookings and room data with live hotel quotes. StayCraft investigates what matters, then brings evidence, business judgments and next steps together.",
+    valuesLabel: "How it works",
     values: [
-      { title: "Daily operations", body: "Keep orders, room status, to-dos and cleaning in one place." },
-      { title: "Business insight", body: "See booking, occupancy and revenue patterns from the data you already keep." },
-      { title: "Nearby pricing & promotion", body: "Check nearby stays and turn local context into editable promotion drafts." },
+      { title: "Connect your data", body: "Upload a booking CSV and complete your property profile and room inventory." },
+      { title: "Let AI investigate", body: "Open the overview. AI reads your records and checks live hotel quotes when needed." },
+      { title: "Review your next move", body: "Read the evidence, assess the recommendations and choose your next action." },
     ],
-    cta: "Get started",
-    ctaNote: "Existing account? Sign in. New here? Register on the same page.",
-    note: "No automatic OTA sync or price changes, and no whole-market real-time bidding. You review every suggestion.",
+    cta: "Try StayCraft",
+    ctaNote: "No sign-up needed. Explore the full workbench with demo data.",
+    note: "AI investigates and explains. You make the business decisions.",
     switchLabel: "切换到中文",
   },
 };
 
-export function LandingPage() {
+export function LandingPage({demoAvailable=false}:{demoAvailable?:boolean}) {
   const { language, setLanguage } = useOperatorLanguage();
+  const [state,action,pending]=useActionState<LoginState,FormData>(signInDemo,undefined);
   const t = content[language];
 
   return (
@@ -79,11 +82,11 @@ export function LandingPage() {
             <h1 className="landing-title" id="landing-title">{t.title}</h1>
             <p className="landing-subtitle">{t.subtitle}</p>
             <div className="landing-actions">
-              <Link className="landing-cta" href="/login">
+              {demoAvailable?<form action={action}><button className="landing-cta" disabled={pending}>{pending?(language==='zh'?'正在进入…':'Opening…'):t.cta}<span aria-hidden="true">↗</span></button>{state?.error&&<p role="alert">{language==='zh'?'演示暂时无法打开，请稍后重试。':'Demo unavailable. Please retry.'}</p>}</form>:<Link className="landing-cta" href="/login">
                 {t.cta}
                 <span className="landing-cta-arrow" aria-hidden="true">→</span>
-              </Link>
-              <p className="landing-cta-note">{t.ctaNote}</p>
+              </Link>}
+              <p className="landing-cta-note">{demoAvailable?t.ctaNote:''}<br/><Link href="/login">{language==='zh'?'登录或创建账号':'Sign in or create an account'} →</Link></p>
             </div>
           </section>
 
@@ -99,7 +102,7 @@ export function LandingPage() {
         </main>
 
         <footer className="landing-footer">
-          <p>{t.note}</p>
+          <div><p>{t.note}</p><p className="landing-team">{language==='zh'?'关于我们 · ENT207 Digital Startup Lab 六人团队。':'Who we are · A six-person ENT207 Digital Startup Lab team.'}<br/>{language==='zh'?'我们为小型民宿经营者探索更易用的 AI 决策支持。':'We build accessible AI decision support for independent homestay owners.'}</p></div>
           <span>StayCraft</span>
         </footer>
       </div>
