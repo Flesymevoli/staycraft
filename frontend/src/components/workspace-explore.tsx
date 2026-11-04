@@ -4,6 +4,7 @@ import {NearbyDiscovery} from "./nearby-discovery";
 import {DecisionAdvice} from "./decision-advice";
 import {DecisionSupport} from "./decision-support";
 import {MarketPrices} from './market-prices';
+import type {MarketAnalysis} from '@/lib/market-position';
 import {OfficialHolidayContext} from "./official-holiday-context";
 import {ArrowRight,Copy,MapPin,Link2,Trash2} from "lucide-react";
 import {emptyPromotion,matchingSources,validBrief,validPromotion,type PromotionBrief,type PromotionDraft,type PromotionState} from "@/lib/promotion";
@@ -16,6 +17,7 @@ type Stored={state:PromotionState;revision:string|null};
 export function WorkspaceExplore({zh}:{zh:boolean}){
  const t=(en:string,cn:string)=>zh?cn:en;
  const [decisionVersion,setDecisionVersion]=useState(0);
+ const [market,setMarket]=useState<MarketAnalysis|null>(null);
  useEffect(()=>{const refresh=()=>setDecisionVersion(v=>v+1);window.addEventListener("staycraft-decisions-changed",refresh);return()=>window.removeEventListener("staycraft-decisions-changed",refresh)},[]);
  const [stored,setStored]=useState<Stored>({state:emptyPromotion(),revision:null}),[loading,setLoading]=useState(true),[loadError,setLoadError]=useState(false),[busy,setBusy]=useState(false),[error,setError]=useState(""),[notice,setNotice]=useState(""),[conflict,setConflict]=useState(false);
  const [brief,setBrief]=useState<PromotionBrief>(()=>initialBrief(zh)),[draft,setDraft]=useState<PromotionDraft|null>(null),[dirty,setDirty]=useState(false);
@@ -43,8 +45,9 @@ export function WorkspaceExplore({zh}:{zh:boolean}){
  async function saveDraft(){if(!draft||!draft.content.trim())return;const next={...draft,content:draft.content.trim()};if(await persist({...stored.state,drafts:[next,...stored.state.drafts.filter(d=>d.id!==next.id)]})){setDraft(next);setDirty(false);setNotice(t("Saved to your account. Not published.","已保存到当前账号，未发布。"))}}
  const eligible=matchingSources(stored.state.sources,{...brief,sourceIds:stored.state.sources.map(s=>s.id)});
  return <div className="workspace-explore-content">
- <MarketPrices zh={zh}/>
- <DecisionSupport zh={zh} start={brief.start} end={brief.end}/>
+ <div className="explore-intro"><div><p>{t("Find a reason to stay.","从周边线索，找到入住理由。")}</p><small>{t("Quotes · Local context · Promotion drafts","报价 · 周边线索 · 推广草稿")}</small></div></div>
+ <MarketPrices zh={zh} onMarket={setMarket}/>
+ <DecisionSupport zh={zh} start={market?.start||brief.start} end={market?new Date(Date.parse(market.end)-86400000).toISOString().slice(0,10):brief.end} market={market}/>
 
 
  {loading?<p role="status">{t("Loading your drafts and sources…","正在读取草稿与线索…")}</p>:loadError?<div className="native-card" role="alert"><p>{t("Your promotion workspace could not be loaded.","暂时无法读取推广工作区。")}</p><button type="button" className="inventory-text" onClick={()=>void load()}>{t("Retry","重试")}</button></div>:<>

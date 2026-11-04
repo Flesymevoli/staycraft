@@ -1,8 +1,8 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { useOperatorLanguage } from "@/components/operator-language";
-import { signIn, signInDemo, type LoginState } from "./actions";
+import { signIn, signInDemo, signUp, type LoginState, type SignupState } from "./actions";
 
 const messages = {
   en: {
@@ -31,10 +31,13 @@ const messages = {
   },
 } as const;
 
-export function LoginForm({ configured,prototypeAvailable=true,sample=false,demoAvailable=false }: { configured: boolean;prototypeAvailable?:boolean;sample?:boolean;demoAvailable?:boolean }) {
+export function LoginForm({ configured,prototypeAvailable=true,demoAvailable=false,confirmationFailed=false }: { configured: boolean;prototypeAvailable?:boolean;sample?:boolean;demoAvailable?:boolean;confirmationFailed?:boolean }) {
   const {language, setLanguage} = useOperatorLanguage();
   const [state, action, pending] = useActionState<LoginState, FormData>(signIn, undefined);
   const [demoState,demoAction,demoPending]=useActionState<LoginState,FormData>(signInDemo,undefined);
+  const [signupState,signupAction,signupPending]=useActionState<SignupState,FormData>(signUp,undefined);
+  const [register,setRegister]=useState(false);
+  const busy=pending||demoPending||signupPending;
   const t = messages[language];
 
   return <div className="auth-page">
@@ -43,18 +46,22 @@ export function LoginForm({ configured,prototypeAvailable=true,sample=false,demo
       <button type="button" className="auth-language" onClick={() => setLanguage(language === "en" ? "zh" : "en")}>{language === "en" ? "中文" : "EN"}</button>
     </header>
     <main className="auth-main">
-      <h1>{t.title}</h1>
-      <p className="auth-subtitle">{t.subtitle}</p>
-      {demoAvailable&&<form action={demoAction} className="auth-card"><button className="auth-submit" disabled={demoPending||pending}>{demoPending?(language==='zh'?'正在进入…':'Opening…'):(language==='zh'?'体验演示 · Try StayCraft':'Try StayCraft')}</button><p className="auth-setup">{language==='zh'?'一键进入演示账号，体验完整工作台。演示账号仅含虚构数据。':'Enter the full workspace with a fictional demo account.'}{sample&&(language==='zh'?' 本机修改重启还原。':' Local changes reset on restart.')}</p>{demoState?.error&&<p role="alert" className="auth-error">{t.unavailable}</p>}</form>}
-      <form action={action} className="auth-card">
+      <h1>{register?(language==='zh'?'创建账号。':'Create an account.'):t.title}</h1>
+      <p className="auth-subtitle">{register?(language==='zh'?'开始管理你的民宿。':'Start your homestay workspace.'):t.subtitle}</p>
+      {confirmationFailed&&<p role="alert" className="auth-error">{language==='zh'?'确认链接已失效，请重新注册或登录。':'This confirmation link has expired. Register again or sign in.'}</p>}
+      <form key={register?'signup':'login'} action={register?signupAction:action} className="auth-card">
         <label htmlFor="email">{t.email}</label>
         <input id="email" name="email" type="email" autoComplete="email" required />
         <label htmlFor="password">{t.password}</label>
-        <input id="password" name="password" type="password" autoComplete="current-password" required />
-        {state?.error && <p role="alert" className="auth-error">{t[state.error]}</p>}
+        <input id="password" name="password" type="password" autoComplete={register?'new-password':'current-password'} minLength={register?8:undefined} placeholder={register?(language==='zh'?'至少 8 位':'At least 8 characters'):undefined} required />
+        {!register&&state?.error && <p role="alert" className="auth-error">{t[state.error]}</p>}
+        {register&&signupState?.error&&<p role="alert" className="auth-error">{signupState.error==='sample'?(language==='zh'?'本地预览请使用下方演示账号。':'Use the demo account in this local preview.'):signupState.error==='password'?(language==='zh'?'密码至少需要 8 位。':'Use at least 8 characters.'):signupState.error==='missing'?t.missing:signupState.error==='failed'?(language==='zh'?'注册未成功，请检查邮箱和密码后重试。':'Could not register. Check your email and password.'):t.unavailable}</p>}
+        {register&&signupState?.sent&&<p role="status" className="auth-setup">{language==='zh'?'请查收确认邮件，点击链接后即可进入。':'Check your inbox and follow the confirmation link.'}</p>}
         {!configured && <p role="status" className="auth-setup">{language === "zh" ? "登录服务尚未配置，当前可查看交互原型。" : "Sign-in is not configured yet. The interactive prototype is available."}</p>}
-        <button className="auth-submit" type="submit" disabled={pending || !configured}>{pending ? t.loading : t.submit}</button>
+        <button className="auth-submit" type="submit" disabled={busy || !configured}>{register?(signupPending?(language==='zh'?'正在注册…':'Creating…'):(language==='zh'?'注册':'Create account')):pending ? t.loading : t.submit}</button>
+        <button type="button" className="auth-switch" disabled={busy} onClick={()=>setRegister(!register)}>{register?(language==='zh'?'已有账号？去登录':'Already registered? Sign in'):(language==='zh'?'还没有账号？注册':'New here? Create an account')}</button>
       </form>
+      {demoAvailable&&<form action={demoAction} className="auth-card auth-demo-card"><button className="auth-submit" disabled={busy}>{demoPending?(language==='zh'?'正在进入…':'Opening…'):(language==='zh'?'体验演示 · Try StayCraft':'Try StayCraft')}</button><p className="auth-setup">{language==='zh'?'无需注册，使用虚构数据体验完整工作台。':'No sign-up needed. Explore the workspace with sample data.'}</p>{demoState?.error&&<p role="alert" className="auth-error">{t.unavailable}</p>}</form>}
       {prototypeAvailable&&<a className="auth-demo-link" href="/native-home">{t.demo} <span aria-hidden="true">→</span></a>}
     </main>
   </div>;

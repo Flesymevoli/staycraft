@@ -30,7 +30,7 @@ if (process.env.STAYCRAFT_QA_AUTH_FIXTURES === '1') {
     const headers = new Headers(init?.headers || (input instanceof Request ? input.headers : undefined));
     const identity = tokens.get((headers.get('authorization') || '').replace(/^Bearer /, ''));
     if (url.hostname !== 'husrpqalpjjswpvrkxet.supabase.co') {
-      const amapRead=process.env.STAYCRAFT_SAMPLE_LIVE_AMAP==='1'&&url.protocol==='https:'&&url.hostname==='mcp.amap.com'&&url.pathname==='/mcp'&&init?.method==='POST'&&['maps_geo','maps_around_search'].includes(JSON.parse(init.body||'{}').params?.name);
+      const amapRead=process.env.STAYCRAFT_SAMPLE_LIVE_AMAP==='1'&&url.protocol==='https:'&&url.hostname==='mcp.amap.com'&&url.pathname==='/mcp'&&init?.method==='POST'&&['maps_geo','maps_around_search','maps_regeocode'].includes(JSON.parse(init.body||'{}').params?.name);
       const marketRead=process.env.STAYCRAFT_SAMPLE_LIVE_AMAP==='1'&&url.protocol==='https:'&&url.hostname==='mcp.rollinggo.cn'&&url.pathname==='/mcp'&&init?.method==='POST'&&JSON.parse(init.body||'{}').params?.name==='searchHotels';
       if(sampleMode&&!amapRead&&!marketRead&&!['127.0.0.1','localhost','[::1]'].includes(url.hostname))throw new Error('External network disabled in sample');
       if(sampleMode&&/\/v1\/properties\/[^/]+\/conversations\/[^/]+\/draft$/.test(url.pathname))return conversations(url,JSON.parse(init?.body||'{}'),identity,identity?propertyFor(identity.index):null);

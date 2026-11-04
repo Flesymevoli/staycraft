@@ -1,6 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
 import { hasSupabaseConfig } from "@/lib/supabase/config";
 import {operatorSample} from '@/lib/operator-sample';
@@ -17,6 +18,28 @@ export async function signInDemo():Promise<LoginState>{
 }
 
 export type LoginState = { error: "invalid" | "unavailable" | "missing" } | undefined;
+
+export type SignupState = { error?: "missing" | "password" | "unavailable" | "sample" | "failed"; sent?: boolean } | undefined;
+
+export async function signUp(_previous: SignupState, formData: FormData): Promise<SignupState> {
+  const email = String(formData.get("email") ?? "").trim();
+  const password = String(formData.get("password") ?? "");
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return { error: "missing" };
+  if (password.length < 8) return { error: "password" };
+  if (operatorSample()) return { error: "sample" };
+  if (!hasSupabaseConfig()) return { error: "unavailable" };
+  let signedIn = false;
+  try {
+    const origin = (await headers()).get("origin");
+    if (!origin) return { error: "unavailable" };
+    const supabase = await createClient();
+    const { data, error } = await supabase.auth.signUp({ email, password, options: { emailRedirectTo: new URL("/auth/callback", origin).href } });
+    if (error) return { error: "failed" };
+    signedIn = Boolean(data.session);
+  } catch { return { error: "unavailable" }; }
+  if (signedIn) redirect("/app");
+  return { sent: true };
+}
 
 export async function signIn(
   _previous: LoginState,

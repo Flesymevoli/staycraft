@@ -8,7 +8,8 @@ import {operatorSample} from "@/lib/operator-sample";
 
 export const dynamic = "force-dynamic";
 
-export default async function LoginPage() {
+export default async function LoginPage({searchParams}:{searchParams:Promise<{confirmation?:string}>}) {
+  const confirmationFailed=(await searchParams).confirmation==='failed';
   let authenticated = false;
   if (hasSupabaseConfig()) {
     try {
@@ -23,5 +24,5 @@ export default async function LoginPage() {
   }
   if (authenticated) redirect("/app");
 
-  return <div className="auth-shell"><LoginForm configured={hasSupabaseConfig()} sample={operatorSample()} demoAvailable={operatorSample()||Boolean(process.env.DEMO_LOGIN_EMAIL&&process.env.DEMO_LOGIN_PASSWORD)} prototypeAvailable={!isHosted()&&!operatorSample()} /></div>;
+  return <div className="auth-shell"><LoginForm configured={hasSupabaseConfig()} confirmationFailed={confirmationFailed} demoAvailable={operatorSample()||Boolean(process.env.DEMO_LOGIN_EMAIL&&process.env.DEMO_LOGIN_PASSWORD)} prototypeAvailable={!isHosted()&&!operatorSample()} /></div>;
 }

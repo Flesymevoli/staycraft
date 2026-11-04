@@ -36,4 +36,7 @@
 .auth-error { margin: 0; color: #a22929; font-size: 13px; line-height: 1.5; }
 .auth-demo-link { display: inline-flex; align-items: center; gap: 10px; min-height: 44px; margin-top: 20px; color: #0878ee; font-size: 14px; text-decoration: none; }
 .auth-setup { margin: 0; color: #61656d; font-size: 12px; line-height: 1.5; }
+.auth-switch { min-height: 44px; border: 0; background: none; color: #0878ee; font: inherit; font-size: 14px; cursor: pointer; }
+.auth-demo-card { margin-top: 24px; }
+.auth-demo-card .auth-submit { margin-top: 0; background: #edf4ff; color: #0878ee; }
 @media (prefers-reduced-motion: reduce) { .auth-shell *, .auth-shell *::before, .auth-shell *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; } }
