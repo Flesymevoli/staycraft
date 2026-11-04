@@ -20,5 +20,6 @@ export async function POST(request:Request){try{
  const ranked=await prioritiseInsights(items,{model:!operatorSample()&&process.env.MODEL_ENABLED==='1'&&process.env.FORMAL_MODEL_ENABLED==='1',signal:request.signal});
  const content=[price,...ranked.items.map(i=>`${i.title}\n${i.action}`)].join('\n\n');
  const draft:PromotionDraft={kind:"action",id:randomUUID(),createdAt:stamp.toISOString(),engine:ranked.engine,brief:{language:input.language,channel:'xiaohongshu',goal:'rooms',start:period.start!,end:period.end!,sourceIds:sources.map((s:{id:string})=>s.id)},content,basis:[{label:t('Booking basis','经营依据'),text:`${period.start} — ${period.end}; ${t('recorded order nights','记录订单间夜')}: ${data.booked_order_room_nights||0}; ${t('current list rate range','当前挂牌价范围')}: ${data.rate_min??'—'}–${data.rate_max??'—'}; ${t('partial channel coverage; not cash receipts','渠道可能不完整，不代表实收')}`},...sources.map((s:{title:string;summary:string;url:string})=>({label:s.title,text:s.summary,url:s.url}))]};
- return Response.json({draft,fallback:ranked.fallback,sourceRevision:stored.data?.revision||null},{headers:{'Cache-Control':'no-store'}});
+ const pricingContext={start:period.start,end:period.end,bookedPct:data.historical_inventory_unknown?null:data.booked_pct,available:data.available_room_nights,capacity:data.capacity_room_nights};
+ return Response.json({draft,pricingContext,fallback:ranked.fallback,sourceRevision:stored.data?.revision||null},{headers:{'Cache-Control':'no-store'}});
 }catch(error){return workspaceFailure(error)}}

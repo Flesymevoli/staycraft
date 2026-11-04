@@ -1,16 +1,17 @@
 "use client";
 import {useEffect,useState,useMemo} from 'react';
-import {marketPriceAdvice,type MarketAnalysis} from '@/lib/market-position';
+import {marketPriceAdvice,type MarketAnalysis,type PricingContext} from '@/lib/market-position';
 import {DecisionAdvice} from './decision-advice';
 import type {PromotionDraft} from '@/lib/promotion';
 export function DecisionSupport({zh,start,end,market}:{zh:boolean;start:string;end:string;market?:MarketAnalysis|null}){
  const t=(en:string,cn:string)=>zh?cn:en;
  const [baseDraft,setDraft]=useState<PromotionDraft|null>(null),[busy,setBusy]=useState(false),[notice,setNotice]=useState(''),[saved,setSaved]=useState(false),[revision,setRevision]=useState<string|null>(null);
  const [savedMarket,setSavedMarket]=useState('');
+ const [pricingContext,setPricingContext]=useState<PricingContext|null>(null);
  const savedForCurrent=saved&&savedMarket===(market?.checkedAt||'');
- const draft=useMemo(()=>!baseDraft?null:!market?baseDraft:{...baseDraft,content:[marketPriceAdvice(market,zh).content,...baseDraft.content.split('\n\n').slice(1)].join('\n\n'),basis:[...baseDraft.basis,{label:'RollingGo',text:`${market.location} · ${market.start} → ${market.end} · CNY ${market.low}–${market.high} · ${market.count} hotels · ${market.checkedAt}`}]},[baseDraft,market,zh]);
+ const draft=useMemo(()=>!baseDraft?null:!market?baseDraft:{...baseDraft,content:[marketPriceAdvice(market,zh,pricingContext).content,...baseDraft.content.split('\n\n').slice(1)].join('\n\n'),basis:[...baseDraft.basis,{label:'RollingGo',text:`${market.location} · ${market.start} → ${market.end} · CNY ${market.low}–${market.high} · ${market.count} hotels · ${market.checkedAt}`}]},[baseDraft,market,zh,pricingContext]);
  const [attempt,setAttempt]=useState(0);
- useEffect(()=>{const controller=new AbortController();async function generate(){setBusy(true);setDraft(null);setSaved(false);setNotice('');try{const r=await fetch('/api/workspace/decision',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({start,end,language:zh?'zh':'en'}),signal:controller.signal});if(!r.ok)throw Error();const result=await r.json();if(!controller.signal.aborted){setDraft(result.draft);setRevision(result.sourceRevision);if(result.fallback)setNotice(zh?'当前使用经营数据规则建议。':'Using operating-data rules for these suggestions.')}}catch{if(!controller.signal.aborted)setNotice(zh?'建议暂时无法加载，请重试。':'Suggestions could not be loaded. Please retry.')}finally{if(!controller.signal.aborted)setBusy(false)}}void generate();return()=>controller.abort()},[start,end,zh,attempt]);
+ useEffect(()=>{const controller=new AbortController();async function generate(){setBusy(true);setDraft(null);setPricingContext(null);setSaved(false);setNotice('');try{const r=await fetch('/api/workspace/decision',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({start,end,language:zh?'zh':'en'}),signal:controller.signal});if(!r.ok)throw Error();const result=await r.json();if(!controller.signal.aborted){setDraft(result.draft);setPricingContext(result.pricingContext||null);setRevision(result.sourceRevision);if(result.fallback)setNotice(zh?'当前使用经营数据规则建议。':'Using operating-data rules for these suggestions.')}}catch{if(!controller.signal.aborted)setNotice(zh?'建议暂时无法加载，请重试。':'Suggestions could not be loaded. Please retry.')}finally{if(!controller.signal.aborted)setBusy(false)}}void generate();return()=>controller.abort()},[start,end,zh,attempt]);
  return <section className="native-card decision-support"><h2>{t('AI suggestions','AI 建议')}</h2><p className="decision-period">{start} — {end}</p>
  {busy&&!draft&&<p role="status" className="promotion-muted">{t('Preparing suggestions…','正在整理建议…')}</p>}
  {!busy&&!draft&&<button className="inventory-text" onClick={()=>setAttempt(v=>v+1)}>{t('Retry','重试')}</button>}
