@@ -13,7 +13,7 @@ const base=process.env.QA_BASE||'http://127.0.0.1:3115';
   const read=async path=>{const r=await fetch(base+path,{headers,signal:AbortSignal.timeout(20000)});assert.equal(r.status,200,path);return r.json()};
   const profile=await read('/api/workspace/profile');assert.match(profile.profile?.name||'',/虚构|演示/,'Refuse live test on a non-fictional property');
   const before=await read('/api/workspace/bookings');
-  const response=await fetch(base+'/api/workspace/agent',{method:'POST',headers,body:JSON.stringify({language:'zh'}),signal:AbortSignal.timeout(100000)});
+  const response=await fetch(base+'/api/workspace/agent',{method:'POST',headers,body:JSON.stringify({language:'zh',...(process.env.QA_FORCE_AGENT==='1'?{force:true}:{})}),signal:AbortSignal.timeout(100000)});
   const result=await response.json();assert.equal(response.status,200,JSON.stringify(result));
   fs.mkdirSync('../tmp/workbench-qa',{recursive:true});fs.writeFileSync('../tmp/workbench-qa/live-agent-result.json',JSON.stringify(result,null,2));
   console.log(JSON.stringify({id:result.run?.id,engine:result.run?.engine,status:result.run?.status,cached:result.cached,historyAvailable:result.historyAvailable,steps:result.run?.steps,summary:result.run?.summary,limitations:result.run?.limitations},null,2));
