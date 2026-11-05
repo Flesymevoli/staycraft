@@ -1,6 +1,7 @@
 "use client";
 import {useCallback,useEffect,useState} from "react";
 import Link from "next/link";
+import {DiagnosticArticle} from "./diagnostic-article";
 import {WorkbenchReport} from "./workbench-report";
 import {ArrowRight,ArrowUpRight,ChevronDown,Clock3,Database,Loader2} from "lucide-react";
 import {useBookingMetrics} from "./booking-metrics";
@@ -42,6 +43,17 @@ export function WorkbenchDashboard({scope,zh}:{scope:string;zh:boolean}){
  useEffect(()=>{const changed=()=>{const entry=diagnoses.get(cacheKey(scope,zh));if(entry){entry.stale=true;entry.time=0;}setDataChanged(true);retryMetrics();void refresh(false)};const events=['staycraft-stays-changed','staycraft-activity-changed','staycraft-inventory-changed','staycraft-profile-changed','staycraft-import-changed'];events.forEach(name=>window.addEventListener(name,changed));return()=>events.forEach(name=>window.removeEventListener(name,changed));},[scope,zh,retryMetrics,refresh]);
  const operating=run?.metrics||(metrics?{bookedPct:metrics.booked_pct,bookedRoomNights:metrics.booked_room_nights,capacityRoomNights:metrics.capacity_room_nights,availableRoomNights:metrics.available_room_nights,amountCents:metrics.amount_cents??null,activeRooms:metrics.active_rooms}:null);
  const period=run?.period||(metrics?{start:metrics.period_start,end:metrics.period_end}:null);
+ async function retryWriting(current:DecisionAgentRun){
+  setBusy(true);setError('');
+  try{
+   const response=await fetch('/api/workspace/agent',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({runId:current.id,language:zh?'zh':'en'})});
+   const result=await response.json();
+   if(!response.ok||!result.run)throw Error(result.error||'report_failed');
+   setRun(result.run);
+   const entry=diagnoses.get(cacheKey(scope,zh));
+   if(entry?.run?.id===current.id)entry.run=result.run;
+  }catch(e){setError(e instanceof Error?e.message:'report_failed')}finally{setBusy(false)}
+ }
  const empty=operating?.activeRooms===0;
  const revealHistory=()=>{const panel=document.getElementById('diagnosis-history');if(panel instanceof HTMLDetailsElement)panel.open=true;};
  const actionHref=(finding:DecisionAgentRun["findings"][number])=>{const action=finding.nextAction;if(!action||!run)return null;const dates=new URLSearchParams({start:action.period.start,end:action.period.end});if(action.target==='promotion')return `/app/promotion?${new URLSearchParams({runId:run.id,findingId:finding.id})}`;if(action.target==='market')return `/app/explore?${dates}`;if(action.target==='data')return `/app/analysis?${dates}`;return null;};
@@ -56,8 +68,8 @@ export function WorkbenchDashboard({scope,zh}:{scope:string;zh:boolean}){
    {error&&<div className="wb-inline-error" role="alert"><p>{/cooldown|rate|busy/.test(error)?t('Please try again shortly.','请稍后再试。'):t('Analysis unavailable. Your data is still accessible.','本次分析未完成，经营数据仍可查看。')}</p><button disabled={busy} onClick={()=>void refresh(false)}>{t('Retry','重试')}</button></div>}
    {busy&&!run&&<div className="wb-analysis-loading" role="status"><Loader2 aria-hidden="true" className="is-spinning" size={24}/><h3>{t('Investigating your business','正在分析经营情况')}</h3><p>{t('Reading records and choosing what to investigate.','读取经营记录，按需调查市场信息…')}</p></div>}
    {run&&<><div className="wb-agent-summary" aria-live="polite"><span>{run.engine==='model_v1'?t('AI diagnosis','AI 诊断'):t('Data summary','经营数据摘要')}</span><time>{new Date(run.generatedAt).toLocaleString(zh?'zh-CN':'en-GB')}</time>{run.phase==='writing_failed'?<span>{t('Writing incomplete','报告写作未完成')}</span>:run.status!=='completed'&&<span>{t('Partial evidence','部分证据不可用')}</span>}</div>
-   <p className="wb-report-summary">{run.summary}</p>{run.report&&<Link className="wb-secondary-link" href={`/app/reports/${run.id}`}>{t("Read full report","阅读完整报告")} →</Link>}{run.phase==='writing_failed'&&<Link href={`/app/reports/${run.id}`}>{t("Resume report writing","重试报告写作（复用现有证据）")}</Link>}
-   <div className="wb-decision-layout wb-inline-layout"><section className="wb-diagnosis"><div className="wb-findings">{(run.report?run.report.sections.slice(0,3).map((section,i)=>({id:`report-${i}`,title:section.title,conclusion:section.paragraphs[0].match(/^.*?[。！？]/)?.[0]||section.paragraphs[0],severity:"medium" as const,action:"",reason:"",evidenceIds:section.evidenceIds,uncertainty:"",nextAction:undefined})):run.findings.slice(0,2)).map((finding,index)=><article className={`wb-finding ${index===0?'is-focused':'is-secondary'} ${finding.severity}`} key={finding.id}>
+   <p className="wb-report-summary">{run.summary}</p>{run.report&&<details key={run.id} className="wb-inline-report"><summary><span className="when-closed">{t("Read full report","展开完整报告")}</span><span className="when-open">{t("Collapse report","收起报告")}</span><ChevronDown size={16} aria-hidden="true"/></summary><DiagnosticArticle initial={run} inline zh={zh}/></details>}{run.phase==='writing_failed'&&<button className="wb-secondary-link" disabled={busy} onClick={()=>void retryWriting(run)}>{t("Retry report writing","重试报告写作")}</button>}
+   {!run.report&&<div className="wb-decision-layout wb-inline-layout"><section className="wb-diagnosis"><div className="wb-findings">{run.findings.slice(0,2).map((finding,index)=><article className={`wb-finding ${index===0?'is-focused':'is-secondary'} ${finding.severity}`} key={finding.id}>
     <h3>{finding.title}</h3><p>{finding.conclusion}</p>
     <div className="wb-finding-actions">{actionHref(finding)&&<Link className="wb-primary-action" href={actionHref(finding)!}>{actionLabel(finding.nextAction!.target)}<ArrowUpRight aria-hidden="true" size={16}/></Link>}</div>
    {!run.report&&<div className="wb-inline-explanation" id={`advice-${finding.id}`}>
@@ -71,7 +83,7 @@ export function WorkbenchDashboard({scope,zh}:{scope:string;zh:boolean}){
    </div>}
    </article>)}</div>{!run.findings.length&&<p className="wb-quiet-state">{t('No actionable findings in this run.','本次未形成具体建议，可先查看经营数据。')}</p>}
    <a className="wb-secondary-link" href="#diagnosis-history" onClick={revealHistory}>{t('All diagnoses','查看全部诊断')}<ArrowRight aria-hidden="true" size={14}/></a></section>
-   </div></>}
+   </div>}</>}
   </>}
   <details className="wb-history" id="diagnosis-history"><summary>{t('Diagnosis history','诊断历史')}<ChevronDown aria-hidden="true" size={16}/></summary>{history.length?<ul>{history.map(item=><li key={item.id}><div><time>{new Date(item.createdAt).toLocaleString(zh?'zh-CN':'en-GB')}</time><p>{item.summary||t('Analysis incomplete','分析未完成')}</p></div><button disabled={busy||!['completed','limited'].includes(item.status)||item.id===run?.id} onClick={()=>void openHistory(item.id)}>{item.id===run?.id?t('Viewing','正在查看'):t('Review','查看')}</button></li>)}</ul>:<p>{t('No saved history available.','暂无可读取的历史诊断。')}</p>}</details>
 
