@@ -1,30 +1,30 @@
 /* Shared reference palette: neutral surfaces, graphite actions, violet evidence accents. */
-.workbench-shell{--ink:#2c2c2e;--muted:#777779;--blue:#5546d9;--blue-hover:#5546d9;--page:#f6f6f8;--hairline:#e9e9eb;--card-shadow:0 3px 14px #254e8609;--card-radius:24px}
+.workbench-shell{--ink:#2c2c2e;--muted:#777779;--blue:#5546d9;--blue-hover:#5546d9;--page:#f6f6f8;--hairline:#e9e9eb;--card-shadow:none;--card-radius:24px}
 .workbench-shell .workbench-page{background:var(--page)}
 .workbench-sidebar{background:#ffffffb8;backdrop-filter:blur(18px);border-right:1px solid #fff;box-shadow:none}
 .workbench-brand{padding:2px 12px 18px}.workbench-brand img{max-width:188px}
 .workbench-sidebar nav>a{font-weight:500;margin:8px 0;border:1px solid transparent;transition:background .16s,box-shadow .16s}
 .workbench-sidebar nav>a.is-active{background:#f3f3f5;color:#5546d9;border-color:#e9e9eb;box-shadow:none}
 .workbench-topbar{border-color:#e6e6e8;min-height:76px}.workbench-page-heading{margin:28px 0 26px}.workbench-shell .workbench-page h1{font-size:28px;font-weight:650;letter-spacing:-.7px}.workbench-page-description{font-size:15px}
-.workbench-shell .native-card,.workbench-shell .profile-form,.workbench-shell .profile-summary,.workbench-shell .room-board-surface,.workbench-shell .booking-analysis-panel,.workbench-shell .workspace-booking-list,.wb-evidence-panel,.workbench-info-panel{border:1px solid #fff;background:#ffffffed;box-shadow:var(--card-shadow);border-radius:24px}
+.workbench-shell .native-card,.workbench-shell .profile-form,.workbench-shell .profile-summary,.workbench-shell .room-board-surface,.workbench-shell .booking-analysis-panel,.workbench-shell .workspace-booking-list,.wb-evidence-panel,.workbench-info-panel{border:1px solid #fff;background:#fff;box-shadow:var(--card-shadow);border-radius:24px}
 .workbench-shell .workbench-page.workspace-page :is(.native-primary,.inventory-soft,.room-add-link),.workbench-shell .wb-primary-action{background:#5546d9;color:#fff;border:1px solid transparent;border-radius:13px;box-shadow:none;font-weight:600;transition:filter .16s,transform .16s}
 @media(hover:hover) and (pointer:fine){.workbench-shell .workbench-page.workspace-page :is(.native-primary,.inventory-soft,.room-add-link):hover{background:#5546d9;color:#fff;filter:none}}
 .workbench-shell .workspace-page button:disabled{box-shadow:none;filter:none;opacity:.55;cursor:not-allowed}
-.workbench-shell .workspace-page :is(input:not([type=checkbox]):not([type=range]),select,textarea){border:1px solid #e2e2e4;background:#fcfcfe;border-radius:12px;color:var(--ink);box-shadow:inset 0 1px 2px #183b6204}
-.wb-metric-grid{gap:18px;margin-bottom:30px}.wb-metric,.wb-metric+.wb-metric{position:relative;isolation:isolate;overflow:hidden;padding:19px 24px;border:1px solid #fff;border-radius:20px;background:#ffffffdc;box-shadow:var(--card-shadow)}
+.workbench-shell .workspace-page :is(input:not([type=checkbox]):not([type=range]),select,textarea){border:1px solid #e2e2e4;background:#fcfcfe;border-radius:12px;color:var(--ink);box-shadow:none}
+.wb-metric-grid{gap:18px;margin-bottom:30px}.wb-metric,.wb-metric+.wb-metric{position:relative;isolation:isolate;overflow:hidden;padding:19px 24px;border:1px solid #fff;border-radius:20px;background:#fff;box-shadow:var(--card-shadow)}
 
 
 .wb-metric>strong{font-size:36px;margin:0 0 9px;letter-spacing:-1.2px}.wb-metric>div{color:var(--ink);font-weight:500}.wb-metric small{margin-top:4px}
 .wb-decision-layout{grid-template-columns:minmax(0,1fr) 310px;gap:20px}.wb-diagnosis-head{padding-bottom:10px}.wb-refresh{box-shadow:none;border-color:#e7e7e9;color:#565658}.wb-agent-summary{font-size:12px;margin-bottom:14px}
-.wb-finding{box-shadow:var(--card-shadow);border-color:#fff;padding:26px}.wb-finding.is-focused{background:linear-gradient(125deg,#fcfcfe,#f4f4f6);border:1px solid #e9e9eb;box-shadow:var(--card-shadow);padding:30px}
+.wb-finding{box-shadow:var(--card-shadow);border-color:#fff;padding:26px}.wb-finding.is-focused{background:#f7f7f9;border:1px solid #e9e9eb;box-shadow:var(--card-shadow);padding:30px}
 .wb-finding.is-focused>h3{font-size:25px;line-height:1.45;margin:15px 0 12px;color:#323234;font-weight:700;max-width:32ch}.wb-finding.is-focused>p{font-size:15px;line-height:1.8;color:#626264}.wb-finding.is-focused>p.wb-finding-action{padding:17px 19px;background:#ffffff8f;border:1px solid #ffffff80;border-radius:15px;color:#424244;margin:20px 0}
 .wb-priority{display:inline-flex;color:#3169a2;background:#ffffffa8;border:1px solid #ffffffb0;border-radius:8px;font-size:11px;padding:3px 8px}.wb-finding.is-focused .wb-finding-actions button{background:#5546d9;color:#fff;border-radius:12px;padding:11px 17px;box-shadow:none;font-weight:600}
 .wb-finding.is-secondary{padding:20px 24px}.wb-evidence-panel{padding:24px}.wb-evidence-panel h3{font-size:16px;font-weight:650}.wb-evidence-item{border-color:#ececee}.wb-evidence-panel .wb-evidence-item strong{font-size:14px}
 .wb-history{background:#ffffff80;border:1px solid #ffffffb0;border-radius:16px;padding:2px 18px;margin-top:24px}.wb-history summary{font-weight:500}.wb-history li{border-color:#ebebed}
-.wb-segmented{background:#ededef;border:1px solid #e8e8ea;padding:4px;border-radius:14px}.wb-segmented button{border-radius:10px}.wb-segmented button[aria-pressed=true]{background:#fff;color:var(--blue);box-shadow:0 1px 3px #294e7a0a;font-weight:600}
+.wb-segmented{background:#ededef;border:1px solid #e8e8ea;padding:4px;border-radius:14px}.wb-segmented button{border-radius:10px}.wb-segmented button[aria-pressed=true]{background:#fff;color:var(--blue);box-shadow:none;font-weight:600}
 .workbench-shell .booking-period-form{padding:16px 18px;border:1px solid #fff;background:#ffffffb3;border-radius:18px;margin-bottom:14px}.workbench-shell .booking-analysis-cards>button{border:1px solid #fff;background:#ffffffcc;box-shadow:var(--card-shadow);text-align:left}.workbench-shell .booking-analysis-cards>button[aria-pressed=true]{border-color:#d1d1d3;background:#f5f5f7;box-shadow:none}.workbench-shell .booking-analysis-cards strong{font-weight:650;color:#38383a}.workbench-shell .booking-analysis-group{font-weight:600;letter-spacing:.04em;color:#6e6e70;margin-top:24px}
 .workbench-shell .market-workspace{gap:22px}.workbench-shell .market-workspace>.market-prices{padding:28px}.workbench-shell .market-overview{background:#f7f7f9;border:1px solid #ededef;border-radius:17px;padding:8px 18px;margin:22px 0}.workbench-shell .market-overview>div{border-color:#e0e0e270}.workbench-shell .market-overview .market-range strong{color:#5546d9;font-size:36px}.workbench-shell .market-hotel-price{color:#38383a}.workbench-shell .market-hotel{border-color:#ededef}.workbench-shell .market-context-panel{background:#fff}
-.workbench-shell .workspace-promotion .workspace-explore-content{display:grid;grid-template-columns:minmax(0,1fr);gap:24px}.workbench-shell .workspace-promotion .workspace-explore-content>section{margin:0}.workbench-shell .promotion-plan-panel{background:linear-gradient(135deg,#fcfcfe,#f5f5f7);border:1px solid #e9e9eb;box-shadow:var(--card-shadow);padding:28px}.workbench-shell .promotion-plan-fields{gap:16px}.workbench-shell .promotion-plan-fields label{padding:16px;background:#ffffffa6;border:1px solid #fff;border-radius:16px;color:#555557}.workbench-shell .promotion-plan-facts{background:#ffffffa6;border-radius:16px;padding:16px}.workbench-shell .promotion-plan-fields input,.workbench-shell .promotion-plan-fields textarea{background:#fff;box-shadow:none}.workbench-shell .promotion-plan-panel h2{color:#163b65;font-size:24px}.workbench-shell .promotion-draft{box-shadow:var(--card-shadow)}
+.workbench-shell .workspace-promotion .workspace-explore-content{display:grid;grid-template-columns:minmax(0,1fr);gap:24px}.workbench-shell .workspace-promotion .workspace-explore-content>section{margin:0}.workbench-shell .promotion-plan-panel{background:#f7f7f9;border:1px solid #e9e9eb;box-shadow:var(--card-shadow);padding:28px}.workbench-shell .promotion-plan-fields{gap:16px}.workbench-shell .promotion-plan-fields label{padding:16px;background:#ffffffa6;border:1px solid #fff;border-radius:16px;color:#555557}.workbench-shell .promotion-plan-facts{background:#ffffffa6;border-radius:16px;padding:16px}.workbench-shell .promotion-plan-fields input,.workbench-shell .promotion-plan-fields textarea{background:#fff;box-shadow:none}.workbench-shell .promotion-plan-panel h2{color:#163b65;font-size:24px}.workbench-shell .promotion-draft{box-shadow:var(--card-shadow)}
 .workbench-shell .profile-summary{background:#f9f9fb;padding:24px}.workbench-shell .profile-form{padding:24px}.workbench-footer{margin-top:28px;opacity:.8}.workbench-mobile-nav{background:#ffffffdb;box-shadow:0 4px 20px #214d8212;border-color:#fff}
 @media(max-width:1100px){.wb-decision-layout{grid-template-columns:minmax(0,1fr)}.wb-evidence-column{display:none}}
 @media(max-width:700px){.workbench-shell .workbench-page{padding-inline:18px}.workbench-shell .workbench-page h1{font-size:26px}.workbench-page-description{font-size:14px}.workbench-page-heading{margin:15px 0 24px}.wb-metric-grid{gap:8px;margin-bottom:27px}.wb-metric,.wb-metric+.wb-metric{padding:15px 10px;border-radius:16px}.wb-metric>strong{font-size:25px;letter-spacing:-1px;margin-bottom:8px}.wb-metric>div{font-size:11px}.wb-metric small{font-size:10px;line-height:1.5}.wb-finding.is-focused{padding:22px}.wb-finding.is-focused>h3{font-size:22px}.wb-finding.is-focused>p{font-size:14px}.wb-finding.is-focused>p.wb-finding-action{padding:14px;margin:17px 0}.wb-finding-actions{gap:8px}.wb-agent-summary{font-size:11px;gap:6px}.workbench-shell .market-workspace>.market-prices{padding:21px}.workbench-shell .market-overview{padding:6px 14px}.workbench-shell .market-overview .market-range strong{font-size:30px}.workbench-shell .promotion-plan-panel{padding:21px}.workbench-shell .workspace-promotion .workspace-explore-content{gap:20px}.workbench-mobile-nav a.is-active{background:#f3f3f5;color:#5546d9}.workbench-shell .booking-period-form{padding:14px}.workbench-shell .profile-form{padding:20px}.workbench-shell .booking-analysis-cards>button{padding:17px}.wb-history{margin-top:20px}.workbench-shell .promotion-plan-fields label{padding:12px}}
@@ -70,7 +70,7 @@
 @media(max-width:700px){.workbench-shell .wb-segmented{width:100%}.workbench-shell .wb-segmented button{flex:1;padding:6px 9px;font-size:12px}.workbench-shell .market-heading h2{font-size:20px}.market-nearby-disclosure>summary{padding:16px}.market-nearby-body{padding:0 16px 16px}.workbench-shell .booking-analysis-group{margin-top:16px}}
 
 /* Compact analytical selectors: a shared surface, not four competing cards. */
-.workbench-shell .booking-analysis-cards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0;padding:5px;margin:18px 0 16px;border:1px solid #e8e8ea;border-radius:18px;background:#fff;box-shadow:0 2px 8px #38383a04}
+.workbench-shell .booking-analysis-cards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0;padding:5px;margin:18px 0 16px;border:1px solid #e8e8ea;border-radius:18px;background:#fff;box-shadow:none}
 .workbench-shell .booking-analysis-cards>button{position:relative;gap:7px;padding:16px;min-height:118px;border:1px solid transparent;border-radius:13px;box-shadow:none;background:transparent}
 .workbench-shell .booking-analysis-cards>button[aria-pressed=true]{background:#f6f6f8;border-color:#ececee;box-shadow:none}
 .workbench-shell .booking-analysis-cards strong{font-size:27px;line-height:1.2;margin:2px 0;letter-spacing:-.7px;font-variant-numeric:tabular-nums}
@@ -83,7 +83,7 @@
 .market-query-summary{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:12px 0;border-bottom:1px solid var(--hairline);font-size:14px}
 .market-query-summary>span{min-width:0;overflow-wrap:anywhere}.market-query-summary small{display:block;color:var(--muted);font-size:12px;margin-top:5px}.market-query-summary button{flex-shrink:0;min-height:44px;font-size:13px}
 .market-query-summary+.market-query-controls:not([hidden]){margin-top:16px}
-.workbench-shell .market-overview{display:flex;flex-wrap:wrap;gap:16px 28px;padding:22px;background:linear-gradient(110deg,#f8f8fa,#fdfdff);border-color:#ebebed}
+.workbench-shell .market-overview{display:flex;flex-wrap:wrap;gap:16px 28px;padding:22px;background:#f8f8fa;border-color:#ebebed}
 .workbench-shell .market-overview>div{display:block;padding:0;border:0;flex:1;min-width:130px}
 .workbench-shell .market-overview>div:first-child{display:none}
 .workbench-shell .market-overview .market-range{order:-1;flex:2;min-width:200px}
@@ -98,20 +98,20 @@
 
 .workbench-shell .market-query-controls{grid-template-columns:minmax(160px,1fr) auto minmax(260px,1.5fr)}.workbench-shell .market-nearby-body{padding:22px}.workbench-shell .market-query-controls input,.workbench-shell .market-query-controls select{min-height:44px;font-size:14px}.workbench-shell .market-query-controls{padding:12px 0 18px;border-bottom:1px solid var(--hairline)}@media(max-width:1100px){.workbench-shell .market-query-controls{grid-template-columns:minmax(0,1fr) auto}.workbench-shell .market-nearby-body{padding:18px}}
 /* Content surfaces: soft slate canvas, tinted focal areas, quiet supporting rows. */
-.workbench-shell{--page:#f1f1f3;--hairline:#e2e2e4;--card-shadow:0 2px 7px #3c3c3e05}
+.workbench-shell{--page:#f1f1f3;--hairline:#e2e2e4;--card-shadow:none}
 .workbench-shell .workbench-page{background:var(--page)}
 .workbench-shell .booking-analysis-panel{background:#fafafc;border-color:#e5e5e7}
 .workbench-shell .booking-analysis-cards{background:#ececee;border-color:#e2e2e4;box-shadow:none}
 .workbench-shell .booking-analysis-cards>button[aria-pressed=true]{background:#fcfcfe}
 .wb-metric,.wb-metric+.wb-metric{background:#ededef;border-color:#e4e4e6;box-shadow:none}
-.workbench-shell .wb-finding.is-focused{background:linear-gradient(115deg,#ededef,#f3f3f5);border-color:#dedee0}
+.workbench-shell .wb-finding.is-focused{background:#f3f3f5;border-color:#dedee0}
 .workbench-shell .wb-finding.is-secondary{background:transparent;border:0;border-top:1px solid var(--hairline);border-radius:0;box-shadow:none}
 .workbench-shell .wb-history{background:transparent;border:0;border-top:1px solid var(--hairline);border-radius:0;padding-inline:0}
 .workbench-shell .market-workspace>.market-prices{background:transparent;border:0;box-shadow:none;padding:0}
-.workbench-shell .market-overview{background:linear-gradient(110deg,#ececee,#f1f1f3);border-color:#dedee0}
+.workbench-shell .market-overview{background:#f1f1f3;border-color:#dedee0}
 .workbench-shell .market-hotels{background:#fafafc;border:1px solid #e5e5e7;border-radius:18px;padding:0 20px}
 .workbench-shell .market-context-panel{background:#eaeaec;border-color:#dcdcde}
-.workbench-shell .promotion-plan-panel{background:linear-gradient(115deg,#eeeef0,#f0f0f2);border-color:#e1e1e3}
+.workbench-shell .promotion-plan-panel{background:#f0f0f2;border-color:#e1e1e3}
 .workbench-shell .promotion-brief{background:#fafafc;border-color:#e5e5e7}
 .workbench-shell .promotion-library{background:transparent;border:0;border-top:1px solid var(--hairline);border-radius:0;box-shadow:none;padding:22px 0}
 .workbench-shell .promotion-editor{background:#fafafc;border-color:#e5e5e7}
@@ -124,13 +124,13 @@
 @media(max-width:1000px){.wb-report-grid{grid-template-columns:minmax(0,1fr)}}@media(max-width:700px){.wb-report-grid{gap:16px;margin-top:16px}.wb-report-grid>section{padding:20px}.wb-revenue-lead>strong{font-size:32px}.wb-report-stats{gap:8px}.wb-report-stats dd{font-size:18px}.wb-report-stats dt{font-size:11px}.wb-price-comparison dd{font-size:27px}.wb-report-summary{font-size:15px}.wb-revenue-bars{gap:8px}}
 
 /* Semantic roles shared by every workbench screen. */
-.workbench-shell{--ink:#18181b;--muted:#62626c;--blue:#5546d9;--blue-hover:#4435be;--page:#f4f4f6;--hairline:#e1e1e7;--action-tint:#eeecfc;--card-radius:18px;--card-shadow:0 2px 8px #18181b04;color:var(--ink);background:var(--page)}
+.workbench-shell{--ink:#18181b;--muted:#62626c;--blue:#5546d9;--blue-hover:#4435be;--page:#fafafb;--hairline:#e1e1e7;--action-tint:#eeecfc;--card-radius:18px;--card-shadow:none;color:var(--ink);background:var(--page)}
 .workbench-shell .workbench-page{color:var(--ink)}
 .workbench-shell :is(.native-card,.profile-form,.profile-summary,.room-board-surface,.booking-analysis-panel,.workspace-booking-list,.workbench-info-panel){border-radius:18px;border-color:var(--hairline)}
 .workbench-sidebar{background:#fafafbd9;border-right-color:#e1e1e7}
 .workbench-brand img{filter:none}
 .workbench-sidebar nav>a.is-active{background:#18181b;color:white;border-color:#18181b}
-.workbench-shell .workbench-page.workspace-page :is(.native-primary,.inventory-soft,.room-add-link),.workbench-shell .wb-primary-action,.workbench-shell .wb-finding.is-focused .wb-finding-actions button{background:#18181b;color:#fff;border-radius:10px}
+.workbench-shell .workbench-page.workspace-page :is(.native-primary,.inventory-soft,.room-add-link),.workbench-shell .wb-primary-action,.workbench-shell .wb-finding.is-focused .wb-finding-actions button{background:#18181b;color:#fff;border-radius:999px}
 .workbench-shell .wb-segmented{background:#e9e9ed;border:1px solid #e1e1e7}
 .workbench-shell .wb-segmented button[aria-pressed=true]{background:#18181b;color:#fff;box-shadow:none}
 .workbench-shell .workspace-page :is(input:not([type=checkbox]):not([type=range]),select,textarea){background:#f6f6f8;border-color:#e1e1e7;box-shadow:none}
@@ -143,7 +143,7 @@
 .workbench-shell .market-overview{background:#f0eff8;border-color:#e1dff0;border-radius:14px}
 .workbench-shell .market-context-panel,.workbench-shell .promotion-plan-panel{background:#ffffffc9;border-color:var(--hairline);backdrop-filter:blur(12px)}
 .workbench-shell .wb-report-grid>section{background:#fff;border-color:var(--hairline);border-radius:18px}
-.workbench-shell .wb-report-grid>section.wb-report-market{background:linear-gradient(135deg,#f4f2fc,#fafafc)}
+.workbench-shell .wb-report-grid>section.wb-report-market{background:#f2f0fa}
 .wb-report-decision{color:#393544}.wb-revenue-bars i{background:#6554e8}
 .workbench-shell .staycraft-chart{--chart-blue:#6554e8;--chart-teal:#6554e8;--chart-muted:#62626c;--chart-grid:#e1e1e7;--chart-ink:#18181b}
 .workbench-shell .workbench-mobile-nav{background:#fafafae6;border-color:#e1e1e7;box-shadow:0 4px 20px #18181b0a;backdrop-filter:blur(20px)}
@@ -157,18 +157,19 @@
 .wb-chart-legend{display:flex;gap:16px;align-items:center}.wb-chart-legend>span{display:inline-flex;gap:6px;align-items:center}.wb-chart-legend i{width:8px;height:8px;border-radius:3px;background:#6554e8}.wb-chart-legend i.is-weekend{background:var(--calendar-yellow);border:1px solid #6554e8}
 .workbench-shell .staycraft-chart .chart-dot.is-weekend{background:var(--calendar-yellow);border-color:#6554e8}
 
-/* Softer outer cards, with a smaller radius for nested selection surfaces. */
-.workbench-shell{--card-radius:26px}
-.workbench-shell :is(.native-card,.profile-form,.profile-summary,.room-board-surface,.booking-analysis-panel,.workspace-booking-list,.workbench-info-panel,.promotion-brief,.promotion-editor,.market-hotels,.promotion-plan-panel,.market-context-panel),.workbench-shell .wb-report-grid>section,.workbench-shell .wb-finding.is-focused{border-radius:26px}
-.workbench-shell .booking-analysis-cards{border-radius:24px}
-.workbench-shell .booking-analysis-cards>button{border-radius:19px}
-.workbench-shell .wb-segmented{border-radius:15px}.workbench-shell .wb-segmented button{border-radius:11px}
-.workbench-shell .market-overview{border-radius:20px}
+/* Quiet, squarer cards; rounded controls carry the interaction affordance. */
+.workbench-shell{--card-radius:16px}
+.workbench-shell :is(.native-card,.profile-form,.profile-summary,.room-board-surface,.booking-analysis-panel,.workspace-booking-list,.workbench-info-panel,.promotion-brief,.promotion-editor,.market-hotels,.promotion-plan-panel,.market-context-panel),.workbench-shell .wb-report-grid>section,.workbench-shell .wb-finding.is-focused{border-radius:16px}
+.workbench-shell .booking-analysis-cards{border-radius:16px}
+.workbench-shell .booking-analysis-cards>button{border-radius:12px}
+.workbench-shell .wb-segmented{border-radius:999px}.workbench-shell .wb-segmented button{border-radius:999px}
+.workbench-shell .promotion-versions{border-radius:999px}.workbench-shell .promotion-versions button{border-radius:999px}.workbench-shell .promotion-versions button[aria-pressed=true]{box-shadow:none}
+.workbench-shell .market-overview{border-radius:16px}
 
 /* Flat surfaces: solid fills, quiet borders, no optical depth. */
 .workbench-shell{--card-shadow:none}
 .workbench-shell :is(.native-card,.profile-form,.profile-summary,.room-board-surface,.booking-analysis-panel,.booking-analysis-cards,.workspace-booking-list,.workbench-info-panel,.promotion-brief,.promotion-editor,.market-hotels,.promotion-plan-panel,.market-context-panel),.workbench-shell .wb-report-grid>section,.workbench-shell .wb-finding.is-focused{background:#fff;background-image:none;box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none}
 .workbench-shell .wb-report-grid>section.wb-report-market,.workbench-shell .market-overview{background:#f2f0fa;background-image:none;box-shadow:none}
-.workbench-shell .workbench-mobile-nav,.workbench-sidebar{background:#fafafc;background-image:none;box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none;border-color:#e1e1e7}
+.workbench-shell .workbench-mobile-nav,.workbench-sidebar{background:#fafafce0;background-image:none;box-shadow:none;backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border-color:#e1e1e7}
 .workbench-shell .wb-finding,.workbench-shell .wb-history,.workbench-shell .wb-metric,.workbench-shell .wb-evidence-panel{box-shadow:none;backdrop-filter:none;-webkit-backdrop-filter:none}
-.wb-income-overview{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;padding:24px;background:#fff;border:1px solid #e1e1e7;border-radius:26px;margin:20px 0 30px}.wb-income-overview>div{min-width:0;display:flex;flex-direction:column;gap:10px}.wb-income-overview span,.wb-income-overview small,.wb-income-overview a{font-size:12px;line-height:1.6;color:var(--muted)}.wb-income-overview strong{font-size:26px;letter-spacing:-.6px;overflow-wrap:anywhere}.wb-income-overview a{color:var(--blue)}@media(max-width:800px){.wb-income-overview{grid-template-columns:repeat(2,minmax(0,1fr));gap:24px 16px;padding:20px}.wb-income-overview strong{font-size:24px}}
+.wb-income-overview{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;padding:24px;background:#fff;border:1px solid #e1e1e7;border-radius:16px;margin:20px 0 30px}.wb-income-overview>div{min-width:0;display:flex;flex-direction:column;gap:10px}.wb-income-overview span,.wb-income-overview small,.wb-income-overview a{font-size:12px;line-height:1.6;color:var(--muted)}.wb-income-overview strong{font-size:26px;letter-spacing:-.6px;overflow-wrap:anywhere}.wb-income-overview a{color:var(--blue)}@media(max-width:800px){.wb-income-overview{grid-template-columns:repeat(2,minmax(0,1fr));gap:24px 16px;padding:20px}.wb-income-overview strong{font-size:24px}}
