@@ -1,114 +1,125 @@
 "use client";
 
-import Link from "next/link";
 import Image from "next/image";
-import {useActionState} from 'react';
-import {signInDemo,type LoginState} from './login/actions';
+import Link from "next/link";
+import { DataSample, MarketSample, DecisionSample } from "./landing-samples";
+import { useActionState, useEffect, useRef } from "react";
 import { useOperatorLanguage } from "@/components/operator-language";
+import { signInDemo, type LoginState } from "./login/actions";
 
-type LandingCopy = {
-  brandNote: string;
-  eyebrow: string;
-  title: string;
-  subtitle: string;
-  valuesLabel: string;
-  values: { title: string; body: string }[];
-  cta: string;
-  ctaNote: string;
-  note: string;
-  switchLabel: string;
-};
+const courtyard = "/images/landing-courtyard.webp";
+const chapters = [
+  { id: "data", zh: ["数据管理和可视化", "一周的订单，哪些日子最忙？", "导入订单 CSV，先核对新增、改期和取消记录，再按住宿日查看间夜和渠道构成。"], en: ["Data & visualization", "Which nights fill up first?", "Preview new, changed and cancelled bookings before importing your CSV. Then explore room nights by stay date and channel."] },
+  { id: "market", zh: ["市场调研与分析", "同一天，周边怎么报价？", "选定入住日期，把周边住宿的公开报价放在一把尺上。切换日期，看看不同民宿的报价和样本中位数怎样变化。"], en: ["Market research", "What are nearby stays asking?", "Compare nearby listings on a common price scale. Switch the stay date to see how individual quotes and the sample median change."] },
+  { id: "decision", zh: ["决策与推广优化", "给订得少的日子，写一份邀请。", "从经营报告里找到值得跟进的日期，再结合民宿特色准备推广草稿。发布前，由你核对房态、修改措辞。"], en: ["Decisions & promotion", "Give quieter nights a reason to book.", "Use the operating report to pick a date worth attention. Turn property details into a draft, check availability and edit the wording before you publish."] },
+] as const;
 
-const content: Record<"zh" | "en", LandingCopy> = {
-  zh: {
-    brandNote: "AI 经营决策工作台",
-    eyebrow: "为小型民宿经营者而做",
-    title: "看清经营，决定下一步。",
-    subtitle: "连接订单与房态，按需调查周边酒店报价。StayCraft 主动发现值得关注的问题，把数据、原因和行动建议放在一起。",
-    valuesLabel: "三步开始使用",
-    values: [
-      { title: "导入经营数据", body: "上传订单 CSV，补全民宿资料与房态，让分析有准确的起点。" },
-      { title: "让 AI 主动调查", body: "打开决策总览，AI 读取经营记录，按需查询真实酒店报价。" },
-      { title: "审核经营建议", body: "查看结论与数据依据，选择适合民宿的下一步行动。" },
-    ],
-    cta: "试用演示账号",
-    ctaNote: "无需注册，先用演示数据体验完整工作台。",
-    note: "AI 负责调查与分析，经营决策由你掌握。",
-    switchLabel: "Switch to English",
-  },
-  en: {
-    brandNote: "AI decision workbench",
-    eyebrow: "Built for independent homestays",
-    title: "See your business. Know your next move.",
-    subtitle: "Connect bookings and room data with live hotel quotes. StayCraft investigates what matters, then brings evidence, business judgments and next steps together.",
-    valuesLabel: "How it works",
-    values: [
-      { title: "Connect your data", body: "Upload a booking CSV and complete your property profile and room inventory." },
-      { title: "Let AI investigate", body: "Open the overview. AI reads your records and checks live hotel quotes when needed." },
-      { title: "Review your next move", body: "Read the evidence, assess the recommendations and choose your next action." },
-    ],
-    cta: "Try the demo",
-    ctaNote: "No sign-up needed. Explore the full workbench with demo data.",
-    note: "AI investigates and explains. You make the business decisions.",
-    switchLabel: "切换到中文",
-  },
-};
+// The anchors stay in normal document flow, including while the desktop stage is pinned.
+function useLandingScroll() {
+  const root = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const page = root.current;
+    if (!page) return;
+    const anchors = Array.from(page.querySelectorAll<HTMLElement>(".story-stop"));
+    const scenes = Array.from(page.querySelectorAll<HTMLElement>(".story"));
+    const links = Array.from(page.querySelectorAll<HTMLAnchorElement>(".landing-index a"));
+    const stage = page.querySelector<HTMLElement>(".story-stage")!;
+    const nav = page.querySelector<HTMLElement>(".landing-index")!;
+    const hero = page.querySelector<HTMLElement>(".landing-hero")!;
+    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const desktop = window.matchMedia("(min-width: 850px) and (min-height: 620px)");
+    const clamp = (n: number) => Math.max(0, Math.min(1, n));
+    let frame = 0;
 
-export function LandingPage({demoAvailable=false}:{demoAvailable?:boolean}) {
+    function draw() {
+      frame = 0;
+      if (!page) return;
+      const viewport = document.documentElement.clientHeight;
+      const navHeight = nav.offsetHeight;
+      const pinned = desktop.matches && !reduced.matches &&
+        scenes.every(scene => [".story-copy", ".story-object"].every(selector =>
+          scene.querySelector<HTMLElement>(selector)!.offsetHeight + 48 < viewport - navHeight));
+      page.toggleAttribute("data-pinned", pinned);
+      const top = anchors.map(anchor => anchor.getBoundingClientRect().top);
+      const chapterHeight = top[1] - top[0] || viewport;
+      const position = (navHeight - top[0]) / chapterHeight;
+      const current = pinned ? Math.min(scenes.length - 1, Math.max(0, Math.floor(position + .20))) :
+        Math.max(0, top.filter(y => y < viewport * .54).length - 1);
+      const heroBounds = hero.getBoundingClientRect();
+      hero.style.setProperty("--hero-travel", String(reduced.matches ? 0 : clamp(-heroBounds.top / heroBounds.height)));
+
+      scenes.forEach((scene,i) => {
+        const local = position - i;
+        const enter = i === 0 ? 1 : clamp((local + .36) / .32);
+        const leave = i === scenes.length - 1 ? 0 : clamp((local - .64) / .32);
+        const figure = scene.querySelector("figure")!.getBoundingClientRect();
+        const progress = pinned ? clamp((local + (i === 0 ? .28 : .34)) / (i === 0 ? .70 : .40)) :
+          clamp((viewport * .94 - figure.top) / Math.min(figure.height * .70, viewport * .50));
+        scene.style.setProperty("--reveal", String(reduced.matches ? 1 : progress));
+        scene.style.setProperty("--scene-alpha", String(enter * (1 - leave)));
+        scene.style.setProperty("--scene-offset", ((1 - enter) * 56 - leave * 56) + "px");
+        scene.inert = pinned && i !== current;
+        if (i === current && top[0] < viewport * .65) links[i].setAttribute("aria-current", "location");
+        else links[i].removeAttribute("aria-current");
+      });
+    }
+    function queue() {
+      if (!frame) frame = requestAnimationFrame(draw);
+    }
+    const resize = new ResizeObserver(queue);
+    resize.observe(stage);
+    scenes.forEach(scene => resize.observe(scene.querySelector(".story-inner")!));
+    window.addEventListener("scroll", queue, { passive: true });
+    window.addEventListener("resize", queue);
+    reduced.addEventListener("change", queue);
+    draw();
+    return () => {
+      cancelAnimationFrame(frame);
+      resize.disconnect();
+      window.removeEventListener("scroll", queue);
+      window.removeEventListener("resize", queue);
+      reduced.removeEventListener("change", queue);
+      page.removeAttribute("data-pinned");
+      scenes.forEach(scene => { scene.inert = false; });
+    };
+  }, []);
+  return root;
+}
+export function LandingPage({ demoAvailable = false }: { demoAvailable?: boolean }) {
+  const root = useLandingScroll();
   const { language, setLanguage } = useOperatorLanguage();
-  const [state,action,pending]=useActionState<LoginState,FormData>(signInDemo,undefined);
-  const t = content[language];
-
-  return (
-    <div className="landing" lang={language === "zh" ? "zh-CN" : "en"}>
-      <a className="landing-skip" href="#landing-main">{language === "zh" ? "跳至主要内容" : "Skip to main content"}</a>
-      <div className="landing-shell">
-        <header className="landing-header">
-          <div className="landing-brand">
-            <Image src="/brand/staycraft-violet-yellow.png" alt="StayCraft" width={2172} height={724} priority />
-            <span className="landing-brand-note">{t.brandNote}</span>
+  const zh = language === "zh";
+  const [state, action, pending] = useActionState<LoginState, FormData>(signInDemo, undefined);
+  const trialLabel = pending ? (zh ? "正在进入…" : "Opening…") : (zh ? "免登录试用" : "Try the demo");
+  const login = zh ? "登录 / 注册" : "Sign in / Register";
+  return <div ref={root} className="landing" lang={zh ? "zh-CN" : "en"}>
+    <a className="landing-skip" href="#landing-main">{zh ? "跳至主要内容" : "Skip to content"}</a>
+    <header className="landing-header">
+      <Image src="/brand/staycraft-violet-yellow.png" alt="StayCraft" width={2172} height={724} priority/>
+      <div><button className="landing-language" type="button" aria-label={zh ? "Switch to English" : "切换到中文"} onClick={() => setLanguage(zh ? "en" : "zh")}>{zh ? "EN" : "中文"}</button><Link href="/login">{login}</Link></div>
+    </header>
+    <main id="landing-main" tabIndex={-1}>
+      <section className="landing-hero" aria-labelledby="landing-title">
+        <div className="landing-intro"><h1 id="landing-title">{zh ? "看清经营，" : "See your business."}<br/>{zh ? "决定下一步。" : "Plan your next move."}</h1>
+          <p>{zh ? "整理订单，看懂预订走势，调查周边报价。StayCraft 帮你判断哪些日子值得跟进，把经营建议写进推广草稿。" : "Organize bookings, track demand and explore nearby rates. StayCraft helps you decide where to focus and prepare a promotion for your stay."}</p>
+          <div className="landing-actions">
+            {demoAvailable ? <form id="landing-trial" action={action}><button className="landing-cta" disabled={pending}>{trialLabel} <span aria-hidden="true">↗</span></button>
+              {state?.error && <p role="alert">{zh ? "演示暂时无法打开，请稍后重试。" : "The demo is unavailable. Please try again."}</p>}</form>
+              : <Link className="landing-cta" href="/login">{login} <span aria-hidden="true">↗</span></Link>}
+            <a className="landing-discover" href="#data">{zh ? "浏览功能" : "Explore features"} <span aria-hidden="true">↓</span></a>
           </div>
-          <button
-            type="button"
-            className="landing-language"
-            onClick={() => setLanguage(language === "zh" ? "en" : "zh")}
-            aria-label={t.switchLabel}
-          >
-            {language === "zh" ? "EN" : "中文"}
-          </button>
-        </header>
-
-        <main id="landing-main" tabIndex={-1} className="landing-main" lang={language === "zh" ? "zh-CN" : "en"}>
-          <section className="landing-hero" aria-labelledby="landing-title">
-            <p className="landing-eyebrow">{t.eyebrow}</p>
-            <h1 className="landing-title" id="landing-title">{t.title}</h1>
-            <p className="landing-subtitle">{t.subtitle}</p>
-            <div className="landing-actions">
-              {demoAvailable?<form action={action}><button className="landing-cta" disabled={pending}>{pending?(language==='zh'?'正在进入…':'Opening…'):t.cta}<span aria-hidden="true">↗</span></button>{state?.error&&<p role="alert">{language==='zh'?'演示暂时无法打开，请稍后重试。':'Demo unavailable. Please retry.'}</p>}</form>:<Link className="landing-cta" href="/login">
-                {t.cta}
-                <span className="landing-cta-arrow" aria-hidden="true">→</span>
-              </Link>}
-              <Link className="landing-login" href="/login">{language==='zh'?'登录 / 注册':'Sign in / Register'} <span aria-hidden="true">→</span></Link>
-            </div>
-            {demoAvailable&&<p className="landing-demo-note">{t.ctaNote}</p>}
-          </section>
-
-          <ul className="landing-values" aria-label={t.valuesLabel}>
-            {t.values.map((value, index) => (
-              <li key={value.title}>
-                <span className="landing-value-index" aria-hidden="true">0{index + 1}</span>
-                <h2>{value.title}</h2>
-                <p>{value.body}</p>
-              </li>
-            ))}
-          </ul>
-        </main>
-
-        <footer className="landing-footer">
-          <div><p>{t.note}</p><p className="landing-team">{language==='zh'?'关于我们 · ENT207 Digital Startup Lab 六人团队。':'Who we are · A six-person ENT207 Digital Startup Lab team.'}<br/>{language==='zh'?'我们为小型民宿经营者探索更易用的 AI 决策支持。':'We build accessible AI decision support for independent homestay owners.'}</p></div>
-          <span>StayCraft</span>
-        </footer>
-      </div>
-    </div>
-  );
+          {demoAvailable && <small>{zh ? "直接进入演示民宿工作台，无需填写账号。" : "No sign-up needed. Explore with sample data."}</small>}
+        </div>
+        <div className="landing-photo"><Image src={courtyard} alt={zh ? "临河小院的树荫、茶桌与客房，民宿场景示意" : "Illustration of a canal-side guesthouse, with a shaded table and open guest room"} fill priority sizes="(max-width: 720px) 100vw, 54vw"/></div>
+      </section>
+      <nav className="landing-index" aria-label={zh ? "功能章节" : "Feature chapters"}>{chapters.map((c,i) => <a href={`#${c.id}`} key={c.id}>{(zh ? ["数据可视化", "市场调研", "决策与推广"] : ["Data", "Market", "Decisions"])[i]}</a>)}{demoAvailable && <button className="index-trial" type="submit" form="landing-trial" disabled={pending}>{trialLabel} <span aria-hidden="true">↗</span></button>}</nav>
+      <div className="story-flow"><div className="story-stops" aria-hidden="true">{chapters.map(c => <div className="story-stop" key={c.id} id={c.id}/>)}</div>
+      <div className="story-stage">{chapters.map(c => <section key={c.id} className={`story story-${c.id}`} aria-labelledby={`title-${c.id}`}>
+        <div className="story-inner"><div className="story-copy"><p className="story-label">{c[language][0]}</p><h2 id={`title-${c.id}`}>{c[language][1]}</h2><p>{c[language][2]}</p></div>
+        <div className="story-object">{c.id === "data" && <DataSample zh={zh}/>} {c.id === "market" && <MarketSample zh={zh}/>} {c.id === "decision" && <DecisionSample zh={zh}/>}</div></div>
+      </section>)}</div></div>
+    </main>
+    <footer className="landing-footer"><div><strong>StayCraft</strong><p>{zh ? "ENT207 Digital Startup Lab 六人团队 · 为小型民宿经营者而做" : "A six-person ENT207 Digital Startup Lab team building for independent homestays."}</p></div>
+      <a href="#landing-title">{zh ? "回到首屏" : "Back to top"} ↑</a></footer>
+  </div>;
 }
