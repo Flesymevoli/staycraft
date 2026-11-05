@@ -43,21 +43,16 @@ function useLandingScroll() {
       const top = anchors.map(anchor => anchor.getBoundingClientRect().top);
       const chapterHeight = top[1] - top[0] || viewport;
       const position = (navHeight - top[0]) / chapterHeight;
-      const current = pinned ? Math.min(scenes.length - 1, Math.max(0, Math.floor(position + .20))) :
+      const current = pinned ? Math.min(scenes.length - 1, Math.max(0, Math.round(position))) :
         Math.max(0, top.filter(y => y < viewport * .54).length - 1);
       const heroBounds = hero.getBoundingClientRect();
       hero.style.setProperty("--hero-travel", String(reduced.matches ? 0 : clamp(-heroBounds.top / heroBounds.height)));
 
       scenes.forEach((scene,i) => {
-        const local = position - i;
-        const enter = i === 0 ? 1 : clamp((local + .36) / .32);
-        const leave = i === scenes.length - 1 ? 0 : clamp((local - .64) / .32);
         const figure = scene.querySelector("figure")!.getBoundingClientRect();
-        const progress = pinned ? clamp((local + (i === 0 ? .28 : .34)) / (i === 0 ? .70 : .40)) :
+        const progress = pinned ? 1 :
           clamp((viewport * .94 - figure.top) / Math.min(figure.height * .70, viewport * .50));
         scene.style.setProperty("--reveal", String(reduced.matches ? 1 : progress));
-        scene.style.setProperty("--scene-alpha", String(enter * (1 - leave)));
-        scene.style.setProperty("--scene-offset", ((1 - enter) * 56 - leave * 56) + "px");
         scene.inert = pinned && i !== current;
         if (i === current && top[0] < viewport * .65) links[i].setAttribute("aria-current", "location");
         else links[i].removeAttribute("aria-current");

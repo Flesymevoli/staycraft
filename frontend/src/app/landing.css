@@ -135,8 +135,18 @@
 .landing[data-pinned] .story-stop { height: 100svh; }
 .landing[data-pinned] .story-stop:last-child { height: calc(100svh - 58px); }
 .landing[data-pinned] .story-stage { grid-area: 1 / 1; align-self: start; display: grid; align-items: center; position: sticky; top: 58px; min-height: calc(100svh - 58px); }
-.landing[data-pinned] .story { grid-area: 1 / 1; opacity: var(--scene-alpha, 1); transform: translateY(var(--scene-offset, 0px)); }
-.landing[data-pinned] .story[inert] { pointer-events: none; }
+.landing[data-pinned] .story { grid-area: 1 / 1; }
+.landing[data-pinned] .story[inert] { visibility: hidden; }
+html:has(.landing[data-pinned]) { scroll-snap-type: y mandatory; }
+.landing[data-pinned] .landing-header { scroll-snap-align: start; }
+.landing[data-pinned] .landing-footer { scroll-snap-align: end; }
+.landing[data-pinned] .story-stop::before {
+  content: "";
+  display: block;
+  height: 1px;
+  scroll-margin-top: 58px;
+  scroll-snap-align: start;
+}
 .landing[data-pinned] .story-inner { padding-block: 24px; min-height: 0; }
 @media (prefers-reduced-motion: no-preference) {
   .landing-photo img { transform: scale(calc(1 + var(--hero-travel, 0) * .10)); transform-origin: 55% 65%; }
