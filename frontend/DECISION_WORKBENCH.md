@@ -1,3 +1,5 @@
+ > 当前实现以 [收入报告技术说明](AGENT_REPORT_TECHNICAL.md) 为准：新增 get_revenue、独立写作与语义复核、持久化续写；下文900-token/65秒等预算属于2026-11-04历史记录。
+
 # StayCraft 决策工作台：实现与验收
 
 更新：2026-11-04。本说明区分离线夹具、虚构民宿的云端经营数据和真实酒店报价；不是商业效果验证报告。
@@ -75,6 +77,14 @@
 | 构建 | 全源码ESLint、TypeScript及Cloudflare/OpenNext构建通过 |
 
 离线测试不需要真实密钥。真实调用脚本必须单独显式运行，不能加入默认构建或反复初始化演示数据。
+
+## 本地增量：统一产品与设计接续（设计已确认、本地已集成，未发布）
+
+四个主职责为工作台综合诊断、经营数据内部事实、市场调研外部证据、推广方案承接适用机会。核心 PC/手机设计由 Build Web Apps 主导，emil-design-eng 仅细节打磨，web-design-guidelines 仅最终审查；旧 UI/UX skill 停用。用户已确认苹果风、蓝白/青色和明亮 Logo；四入口已统一应用实际页面，运行预览确认后再部署。
+
+技术侧保留现有 Agent Loop，新增可选 `finding.nextAction`（kind、含首尾日期的 period、evidenceIds、服务端映射的 target）。模型不能指定 URL；推广须目标各日有正可售余量证据。旧结果无此字段时仅允许查看诊断详情，不从文本猜导航。新结果保存 `dailyMetrics`，只对应 run.period；旧结果缺少每日快照时不得替用实时图表。市场证据 periodEnd 为 exclusive，退房日不代表该晚报价，查询与返回日期不一致的报价不得进入证据。
+
+本轮23组隔离Agent场景、旧/新结果PGlite持久化与权限、TypeScript及定向Lint通过；主Agent本地Next构建通过。上述为本地技术检查。新版 UI 已消费 nextAction 与 dailyMetrics；推广方案按 owner 读取诊断、重新核对空房与事实，使用既有模型接口生成客群和内容方向，旧草稿兼容。最终 Next build、全 src ESLint 和方案 Mock 通过。六屏三宽浏览器检查、登录/演示、弹层与方案生成通过；3116 为隔离样本且模型关闭，不代表真实模型重新验收。未修改生产数据、未重复付费调用、未发布。
 
 ## 能力边界
 

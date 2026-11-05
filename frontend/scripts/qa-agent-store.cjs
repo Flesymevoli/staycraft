@@ -17,12 +17,16 @@ const {PGlite}=require('@electric-sql/pglite'),fs=require('node:fs'),assert=requ
  await assert.rejects(record(second),/row-level security/);
  await db.query("update decision_agent_runs set steps=$2,status='completed',engine='model_v1',result=$3,completed_at=now() where id=$1",[id,JSON.stringify([{id:'step-1',tool:'get_metrics'}]),JSON.stringify({summary:'A factual diagnosis',evidence:[]})]);
  assert.equal((await db.query('select status,steps,result from decision_agent_runs where id=$1',[id])).rows[0].status,'completed');
- await record(); // A completed task must release the unique running slot.
+ const nextId=(await record()).rows[0].id; // A completed task must release the unique running slot.
+ const snapshot={summary:'Snapshot-backed diagnosis',dailyMetrics:[{date:'2026-11-08',booked:1,capacity:5,available:4,bookedPct:20,amountCents:50000}],findings:[{id:'finding-1',action:'Review a promotion for the open night.',nextAction:{kind:'plan_promotion',target:'promotion',period:{start:'2026-11-08',end:'2026-11-08'},evidenceIds:['e1']}}],evidence:[{id:'e1',kind:'metrics',period:{start:'2026-11-04',end:'2026-11-10'}},{id:'e2',kind:'market',period:{start:'2026-11-07',end:'2026-11-08'},periodEnd:'exclusive'}]};
+ await db.query("update decision_agent_runs set status='completed',engine='model_v1',result=$2,completed_at=now() where id=$1",[nextId,JSON.stringify(snapshot)]);
+ assert.deepEqual((await db.query('select result from decision_agent_runs where id=$1',[nextId])).rows[0].result,snapshot);
+ assert.deepEqual((await db.query('select result from decision_agent_runs where id=$1',[id])).rows[0].result,{summary:'A factual diagnosis',evidence:[]});
  await assert.rejects(db.query('update decision_agent_runs set property_id=$1 where id=$2',[second,id]),/row-level security/);
  await assert.rejects(db.query('delete from decision_agent_runs where id=$1',[id]),/permission denied/);
  await sign(other);assert.equal((await db.query('select * from decision_agent_runs')).rows.length,0);
  assert.equal((await db.query("update decision_agent_runs set status='failed' where id=$1 returning id",[id])).rows.length,0);
  await db.exec('reset role;set role anon');await assert.rejects(db.query('select * from decision_agent_runs'),/permission denied/);
- console.log('PASS isolated diagnosis persistence, progress/final result, concurrent-run uniqueness, owner scope, reassignment/cross-account/anonymous/delete denial. No hosted writes.');
+ console.log('PASS isolated diagnosis persistence, old/new result compatibility, daily/action/market-end snapshots, progress/final result, concurrent-run uniqueness, owner scope, reassignment/cross-account/anonymous/delete denial. No hosted writes.');
  }finally{await db.close()}
 })().catch(e=>{console.error(e.message);process.exitCode=1});

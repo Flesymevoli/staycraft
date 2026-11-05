@@ -1,0 +1,18 @@
+/* Feedback is local; charts, values and page navigation stay immediate. */
+.workbench-shell{--ease-out:cubic-bezier(.23,1,.32,1)}
+.workbench-shell :is(.native-primary,.inventory-soft,.wb-primary-action,.wb-refresh,.wb-finding-actions button){transition:transform 120ms var(--ease-out),opacity 120ms var(--ease-out)}
+.workbench-shell :is(.native-primary,.inventory-soft,.wb-primary-action,.wb-refresh,.wb-finding-actions button):active:not(:disabled):not(:focus-visible){transform:scale(.985);opacity:.88}
+.workbench-shell :is(.wb-segmented,.promotion-versions) button{transition:opacity 120ms var(--ease-out)}
+.workbench-shell :is(.wb-segmented,.promotion-versions) button:active:not(:focus-visible){opacity:.65}
+.wb-detail-dialog[data-motion=true]{opacity:0;transform:translateY(8px) scale(.985);transition:opacity 200ms var(--ease-out),transform 200ms var(--ease-out),display 200ms allow-discrete,overlay 200ms allow-discrete}
+.wb-detail-dialog[data-motion=true][open]{opacity:1;transform:none}
+.wb-detail-dialog[data-motion=true]::backdrop{transition:opacity 200ms var(--ease-out),display 200ms allow-discrete,overlay 200ms allow-discrete;opacity:0}
+.wb-detail-dialog[data-motion=true][open]::backdrop{opacity:1}
+.workbench-shell .promotion-plan-fields{transition:opacity 200ms var(--ease-out)}
+@starting-style{.wb-detail-dialog[data-motion=true][open]{opacity:0;transform:translateY(8px) scale(.985)}.wb-detail-dialog[data-motion=true][open]::backdrop{opacity:0}.workbench-shell .promotion-plan-fields{opacity:0}}
+@media(hover:hover) and (pointer:fine){.workbench-shell .wb-secondary-link:hover{opacity:.75}}
+@media(prefers-reduced-motion:reduce){.workbench-shell *, .wb-detail-dialog::backdrop{transition:none!important;animation:none!important}.wb-detail-dialog[data-motion=true]{transform:none}}
+@media(prefers-reduced-motion:no-preference){
+ .workbench-shell :is(.workbench-primary-nav,.workbench-mobile-nav) a svg{transition:transform 120ms var(--ease-out),opacity 120ms var(--ease-out)}
+ .workbench-shell :is(.workbench-primary-nav,.workbench-mobile-nav) a:active:not(:focus-visible) svg{transform:scale(.94);opacity:.7}
+}

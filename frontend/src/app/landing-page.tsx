@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import {useActionState} from 'react';
 import {signInDemo,type LoginState} from './login/actions';
 import { useOperatorLanguage } from "@/components/operator-language";
@@ -30,7 +31,7 @@ const content: Record<"zh" | "en", LandingCopy> = {
       { title: "让 AI 主动调查", body: "打开决策总览，AI 读取经营记录，按需查询真实酒店报价。" },
       { title: "审核经营建议", body: "查看结论与数据依据，选择适合民宿的下一步行动。" },
     ],
-    cta: "体验 StayCraft",
+    cta: "试用演示账号",
     ctaNote: "无需注册，先用演示数据体验完整工作台。",
     note: "AI 负责调查与分析，经营决策由你掌握。",
     switchLabel: "Switch to English",
@@ -46,7 +47,7 @@ const content: Record<"zh" | "en", LandingCopy> = {
       { title: "Let AI investigate", body: "Open the overview. AI reads your records and checks live hotel quotes when needed." },
       { title: "Review your next move", body: "Read the evidence, assess the recommendations and choose your next action." },
     ],
-    cta: "Try StayCraft",
+    cta: "Try the demo",
     ctaNote: "No sign-up needed. Explore the full workbench with demo data.",
     note: "AI investigates and explains. You make the business decisions.",
     switchLabel: "切换到中文",
@@ -59,13 +60,14 @@ export function LandingPage({demoAvailable=false}:{demoAvailable?:boolean}) {
   const t = content[language];
 
   return (
-    <div className="landing">
+    <div className="landing" lang={language === "zh" ? "zh-CN" : "en"}>
+      <a className="landing-skip" href="#landing-main">{language === "zh" ? "跳至主要内容" : "Skip to main content"}</a>
       <div className="landing-shell">
         <header className="landing-header">
-          <p className="landing-brand">
-            StayCraft
+          <div className="landing-brand">
+            <Image src="/brand/staycraft-violet-yellow.png" alt="StayCraft" width={2172} height={724} priority />
             <span className="landing-brand-note">{t.brandNote}</span>
-          </p>
+          </div>
           <button
             type="button"
             className="landing-language"
@@ -76,7 +78,7 @@ export function LandingPage({demoAvailable=false}:{demoAvailable?:boolean}) {
           </button>
         </header>
 
-        <main className="landing-main" lang={language === "zh" ? "zh-CN" : "en"}>
+        <main id="landing-main" tabIndex={-1} className="landing-main" lang={language === "zh" ? "zh-CN" : "en"}>
           <section className="landing-hero" aria-labelledby="landing-title">
             <p className="landing-eyebrow">{t.eyebrow}</p>
             <h1 className="landing-title" id="landing-title">{t.title}</h1>
@@ -86,8 +88,9 @@ export function LandingPage({demoAvailable=false}:{demoAvailable?:boolean}) {
                 {t.cta}
                 <span className="landing-cta-arrow" aria-hidden="true">→</span>
               </Link>}
-              <p className="landing-cta-note">{demoAvailable?t.ctaNote:''}<br/><Link href="/login">{language==='zh'?'登录或创建账号':'Sign in or create an account'} →</Link></p>
+              <Link className="landing-login" href="/login">{language==='zh'?'登录 / 注册':'Sign in / Register'} <span aria-hidden="true">→</span></Link>
             </div>
+            {demoAvailable&&<p className="landing-demo-note">{t.ctaNote}</p>}
           </section>
 
           <ul className="landing-values" aria-label={t.valuesLabel}>

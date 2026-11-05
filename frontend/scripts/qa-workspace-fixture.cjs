@@ -33,7 +33,9 @@ if (process.env.STAYCRAFT_QA_AUTH_FIXTURES === '1') {
       const amapRead=process.env.STAYCRAFT_SAMPLE_LIVE_AMAP==='1'&&url.protocol==='https:'&&url.hostname==='mcp.amap.com'&&url.pathname==='/mcp'&&init?.method==='POST'&&['maps_geo','maps_around_search','maps_regeocode'].includes(JSON.parse(init.body||'{}').params?.name);
       const marketRead=process.env.STAYCRAFT_SAMPLE_LIVE_AMAP==='1'&&url.protocol==='https:'&&url.hostname==='mcp.rollinggo.cn'&&url.pathname==='/mcp'&&init?.method==='POST'&&JSON.parse(init.body||'{}').params?.name==='searchHotels';
       const amapAddressRead=process.env.STAYCRAFT_SAMPLE_LIVE_AMAP==='1'&&url.protocol==='https:'&&url.hostname==='restapi.amap.com'&&url.pathname==='/v3/geocode/regeo'&&(!init?.method||init.method==='GET');
-      if(sampleMode&&!amapRead&&!amapAddressRead&&!marketRead&&!['127.0.0.1','localhost','[::1]'].includes(url.hostname))throw new Error('External network disabled in sample');
+      const modelEndpoints=['https://api.deepseek.com/chat/completions',...(process.env.MODEL_BASE_URL?[process.env.MODEL_BASE_URL.replace(/\/$/,'')+'/chat/completions']:[])];
+      const modelRead=process.env.STAYCRAFT_SAMPLE_LIVE_MODEL==='1'&&url.protocol==='https:'&&init?.method==='POST'&&modelEndpoints.includes(url.href);
+      if(sampleMode&&!modelRead&&!amapRead&&!amapAddressRead&&!marketRead&&!['127.0.0.1','localhost','[::1]'].includes(url.hostname))throw new Error('External network disabled in sample');
       if(sampleMode&&/\/v1\/properties\/[^/]+\/conversations\/[^/]+\/draft$/.test(url.pathname))return conversations(url,JSON.parse(init?.body||'{}'),identity,identity?propertyFor(identity.index):null);
       return originalFetch(input, init);
     }
@@ -47,6 +49,7 @@ if (process.env.STAYCRAFT_QA_AUTH_FIXTURES === '1') {
       return json({access_token:token,refresh_token:'sample-only',token_type:'bearer',expires_in:3600,expires_at:4102444800,user:{id:sample.ownerId,email:'demo@example.invalid',aud:'authenticated',role:'authenticated',app_metadata:{},user_metadata:{},identities:[],created_at:'2026-01-01T00:00:00Z'}});
     }
     if (!identity) return json({ message: 'Invalid session' }, 401);
+    if(sampleMode&&url.pathname==='/rest/v1/decision_agent_runs'){if(identity.index===2)return json({code:'42501'},403);return require('./agent-store-fixture.cjs')(url,init,propertyFor(identity.index));}
     if(importDb){const imported=await importDb.handle(url,init,identity);if(imported)return imported;}
     if(url.pathname==='/rest/v1/operation_activity'){const p=propertyFor(identity.index);return identity.index===2||url.searchParams.get('property_id')!=='eq.'+p?json({message:'Forbidden'},403):json(activity.get(p)||[])}
     if (url.pathname === '/auth/v1/user') return json({ id: identity.id, email: `account-${identity.index}@example.invalid`, aud: 'authenticated', role: 'authenticated', app_metadata: {}, user_metadata: {}, identities: [], created_at: '2026-01-01T00:00:00Z' });

@@ -3,3 +3,20 @@
 .revenue-insights{margin-top:20px;padding-top:20px;border-top:1px solid var(--hairline)}.revenue-insights h3{font-size:17px;margin:0 0 16px;font-weight:500}.revenue-insights h4{font-size:14px;line-height:1.6;margin:18px 0 8px;font-weight:500}.revenue-insights p{font-size:13px;line-height:1.7;color:var(--muted)}.revenue-insights ul{list-style:none;padding:0;margin:14px 0}.revenue-insights li{display:flex;gap:12px;justify-content:space-between;padding:10px 0;font-size:13px}.revenue-insights small{display:block;font-size:11px;color:var(--muted);margin-top:6px}.revenue-insights strong{font-weight:500}.revenue-peak-dates{display:flex;flex-wrap:wrap;gap:8px}.revenue-peak-dates button{min-height:44px;border:0;border-radius:14px;background:var(--blue-soft,#edf5ff);color:var(--blue);padding:8px 12px;font:inherit;font-size:12px}
 
 .revenue-day-detail li strong{flex-shrink:0;text-align:right}.revenue-day-detail li strong a{display:block;margin-top:6px;color:var(--blue);font-size:11px;font-weight:400}.revenue-preview>p{font-size:13px;line-height:1.6;color:var(--muted)}
+
+/* Shared blue value scale with the daily booking chart. */
+.revenue-preview{--revenue-ink:#172b4d;--revenue-muted:#586b85;--revenue-grid:#dde6f1;--revenue-accent:#087f8c;font-variant-numeric:tabular-nums}
+.revenue-preview .revenue-level-0{background:#f0f4fa;color:#586b85}
+.revenue-preview .revenue-level-1{background:#e0ecfa;color:#172b4d}
+.revenue-preview .revenue-level-2{background:#abcbee;color:#172b4d}
+.revenue-preview .revenue-level-3{background:#2873cc;color:#fff}
+.revenue-preview .revenue-level-4{background:#164d92;color:#fff}
+.revenue-preview .revenue-day[aria-pressed=true]{outline-color:var(--revenue-accent);outline-width:2px;outline-offset:2px}
+.revenue-preview .revenue-day{border-radius:12px;min-height:58px;gap:6px}
+.revenue-preview .revenue-day small{font-size:10px;font-weight:500}
+.revenue-preview .revenue-calendar-panel{border:1px solid var(--revenue-grid);background:#fff;box-shadow:none}
+.revenue-preview .revenue-metric>strong{font-size:32px;font-weight:650;letter-spacing:-1px;color:var(--revenue-ink)}
+.revenue-preview .revenue-month h2,.revenue-preview .revenue-insights h3{font-weight:600;color:var(--revenue-ink)}
+.revenue-preview .revenue-key{font-size:11px;gap:6px;color:var(--revenue-muted)}
+.revenue-preview .revenue-key i{height:8px;width:16px;border-radius:3px}
+@media(max-width:420px){.revenue-preview .revenue-day{min-height:48px;border-radius:8px}.revenue-preview .revenue-day small{font-size:8px}.revenue-preview .revenue-metric-footer{flex-wrap:wrap;row-gap:8px}}

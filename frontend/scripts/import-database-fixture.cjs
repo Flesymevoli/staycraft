@@ -29,6 +29,7 @@ module.exports=function createImportDb(sample,getInventory){
  await syncInventory();
  for(const b of sample.bookings)await db.query(`insert into direct_bookings(id,property_id,guest_hash,request_id,room_id,type_id,room_number,type_name,arrival,departure,guest_name,phone,expected_arrival,nightly_rate,total,status,refund_result) values($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,'00000000',$12,$13,$14,$15,$16)`,[b.id,sample.propertyId,'0'.repeat(64),b.id,b.room_id,b.type_id,b.room_number,b.type_name,b.arrival,b.departure,b.guest_name,b.expected_arrival,b.nightly_rate,b.total,b.status,b.refund_result]);
  for(const b of sample.bookings)if(b.stay_state&&b.stay_state!=='pending')await db.query('update direct_bookings set stay_state=$2,checked_in_at=$3,checked_out_at=$4 where id=$1',[b.id,b.stay_state,b.checked_in_at,b.checked_out_at]);
+ for(const b of sample.bookings)if(b.external_channel&&b.external_id&&b.external_snapshot)await db.query('update direct_bookings set external_channel=$2,external_id=$3,external_snapshot=$4 where id=$1',[b.id,b.external_channel,b.external_id,JSON.stringify(b.external_snapshot)]);
  })();
  async function syncInventory(){
   const inv=getInventory();
@@ -63,5 +64,5 @@ module.exports=function createImportDb(sample,getInventory){
   }catch(error){return json({message:error.message},409)}};
   const pending=chain.then(run,run);chain=pending.catch(()=>{});return pending;
  };
- return {handle};
+ return {handle,close:async()=>{await ready;await chain;await db.close()}};
 };

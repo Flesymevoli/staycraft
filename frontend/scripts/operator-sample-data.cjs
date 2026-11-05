@@ -26,19 +26,21 @@ function createSample(anchor=new Intl.DateTimeFormat('sv-SE',{timeZone:'Asia/Sha
   const random=(offset,room)=>(Math.abs(offset*17+room*13+7)%10)/10;
   const enriched=(n,room,from,to,name,status='confirmed',refund=null)=>{
     const b=booking(n,room,from,to,name,status,refund),weekend=[0,5,6].includes(new Date(day(from)+'T12:00:00Z').getUTCDay());
-    b.nightly_rate=Math.round(b.nightly_rate*(weekend?1.12:.94)*100)/100;b.total=Math.round(b.nightly_rate*(to-from)*100)/100;
+    const periodFactor=from<-14?1.06:from<0?.92:1;
+    b.nightly_rate=Math.round(b.nightly_rate*(weekend?1.12:.94)*periodFactor*100)/100;b.total=Math.round(b.nightly_rate*(to-from)*100)/100;
     b.created_at=day(Math.min(-1,from-Math.min(14,3+n%12)))+'T08:20:00Z';
     b.stay_state=status==='confirmed'&&to<0?'completed':status==='confirmed'&&from<0&&to>=0?'checked_in':'pending';
     b.checked_in_at=b.stay_state==='pending'?null:day(from)+'T07:00:00Z';b.checked_out_at=b.stay_state==='completed'?day(to)+'T03:00:00Z':null;
     return b;
   };
-  base.bookings=base.bookings.map((b,i)=>({...b,stay_state:i===1?'checked_in':'pending',checked_in_at:i===1?day(-2)+'T07:00:00Z':null,checked_out_at:null}));
-  base.bookings.push(enriched(sequence++,4,-1,1,'苏小禾（虚构）'),enriched(sequence++,1,0,1,'陆予安（虚构）'),enriched(sequence++,3,-1,0,'程见山（虚构）'));
+  base.bookings=base.bookings.map((b,i)=>({...b,stay_state:i===1?'completed':'pending',checked_in_at:i===1?day(-2)+'T07:00:00Z':null,checked_out_at:i===1?day(0)+'T03:00:00Z':null}));
+  base.bookings.push(enriched(sequence++,4,0,1,'苏小禾（虚构）'),enriched(sequence++,1,0,1,'陆予安（虚构）'),{...enriched(sequence++,3,-1,0,'程见山（虚构）'),stay_state:'completed',checked_out_at:day(0)+'T03:00:00Z'});
   base.bookings.push(enriched(sequence++,0,-2,-1,'近期住客甲（虚构）'),enriched(sequence++,1,-2,-1,'近期住客乙（虚构）'),enriched(sequence++,4,-2,-1,'近期住客丙（虚构）'));
   for(let from=-42;from<=-4;from+=2){
     for(let room=0;room<5;room++){
       const weekend=[0,5,6].includes(new Date(day(from)+'T12:00:00Z').getUTCDay());
-      if(random(from,room)>(weekend?.86:.62))continue;
+      const threshold=from<-14?(weekend?.7:.45):(weekend?.9:.7);
+      if(random(from,room)>threshold)continue;
       base.bookings.push(enriched(sequence++,room,from,from+1+(sequence%2),`历史住客${sequence}（虚构）`));
     }
   }
@@ -50,6 +52,16 @@ function createSample(anchor=new Intl.DateTimeFormat('sv-SE',{timeZone:'Asia/Sha
     }
   }
   base.bookings.push(enriched(sequence++,0,-9,-7,'已取消住客（虚构）','cancelled','auto_cancelled'),enriched(sequence++,2,7,9,'取消审核通过（虚构）','cancelled','review_approved'));
+  const channels=['ctrip','direct','meituan','ctrip','direct'];
+  base.bookings=base.bookings.map((b,i)=>channels[i%channels.length]==='direct'?b:({...b,external_channel:channels[i%channels.length],external_id:'fictional-'+b.id,external_snapshot:{status:b.status==='cancelled'?'cancelled':b.stay_state==='completed'?'completed':'confirmed',currency:'CNY',fictional:true}}));
+  const occupied=new Set();
+  for(const b of base.bookings){
+    if(b.status!=='confirmed')continue;
+    for(let date=b.arrival;date<b.departure;){
+      const key=b.room_id+':'+date;if(occupied.has(key))throw new Error('Fictional sample has overlapping room nights: '+key);occupied.add(key);
+      const next=new Date(date+'T12:00:00Z');next.setUTCDate(next.getUTCDate()+1);date=next.toISOString().slice(0,10);
+    }
+  }
   base.profile.notes='全部为虚构演示资料，演示日期随当天更新，包含近42天历史与未来28天预订。全屋禁烟，早餐在一楼餐厅。';
   return base;
 }
