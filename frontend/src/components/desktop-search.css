@@ -1,0 +1,17 @@
+.desktop-search-dialog.desktop-search-expanded { width:min(620px,calc(100vw - 32px)); max-height:min(720px,calc(100dvh - 48px)); padding:20px; overflow:hidden; position:fixed; inset:0; margin:auto; }
+.desktop-search-dialog.desktop-search-expanded header input { min-width:0; }
+.desktop-search-dialog.desktop-search-expanded .desktop-search-help { margin:8px 0 12px; color:var(--muted); font-size:12px; line-height:1.7; }
+.desktop-search-dialog.desktop-search-expanded .desktop-search-results { max-height:calc(min(720px,100dvh - 48px) - 142px); overflow-y:auto; overscroll-behavior:contain; padding:0 3px 3px; }
+.desktop-search-dialog.desktop-search-expanded section + section { margin-top:18px; }
+.desktop-search-dialog.desktop-search-expanded h2 { margin:14px 10px 6px; color:var(--muted); font-size:11px; font-weight:600; letter-spacing:.04em; }
+.desktop-search-dialog.desktop-search-expanded nav { margin-top:0; }
+.desktop-search-dialog.desktop-search-expanded nav a { display:flex; align-items:center; gap:12px; text-decoration:none; min-height:44px; }
+.desktop-search-dialog.desktop-search-expanded nav a > svg { flex:none; color:var(--muted); }
+.desktop-search-dialog.desktop-search-expanded nav a > span { flex:1; min-width:0; overflow-wrap:anywhere; }
+.desktop-search-dialog.desktop-search-expanded nav a strong { display:block; font-size:13px; font-weight:600; }
+.desktop-search-dialog.desktop-search-expanded nav a small { display:block; margin-top:3px; color:var(--muted); font-size:11px; line-height:1.6; }
+.desktop-search-dialog.desktop-search-expanded :is(a,button,input):focus-visible { outline:2px solid var(--primary,#6250c9); outline-offset:2px; }
+.desktop-search-dialog.desktop-search-expanded .desktop-search-status,.desktop-search-expanded .desktop-search-error { margin:12px 8px; font-size:13px; line-height:1.7; color:var(--muted); }
+.desktop-search-dialog.desktop-search-expanded .desktop-search-error button { border:0; border-radius:8px; padding:7px 14px; color:var(--ink); background:#ede8f8; cursor:pointer; }
+.room-type-summary[id^="room-type-"] { scroll-margin-top:110px; }
+.room-type-summary[id^="room-type-"]:target { outline:2px solid var(--primary,#6250c9); outline-offset:3px; }

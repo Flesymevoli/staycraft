@@ -1,3 +1,4 @@
+import {desktopModelTransport} from '@/lib/desktop-model';
 import {questionTopic} from "@/lib/assistant-question";
 import {decisionQuestionIds,isDecisionQuestionId,type DecisionQuestionId} from "@/lib/assistant-suggestions";
 import {evaluateDecision,offsetDay,type DecisionInputs} from "@/lib/assistant-decisions";
@@ -5,11 +6,13 @@ import {agentStore} from "@/lib/decision-agent-store";
 import {validateProfile} from "@/lib/property-profile";
 import {propertyPoint} from "@/lib/property-location";
 import {collectEvents} from "@/lib/signals/events";
+import {fetchEvents} from "@/lib/signals/official-events";
+import {desktopSignalsEnabled,readDesktopEvents} from "@/lib/desktop-external-signals";
 import {readSavedMarketSnapshot} from "@/lib/market/saved-snapshot";
 import {readPlanFollowUp} from "@/lib/decisions/plan-follow-up";
 import {groundedInsights,prioritiseInsights} from "@/lib/business-assistant";
 import {bookingPeriod} from "@/lib/booking-period";
-import {isDemoWorkspace,operatorSample} from "@/lib/operator-sample";
+import {isDemoWorkspace,operatorSample,operatorModelEnabled} from "@/lib/operator-sample";
 import {DEMO_PERIOD,demoMetrics,workspaceDay} from "@/lib/demo-period";
 import {validateInventory} from "@/lib/property-inventory";
 import type {BookingMetrics} from "@/components/booking-metrics";
@@ -41,8 +44,10 @@ async function decisionInputs(account:Awaited<ReturnType<typeof verifiedProperty
  const readEvents=async()=>{
   const {data}=await supabase.from("property_details").select("profile").eq("property_id",propertyId).abortSignal(dbSignal).maybeSingle();
   const location=validateProfile(data?.profile)?.location;
+  if(location&&desktopSignalsEnabled()&&!isDemoWorkspace(user.email))return (await readDesktopEvents({account,location,start,end,signal})).events;
   const center=location?await propertyPoint(location,user.email,signal):null;
-  return collectEvents({window:{start,end},scope:{center}}).events;
+  const input={window:{start,end},scope:{center}};
+  return (isDemoWorkspace(user.email)?collectEvents(input):await fetchEvents({...input,signal})).events;
  };
  const readQuotes=async()=>(await readSavedMarketSnapshot(supabase,propertyId,user.email)).quotes;
  const [bookingResult,eventResult,quoteResult,runResult]=await Promise.allSettled([
@@ -123,6 +128,6 @@ export async function POST(request:Request){try{
   action:openDates.length?(zh?"先核对这些日期的可售房量，再决定是否推广。":"Check availability on these dates before planning a promotion."):(zh?"查看经营数据，核对当前房量和订单。":"Review your inventory and bookings in business data."),
   href:"/app/analysis#booking-analysis-detail"
  }]:topic==="booked_value"||topic==="busiest"?focusedInsights(data,topic,zh):groundedInsights(data,topic,zh,attention);
- const result=await prioritiseInsights(items,{model:!operatorSample()&&process.env.FORMAL_MODEL_ENABLED==="1"&&process.env.MODEL_ENABLED==="1",signal:request.signal});
+ const result=await prioritiseInsights(items,{modelTransport:desktopModelTransport(account),model:!operatorSample()&&operatorModelEnabled(),signal:request.signal});
  return Response.json({...result,language:body.language,topic,period_start:data.period_start,period_end:data.period_end,as_of:new Date().toISOString()},{headers:{"Cache-Control":"no-store"}});
 }catch(error){return workspaceFailure(error)}}

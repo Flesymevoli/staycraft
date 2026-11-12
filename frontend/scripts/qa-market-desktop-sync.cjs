@@ -4,7 +4,7 @@ const root=path.resolve(__dirname,'..');
 const a={id:'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',property:'11111111-1111-4111-8111-111111111111'};
 const b={id:'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',property:'22222222-2222-4222-8222-222222222222'};
 const sample={hotelId:'123',hotelName:'虚构测试民宿',stayDate:'2026-11-12',capturedAt:'2026-11-11T08:00:00+08:00',currency:'CNY',kind:'calendar_reference',rooms:1,adults:2,children:0,nights:1,status:'observed',amount:325,sourceUrl:'https://hotels.ctrip.com/hotels/123.html',authScope:'test-do-not-upload'};
-const payload=(account=a)=>({userId:account.id,propertyId:account.property,start:'2026-11-12',end:'2026-11-18',observations:[sample]});
+const payload=(account=a)=>({userId:account.id,propertyId:account.property,collectionLocation:account===a?'杭州地址':'苏州地址',start:'2026-11-12',end:'2026-11-18',observations:[sample]});
 function load(file,mocks){
  const module=new Module(file);
  module.require=name=>Object.hasOwn(mocks,name)?mocks[name]:name.startsWith('@/')?load(path.join(root,'src',name.slice(2)+'.ts'),mocks):name.startsWith('.')?load(path.resolve(path.dirname(file),name+'.ts'),mocks):require(name);
@@ -57,13 +57,17 @@ function load(file,mocks){
   async function switchTo(account){active=account;await db.query("select set_config('request.jwt.claim.sub',$1,false)",[account.id]);}
   const post=(body,origin='https://local.test')=>POST(new Request('https://local.test/api/workspace/market/sync',{method:'POST',headers:{Origin:origin},body:JSON.stringify(body)}));
   await switchTo(a);
-  assert.deepEqual(await (await GET()).json(),{userId:a.id,propertyId:a.property});
+  assert.deepEqual(await (await GET()).json(),{userId:a.id,propertyId:a.property,location:'杭州地址'});
   const first=await post(payload());assert.equal(first.status,201);const saved=(await first.json()).batch;
   const retry=await post(payload());assert.equal(retry.status,200);assert.equal((await retry.json()).batch.id,saved.id);
   assert.equal((await post({...payload(),observations:[{...sample,amount:500}]})).status,409);
   assert.equal((await post({...payload(),observations:[sample,sample]})).status,400);
   assert.equal((await post({...payload(),observations:[{...sample,stayDate:'2026-11-19'}]})).status,400);
   assert.equal((await post(payload(),'https://other.test')).status,403);
+  const changedLocation=await post({...payload(),collectionLocation:'旧地址'});
+  assert.equal(changedLocation.status,409);assert.equal((await changedLocation.json()).error,'market_sync_location_changed');
+  assert.equal((await post({...payload(),collectionLocation:''})).status,409);
+  assert.equal((await post({...payload(),collectionLocation:' 杭州 地址 '})).status,200);
   const rows=(await db.query('select quotes,note from market_quote_batches')).rows;
   assert.equal(JSON.parse(rows[0].note).location,'杭州地址');
   assert.equal(rows.length,1);assert.equal(rows[0].quotes[0].priceCny,325);assert(!Object.hasOwn(rows[0].quotes[0],'authScope'));
@@ -82,6 +86,10 @@ function load(file,mocks){
   const listRow=(await db.query("select quotes from market_quote_batches where quotes->0->>'priceType'='display'")).rows[0];
   assert.equal(listRow.quotes[0].priceType,'display');
   assert(!Object.hasOwn(listRow.quotes[0],'authScope'));
+  const legacy={...payload(),observations:[{...sample,capturedAt:'2026-11-11T04:00:00Z'}]};delete legacy.collectionLocation;
+  assert.equal((await post(legacy)).status,201);
+  const legacyRow=(await db.query("select note from market_quote_batches where captured_at='2026-11-11T04:00:00Z'")).rows[0];
+  assert.equal(JSON.parse(legacyRow.note).location,'');
   console.log('PASS desktop sync route + PGlite: account scope, two isolated owners, duplicate retry, conflict, origin, demo, validation, and local session field exclusion');
  }finally{await db.close()}
 })().catch(error=>{console.error(error);process.exitCode=1});

@@ -1,3 +1,4 @@
+import {desktopModelTransport} from '@/lib/desktop-model';
 import {writeAgentReport} from '@/lib/agent-report-writer';
 import {readAgentRevenue} from '@/lib/agent-revenue';
 import {createHash} from 'node:crypto';
@@ -16,6 +17,8 @@ import {collectSignals} from '@/lib/signals/index';
 import {marketAnchors} from '@/lib/signals/market-anchors';
 import {demoPropertyPoint} from '@/lib/property-location';
 import {amapGeocode,amapPoint} from '@/lib/amap-nearby';
+import {desktopSignalsEnabled,readDesktopEvents,readDesktopWeather} from '@/lib/desktop-external-signals';
+import type {SourceRef} from '@/lib/signals/types';
 
 export const dynamic='force-dynamic';
 export const maxDuration=180;
@@ -29,13 +32,15 @@ export async function GET(request:Request){try{
 }catch(error){return workspaceFailure(error)}}
 
 export async function POST(request:Request){try{
- requireSameOrigin(request);const {supabase,propertyId,user}=await verifiedProperty();
+ requireSameOrigin(request);const account=await verifiedProperty();const {supabase,propertyId,user}=account;
  const demo=isDemoWorkspace(user.email);
+ const remoteSignals=desktopSignalsEnabled()&&!demo;
  let input:Record<string,unknown>;
  try{input=JSON.parse(new TextDecoder().decode(await boundedBody(request,500)));}catch{throw new WorkspaceError('invalid_input',400);}
  if(!input||typeof input!=='object'||Array.isArray(input)||Object.keys(input).some(key=>!['force','language','runId'].includes(key))||input.force!==undefined&&typeof input.force!=='boolean'||input.language!==undefined&&!['zh','en'].includes(String(input.language)))throw new WorkspaceError('invalid_input',400);
  const language=input.language==='en'?'en':'zh';
- const modelEnabled=operatorModelEnabled()&&Boolean(process.env.DEEPSEEK_API_KEY||process.env.MODEL_BASE_URL&&process.env.MODEL_API_KEY&&process.env.MODEL_NAME);
+ const modelTransport=desktopModelTransport(account);
+ const modelEnabled=operatorModelEnabled()&&Boolean(modelTransport||process.env.DEEPSEEK_API_KEY||process.env.MODEL_BASE_URL&&process.env.MODEL_API_KEY&&process.env.MODEL_NAME);
  if(input.runId!==undefined){
   if(typeof input.runId!=='string'||! /^[a-f\d-]{36}$/i.test(input.runId))throw new WorkspaceError('invalid_input',400);
   const store=agentStore(supabase,propertyId),saved=await store.detail(input.runId);
@@ -45,7 +50,7 @@ export async function POST(request:Request){try{
    run:{...saved.run,errorCode:'model_unavailable'},cached:true,historyAvailable:true,writingAvailable:false
   },{headers:{'Cache-Control':'private, no-store'}});
   if(!await store.claim(input.runId))throw new WorkspaceError('analysis_busy',409);
-  try{const claimed=await store.detail(input.runId);if(!claimed.run)throw new WorkspaceError('history_unavailable',503);const run=await writeAgentReport(claimed.run,{language,signal:request.signal,onCheckpoint:async r=>{if(!await store.checkpoint(r))throw Error('report_checkpoint_failed')}});if(!await store.finish(run))throw new WorkspaceError('history_unavailable',503);return Response.json({run,cached:false,historyAvailable:true},{headers:{'Cache-Control':'private, no-store'}})}catch(e){await store.fail(input.runId);throw e;}
+  try{const claimed=await store.detail(input.runId);if(!claimed.run)throw new WorkspaceError('history_unavailable',503);const run=await writeAgentReport(claimed.run,{modelTransport,language,signal:request.signal,onCheckpoint:async r=>{if(!await store.checkpoint(r))throw Error('report_checkpoint_failed')}});if(!await store.finish(run))throw new WorkspaceError('history_unavailable',503);return Response.json({run,cached:false,historyAvailable:true},{headers:{'Cache-Control':'private, no-store'}})}catch(e){await store.fail(input.runId);throw e;}
  }
 
  const today=workspaceDay(demo);
@@ -84,7 +89,7 @@ export async function POST(request:Request){try{
  const priorDay=(date:string)=>new Date(Date.parse(date)-7*86400000).toISOString().slice(0,10);
  const paceBaseline=await store.bookingSnapshot({start:priorDay(period.start),end:priorDay(period.end)},priorDay(today),
   demo?'fictional_demo':'recorded_property_data');
- const fingerprint=createHash('sha256').update(JSON.stringify({version:5,period,language,metrics:stableMetrics,inventoryRevision:inventory.data?.revision||null,initialInventory,profileRevision:profile.data?.revision||null,location,modelEnabled,snapshot,paceBaselineId:paceBaseline?.id})).digest('hex');
+ const fingerprint=createHash('sha256').update(JSON.stringify({version:5,...(remoteSignals?{externalSignals:'desktop_remote_v1'}:{}),period,language,metrics:stableMetrics,inventoryRevision:inventory.data?.revision||null,initialInventory,profileRevision:profile.data?.revision||null,location,modelEnabled,snapshot,paceBaselineId:paceBaseline?.id})).digest('hex');
  const previous=await store.cached(language,fingerprint,input.force===true);
  if(previous)return Response.json({run:previous,cached:true,historyAvailable:true},{headers:{'Cache-Control':'private, no-store'}});
  let historyAvailable=false;
@@ -95,7 +100,7 @@ export async function POST(request:Request){try{
   let updates=Promise.resolve(),steps:import('@/lib/decision-agent-types').AgentStep[]=[];
   try{const run=await runDecisionAgent({
   id,onEvidence:async snapshots=>{if(state==='started'){await updates;const draft:import('@/lib/decision-agent-types').DecisionAgentRun={id,status:'limited',engine:'rules_v1',phase:'investigated',generatedAt:new Date().toISOString(),period,summary:'调查进行中，证据已保存',metrics:metricsSummary(metrics),findings:[],steps,evidence:snapshots.map(s=>s.evidence),snapshots,limitations:['调查尚未完整结束'],dataMode:demo?'fictional_demo':'recorded_property_data'};if(!await store.checkpoint(draft))throw Error('evidence_checkpoint_failed')}},onStep:step=>{if(state==='started'){steps=[...steps,step];const snapshot=steps;updates=updates.then(async()=>{await store.progress(id,snapshot)}).catch(()=>{});}},
-  period,initialMetrics:metrics,initialInventory,language,demo,referenceDay:today,paceBaseline,modelEnabled,marketEnabled:Boolean(snapshot.capturedAt&&marketDates.size),marketDates,signal:request.signal,readMetrics,
+  period,initialMetrics:metrics,initialInventory,language,demo,referenceDay:today,paceBaseline,modelEnabled,modelTransport,marketEnabled:Boolean(snapshot.capturedAt&&marketDates.size),marketDates,signal:request.signal,readMetrics,
   readRevenue:(selected,extra)=>readAgentRevenue(supabase,propertyId,selected,signal(extra),today),
   readBookings:async(selected,extra)=>{const {data,error}=await supabase.from('direct_bookings').select('arrival,departure,type_name,status,total,external_channel,stay_state').eq('property_id',propertyId).lte('arrival',selected.end).gt('departure',selected.start).order('arrival').limit(101).abortSignal(signal(extra));if(error||!data)throw new Error('bookings_unavailable');return {count:Math.min(data.length,100),truncated:data.length>100,orders:data.slice(0,100).map(row=>({arrival:row.arrival,departure:row.departure,roomType:row.type_name||'',status:row.status,totalCny:Number(row.total),source:row.external_channel||'direct',stayState:row.stay_state||'pending'}))}},
   readDetectorBookings:async(selected,extra)=>{
@@ -136,13 +141,24 @@ export async function POST(request:Request){try{
     hotels:rows.map(q=>({name:q.sourceName,price:q.priceCny,currency:'CNY',conditions:q.priceType}))};
   },
   readSignals:async(selected,extra)=>{
-   const point=demoPropertyPoint(profile.data?.profile?.location||'',user.email)??await resolveCoordinates(extra);
    const horizon=new Date(Date.parse(selected.end)+9*86400000).toISOString().slice(0,10);
    const window={start:selected.start,end:horizon};
+   if(remoteSignals){
+    const rawLocation=!profile.error?validateProfile(profile.data?.profile)?.location||'':'';
+    const externalSignal=extra?AbortSignal.any([request.signal,extra]):request.signal;
+    const days=Math.min(16,Math.round((Date.parse(horizon)-Date.parse(selected.start))/86400000)+1);
+    const [weather,events]=await Promise.allSettled([
+     readDesktopWeather({account,location:rawLocation,start:selected.start,days,signal:externalSignal}),
+     readDesktopEvents({account,location:rawLocation,start:selected.start,end:horizon,signal:externalSignal}),
+    ]);
+    const unavailable=(id:'weather'|'events'):SourceRef=>({id,authority:'public',observedAt:new Date().toISOString(),coverage:{from:window.start,to:window.end,kind:'none'},confidence:'low',note:id==='weather'?'天气源暂不可用，不作天气相关推断':'活动源暂不可用，无返回记录不代表没有活动'});
+    return {weather:weather.status==='fulfilled'?weather.value.days:[],events:events.status==='fulfilled'?events.value.events:[],anchors:marketContext.anchors,sources:[weather.status==='fulfilled'?weather.value.source:unavailable('weather'),events.status==='fulfilled'?events.value.source:unavailable('events'),marketContext.source]};
+   }
+   const point=demoPropertyPoint(profile.data?.profile?.location||'',user.email)??await resolveCoordinates(extra);
    if(!point)return {weather:[],events:[],anchors:marketContext.anchors,sources:[marketContext.source,
     {id:'weather',authority:'internal',observedAt:new Date().toISOString(),coverage:{from:window.start,to:window.end,kind:'none'},confidence:'low',note:'缺少可用坐标，本轮不取天气信号'},
     {id:'events',authority:'internal',observedAt:new Date().toISOString(),coverage:{from:window.start,to:window.end,kind:'none'},confidence:'low',note:'缺少可用坐标，本轮不取周边活动'}]};
-   const bundle=await collectSignals({latitude:point.latitude,longitude:point.longitude,anchorEntries:[],window});
+   const bundle=await collectSignals({latitude:point.latitude,longitude:point.longitude,anchorEntries:[],window,liveEvents:!demo,signal:extra?AbortSignal.any([request.signal,extra]):request.signal});
    return {...bundle,anchors:marketContext.anchors,sources:[...bundle.sources.filter(source=>source.id!=='competitor'),marketContext.source]};
   }
   });await updates;run.status='limited';run.phase='investigated';if(state==='started')historyAvailable=await store.finish(run);if(!historyAvailable)throw new WorkspaceError('history_unavailable',503);return run;

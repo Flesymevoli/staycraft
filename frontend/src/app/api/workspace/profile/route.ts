@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { validateProfile } from "@/lib/property-profile";
+import { profileForStorage, validateProfile } from "@/lib/property-profile";
 import { boundedBody, requireSameOrigin, verifiedProperty,writableProperty, WorkspaceError, workspaceFailure } from "@/lib/workspace-access";
 
 export const dynamic = "force-dynamic";
@@ -23,7 +23,7 @@ export async function PUT(request: Request) {
     catch (error) { if (error instanceof WorkspaceError) throw error; throw new WorkspaceError("invalid_profile", 400); }
     const profile = validateProfile(body?.profile);
     if (!profile || body.confirmed !== true || !(body.revision === null || /^[a-f0-9-]{36}$/i.test(body.revision ?? ""))) throw new WorkspaceError("invalid_profile", 400);
-    const row = { property_id: propertyId, profile, revision: randomUUID(), updated_at: new Date().toISOString() };
+    const row = { property_id: propertyId, profile: profileForStorage(profile), revision: randomUUID(), updated_at: new Date().toISOString() };
     const query = body.revision === null ? supabase.from("property_details").insert(row) :
       supabase.from("property_details").update(row).eq("property_id", propertyId).eq("revision", body.revision);
     const { data, error } = await query.select("profile,revision");

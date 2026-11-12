@@ -1,9 +1,10 @@
+import {desktopModelTransport} from '@/lib/desktop-model';
 import {randomUUID} from 'node:crypto';
 import {bookingPeriod} from '@/lib/booking-period';
 import {adviceFacts,modelSuggestions,marketContext,suggestionText,type OperatingSuggestion} from '@/lib/business-assistant';
 import {ruleSuggestions} from '@/lib/decision-summary';
 import {validPromotion,type PromotionDraft} from '@/lib/promotion';
-import {operatorSample} from '@/lib/operator-sample';
+import {operatorSample,operatorModelEnabled} from '@/lib/operator-sample';
 import {boundedBody,requireSameOrigin,verifiedProperty,WorkspaceError,workspaceFailure} from '@/lib/workspace-access';
 export const dynamic='force-dynamic';
 
@@ -11,7 +12,7 @@ export const dynamic='force-dynamic';
 // and the verified same-date market summary. On any failure the rules-based
 // suggestions are returned and marked as rules, never as an AI result.
 export async function POST(request:Request){try{
- requireSameOrigin(request);const {supabase,propertyId}=await verifiedProperty();
+ requireSameOrigin(request);const account=await verifiedProperty();const {supabase,propertyId}=account;
  let input;try{input=JSON.parse(new TextDecoder().decode(await boundedBody(request,2500)))}catch{throw new WorkspaceError('invalid_input',400)}
  const period=bookingPeriod({start:input.start,end:input.end});
  if(!period||!['zh','en'].includes(input.language))throw new WorkspaceError('invalid_input',400);
@@ -23,10 +24,10 @@ export async function POST(request:Request){try{
  const market=submittedMarket&&typeof data.rate_min==='number'&&typeof data.rate_max==='number'&&data.rate_min>0&&data.rate_max>=data.rate_min?{...submittedMarket,ownLow:data.rate_min,ownHigh:data.rate_max}:null;
  const sources=(stored.data?.state.sources||[]).filter((s:{start:string;end:string;checkedOn:string})=>s.start<=end&&s.end>=start&&s.checkedOn>=cutoff&&s.checkedOn<=today).slice(0,5);
  const facts=adviceFacts(data,{start,end},market);
- const model=!operatorSample()&&process.env.MODEL_ENABLED==='1'&&process.env.FORMAL_MODEL_ENABLED==='1';
+ const model=!operatorSample()&&operatorModelEnabled();
  let suggestions:OperatingSuggestion[]=ruleSuggestions(facts,zh),engine:'model_v1'|'rules_v1'='rules_v1',fallback=false;
  if(model){
-  try{suggestions=await modelSuggestions(facts,zh,{signal:request.signal});engine='model_v1'}
+  try{suggestions=await modelSuggestions(facts,zh,{modelTransport:desktopModelTransport(account),signal:request.signal});engine='model_v1'}
   catch(error){fallback=true;console.warn("Operating advice model unavailable",error instanceof Error?error.message.slice(0,140):"unknown")}
  }
  let content=suggestions.map(s=>suggestionText(s,zh)).join('\n\n');

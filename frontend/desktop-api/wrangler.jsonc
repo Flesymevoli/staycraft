@@ -1,0 +1,23 @@
+{
+  "$schema": "../node_modules/wrangler/config-schema.json",
+  "name": "staycraft-desktop-signals",
+  "account_id": "b67f83a25ab379983489fe89319e55ea",
+  "main": "worker.ts",
+  "compatibility_date": "2026-10-24",
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "workers_dev": false,
+  "preview_urls": false,
+  "routes": [{"pattern": "staycraft.online/desktop-api/*", "zone_name": "staycraft.online"}],
+  "vars": {
+    "AI_ENABLED": "1",
+    "SUPABASE_URL": "https://husrpqalpjjswpvrkxet.supabase.co",
+    "SUPABASE_PUBLISHABLE_KEY": "sb_publishable_ZqdrN-2yYsMPsYm-RvYr7w_tr50ju3f"
+  },
+  "secrets": {"required": ["AMAP_MAPS_API_KEY"]},
+  "ratelimits": [
+    {"name": "AUTH_RATE_LIMITER", "namespace_id": "2026111201", "simple": {"limit": 60, "period": 60}},
+    {"name": "SIGNALS_RATE_LIMITER", "namespace_id": "2026111202", "simple": {"limit": 12, "period": 60}},
+    {"name": "AI_RATE_LIMITER", "namespace_id": "2026111203", "simple": {"limit": 12, "period": 60}},
+    {"name": "AI_GLOBAL_RATE_LIMITER", "namespace_id": "2026111204", "simple": {"limit": 60, "period": 60}}
+  ]
+}

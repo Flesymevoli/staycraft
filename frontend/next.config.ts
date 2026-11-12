@@ -7,4 +7,9 @@ if(hosted){
  if(process.env.HOMESTAY_LOCAL_DATA==="1")throw new Error("Local demo data must be disabled in hosted deployments.");
 }
 const nextConfig:NextConfig={...(process.env.STAYCRAFT_DESKTOP_DEV==="1"&&!hosted?{distDir:process.env.STAYCRAFT_DESKTOP_TEST_PORT&&process.env.STAYCRAFT_QA_DESKTOP_SYNC==="1"?".next-desktop/qa":".next-desktop"}:{}),devIndicators:false,poweredByHeader:false,async headers(){return [{source:"/:path*",headers:[{key:"X-Content-Type-Options",value:"nosniff"},{key:"Referrer-Policy",value:"strict-origin-when-cross-origin"},{key:"X-Frame-Options",value:"DENY"},{key:"Permissions-Policy",value:"camera=(), microphone=(), geolocation=(self)"}]}];}};
+if(process.env.STAYCRAFT_DESKTOP_RUNTIME_BUILD==="1"){
+ nextConfig.output="standalone";
+ nextConfig.outputFileTracingRoot=process.env.STAYCRAFT_DESKTOP_TRACE_ROOT;
+ nextConfig.outputFileTracingExcludes={"/*":[".env*","**/.env*","**/.dev.vars*","**/*.pem"]};
+}
 export default nextConfig;

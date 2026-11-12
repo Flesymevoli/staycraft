@@ -47,6 +47,7 @@ next-env.d.ts
 # Cloudflare build output and local secrets
 /.open-next/
 /.wrangler/
+/desktop-api/.wrangler/
 .dev.vars*
 
 # Local public-price collection evidence
@@ -56,3 +57,6 @@ next-env.d.ts
 
 # Additional isolated local QA build output
 /.next-real-qa/
+
+# Isolated desktop runtime sources and generated resources (not installers)
+/.desktop-runtime/

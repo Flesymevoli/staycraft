@@ -1,6 +1,8 @@
 // Loaded only by the isolated QA server; no production imports and no cloud writes.
 if (process.env.STAYCRAFT_QA_AUTH_FIXTURES === '1') {
   const sampleMode=process.env.STAYCRAFT_OPERATOR_SAMPLE==='1';
+  const journeyMode=process.env.STAYCRAFT_QA_DESKTOP_JOURNEY==='1';
+  if(journeyMode&&(process.env.STAYCRAFT_QA_IMPORT_DB!=='1'||process.env.STAYCRAFT_QA_FORMAL_STAYS!=='1'||!process.argv.includes('127.0.0.1')||process.env.STAYCRAFT_HOSTED==='1'||process.env.VERCEL==='1'))throw Error('Desktop journey requires isolated loopback fixtures');
   if(sampleMode&&(process.env.VERCEL==='1'||process.env.STAYCRAFT_HOSTED==='1'||!process.argv.includes('127.0.0.1')))throw new Error('Samples require a separate loopback-only server');
   const sample=(sampleMode||process.env.STAYCRAFT_QA_FORMAL_STAYS==='1')?require('./operator-sample-data.cjs').createSample(process.env.STAYCRAFT_SAMPLE_DATE||(sampleMode?'2026-11-11':undefined),{rich:process.env.STAYCRAFT_SAMPLE_RICH==='1',includeCompletedStay:sampleMode&&process.env.STAYCRAFT_QA_DESKTOP_SYNC==='1'}):null;
   const conversations=require('./conversation-fixture.cjs')(sample,propertyId=>profiles.get(propertyId));
@@ -9,7 +11,7 @@ if (process.env.STAYCRAFT_QA_AUTH_FIXTURES === '1') {
   const inventories = new Map();
   const promotions = new Map();
   const desktopBatches=new Map();
-  const desktopSample=sampleMode&&process.env.STAYCRAFT_QA_DESKTOP_SYNC==="1";
+  const desktopSample=(sampleMode||journeyMode)&&process.env.STAYCRAFT_QA_DESKTOP_SYNC==="1";
   const photos = new Map();const activity=new Map();
   const record=(property,kind,resource,room,automatic=false,completed=true)=>{const items=activity.get(property)||[];items.unshift({id:require('node:crypto').randomUUID(),kind,resource_id:resource,room_number:room,automatic,completed,created_at:new Date().toISOString()});activity.set(property,items)};
   const properties=new Map([['bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',{id:'dddddddd-dddd-4ddd-8ddd-dddddddddddd',name:'Account B private property'}]]);
@@ -55,7 +57,7 @@ if (process.env.STAYCRAFT_QA_AUTH_FIXTURES === '1') {
       return json({access_token:token,refresh_token:'sample-only',token_type:'bearer',expires_in:3600,expires_at:4102444800,user:{id:account,email:body.email,aud:'authenticated',role:'authenticated',app_metadata:{},user_metadata:{},identities:[],created_at:'2026-01-01T00:00:00Z'}});
     }
     if (!identity) return json({ message: 'Invalid session' }, 401);
-    if(sampleMode&&url.pathname==='/rest/v1/decision_agent_runs'){if(identity.index===2)return json({code:'42501'},403);return require('./agent-store-fixture.cjs')(url,init,propertyFor(identity.index));}
+    if((sampleMode||journeyMode)&&url.pathname==='/rest/v1/decision_agent_runs'){if(identity.index===2)return json({code:'42501'},403);return require(journeyMode?'./desktop-journey-store.cjs':'./agent-store-fixture.cjs')(url,init,propertyFor(identity.index));}
     if(importDb){const imported=await importDb.handle(url,init,identity);if(imported)return imported;}
     if(sampleMode&&url.pathname==='/rest/v1/booking_import_tasks'&&(!init?.method||init.method==='GET')){
       const ownProperty=propertyFor(identity.index);
@@ -127,7 +129,14 @@ if (process.env.STAYCRAFT_QA_AUTH_FIXTURES === '1') {
         if(identity.id!==sample.ownerId)return new Response('[]',{headers:{'Content-Type':'application/json','Content-Range':'*/0'}});
         let rows=sample.bookings.map(item=>({...item,stay_state:stays.get(item.id)||item.stay_state||'pending',rooms:{number:inventories.get(sample.propertyId).inventory.rooms.find(room=>room.id===item.room_id)?.number||item.room_number}}));
         const or=url.searchParams.get('or'),room=url.searchParams.get('room_id'),status=url.searchParams.get('status'),arrival=url.searchParams.get('arrival'),departure=url.searchParams.get('departure');
-        if(or){const date=or.match(/\d{4}-\d{2}-\d{2}/)?.[0];rows=rows.filter(item=>item.arrival===date||item.departure===date)}
+        if(journeyMode&&url.searchParams.get('property_id')!=='eq.'+sample.propertyId)return json([]);
+        if(journeyMode&&url.searchParams.has('id'))rows=rows.filter(item=>'eq.'+item.id===url.searchParams.get('id'));
+        if(journeyMode&&or?.includes('.imatch.')){
+          const match=or.match(/\.imatch\.("(?:\\.|[^"\\])*")/);
+          if(!match)throw Error('Unsupported search filter in desktop journey');
+          const pattern=new RegExp(JSON.parse(match[1]),'i');
+          rows=rows.filter(item=>['external_id','guest_name','room_number','type_name','external_channel'].some(field=>pattern.test(item[field]||''))||or.includes('id.eq.'+item.id)||or.includes('arrival.eq.'+item.arrival)||or.includes('departure.eq.'+item.departure));
+        }else if(or){const date=or.match(/\d{4}-\d{2}-\d{2}/)?.[0];rows=rows.filter(item=>item.arrival===date||item.departure===date)}
         if(room)rows=rows.filter(item=>'eq.'+item.room_id===room);
         if(status)rows=rows.filter(item=>'eq.'+item.status===status);
         if(arrival?.startsWith('lt.'))rows=rows.filter(item=>item.arrival<arrival.slice(3));

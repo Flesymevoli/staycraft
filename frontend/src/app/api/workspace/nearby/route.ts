@@ -6,10 +6,12 @@ import {marketDay} from '@/lib/market/quote-identity';
 import {isDemoWorkspace} from '@/lib/operator-sample';
 import {DEMO_PERIOD,workspaceDay} from '@/lib/demo-period';
 import type {SourceRef} from '@/lib/signals/types';
+import {desktopSignalsEnabled,readDesktopWeather} from '@/lib/desktop-external-signals';
 export const dynamic='force-dynamic';
 
 export async function GET(request:Request){try{
- const {supabase,propertyId,user}=await verifiedProperty();
+ const account=await verifiedProperty();
+ const {supabase,propertyId,user}=account;
  const demo=isDemoWorkspace(user.email);
  const url=new URL(request.url),today=workspaceDay(demo);
  const requested=url.searchParams.get('start')||today;
@@ -33,6 +35,12 @@ export async function GET(request:Request){try{
   return Response.json({...context,weather:{status:selected.length?'available':'unavailable',days:selected,source}},{headers});
  }
  if(offset>=16)return unavailable('所选日期超出天气预报范围');
+ if(desktopSignalsEnabled()){
+  try{
+   const result=await readDesktopWeather({account,location,start,days,signal:request.signal});
+   return Response.json({...context,weather:{status:result.days.length?'available':'unavailable',days:result.days,source:result.source,...(!result.days.length?{note:result.source.note||'天气源暂不可用'}:{})}},{headers});
+  }catch{return unavailable('暂时无法读取民宿天气，请稍后重试')}
+ }
  let point;
  try{point=await propertyPoint(location,user?.email,request.signal)}catch{return unavailable('暂时无法定位民宿，未获取天气')}
  if(!point)return unavailable('缺少可用民宿坐标，未获取天气');

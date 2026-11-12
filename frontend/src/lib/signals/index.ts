@@ -3,9 +3,10 @@ import type {CompetitorAnchor,LocalEvent,SignalBundle,SourceRef,WeatherDay} from
 import {validCoordinates} from '../amap-nearby';
 import {fetchWeather} from './weather';
 import {collectEvents} from './events';
+import {fetchEvents} from './official-events';
 import {normalizeAnchors} from './competitors';
 
-export type SignalsInput={latitude:number;longitude:number;anchorEntries:unknown[];window:{start:string;end:string};fetcher?:typeof fetch;now?:Date};
+export type SignalsInput={latitude:number;longitude:number;anchorEntries:unknown[];window:{start:string;end:string};fetcher?:typeof fetch;now?:Date;liveEvents?:boolean;signal?:AbortSignal};
 
 const ISO_DATE=/^\d{4}-\d{2}-\d{2}$/;
 const DAY_MS=86400000;
@@ -34,7 +35,8 @@ export async function collectSignals(input:SignalsInput):Promise<SignalBundle>{
  try{
   // The workspace geocoder supplies GCJ-02, which is also the venue datum.
   const point={latitude:input.latitude,longitude:input.longitude};
-  const result=collectEvents({window,now,scope:{center:validCoordinates(point)?point:null}});
+  const eventInput={window,now,scope:{center:validCoordinates(point)?point:null}};
+  const result=input.liveEvents?await fetchEvents({...eventInput,fetcher:input.fetcher,signal:input.signal}):collectEvents(eventInput);
   events=result.events;sources.push(result.source);
  }catch{events=[];sources.push(failed('events',now,window,'活动日历源不可用，已降级'))}
  let anchors:CompetitorAnchor[]=[];

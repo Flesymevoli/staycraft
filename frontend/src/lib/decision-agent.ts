@@ -1,6 +1,6 @@
 import type {BookingMetrics} from '@/components/booking-metrics';
 import type {AgentEvidence,AgentFinding,AgentMarket,AgentMetrics,AgentNextAction,AgentPeriod,AgentStep,DecisionAgentRun} from './decision-agent-types';
-import {modelChat,type ModelProvider} from './model-provider';
+import {modelChat,type ModelProvider,type ModelTransport} from './model-provider';
 import {detectAll} from './decisions/detectors';
 import {buildOpportunities} from './decisions/opportunity';
 import type {DetectorSignal,Opportunity} from './decisions/types';
@@ -16,7 +16,7 @@ export type AgentDependencies={
  readBookings?:(period:AgentPeriod,signal?:AbortSignal)=>Promise<AgentBookings>;demo?:boolean;
  readDetectorBookings?:(period:AgentPeriod,signal?:AbortSignal)=>Promise<AgentBookings['orders']>;
  readSignals?:(period:AgentPeriod,signal?:AbortSignal)=>Promise<import('./signals/types').SignalBundle>;
- language?:'zh'|'en';modelEnabled:boolean;marketEnabled:boolean;id?:string;onStep?:(step:AgentStep)=>void;
+ language?:'zh'|'en';modelTransport?:ModelTransport;modelEnabled:boolean;marketEnabled:boolean;id?:string;onStep?:(step:AgentStep)=>void;
  onEvidence?:(evidence:import('./decision-agent-types').AgentSnapshot[])=>Promise<void>;signal?:AbortSignal;fetcher?:typeof fetch;now?:()=>number;referenceDay?:string;marketDates?:ReadonlySet<string>;paceBaseline?:DecisionAgentRun|null;
 };
 const completedRuns=new Map<string,{run:DecisionAgentRun;createdAt:number;expiresAt:number}>();
@@ -138,7 +138,7 @@ export async function runDecisionAgent(deps:AgentDependencies):Promise<DecisionA
  const today=deps.referenceDay??new Intl.DateTimeFormat('sv-SE',{timeZone:'Asia/Shanghai'}).format(new Date(now()));
  let market:AgentMarket|undefined,toolCount=0,marketCount=0,modelCompleted=false;
  const seen=new Map<string,Record<string,unknown>>();
- const modelReady=deps.modelEnabled&&deps.initialMetrics.active_rooms>0&&Boolean(process.env.DEEPSEEK_API_KEY||process.env.MODEL_BASE_URL&&process.env.MODEL_API_KEY&&process.env.MODEL_NAME);
+ const modelReady=deps.modelEnabled&&deps.initialMetrics.active_rooms>0&&Boolean(deps.modelTransport||process.env.DEEPSEEK_API_KEY||process.env.MODEL_BASE_URL&&process.env.MODEL_API_KEY&&process.env.MODEL_NAME);
  const deadline=AbortSignal.timeout(140000),signal=deps.signal?AbortSignal.any([deps.signal,deadline]):deadline;
  // External signals are evidence, collected once before investigation. A failed source never blocks the run.
  let signals:import('./signals/types').SignalBundle|undefined;
@@ -152,7 +152,15 @@ export async function runDecisionAgent(deps:AgentDependencies):Promise<DecisionA
     stored.push({evidence:{id:`e${stored.length+1}`,kind:'weather',title:t('未来天气预报','Upcoming weather forecast'),source:'Open-Meteo · forecast',capturedAt:stamp(),period:{start:first,end:last},href:'/app/explore',facts:[`${first} — ${last}`,upcoming.length?upcoming.map(w=>`${w.date} · ${w.tempMin??'—'}–${w.tempMax??'—'}℃ · ${t('降水概率','precip')} ${w.precipProb??'—'}%`).join('；'):t('有效窗口内没有预报','No forecast inside the window'),t('天气是外部条件，不构成需求或预订量预测','Weather is an external condition, not a demand or booking forecast')]},data:{days:weather}});
    }else limitations.push(t('天气预报未获取，不作天气相关推断','Weather forecast unavailable; no weather-based inference'));
    const events=bundle.events,eventSource=bundle.sources.find(s=>s.id==='events');
-   stored.push({evidence:{id:`e${stored.length+1}`,kind:'events',title:t('本地活动线索','Local event leads'),source:t('人工维护的活动日历','Maintained event calendar'),capturedAt:stamp(),period:{start:eventSource?.coverage.from||deps.period.start,end:eventSource?.coverage.to||deps.period.end},href:'/app/explore',facts:events.length?[...events.slice(0,6).map(e=>`${e.start}${e.end!==e.start?`–${e.end}`:''} · ${e.title}${e.verified?'':`（${t('未核实','unverified')}）`}`),t('活动日期为人工维护，未与主办方核实','Event dates are manually maintained and not confirmed with organisers')]:[t('本窗口没有已维护的本地活动','No maintained local event in this window')]},data:{events}});
+   const publicEvents=events.filter(event=>event.source.authority==='public');
+   const publicVerified=publicEvents.filter(event=>event.verified).length;
+   const eventLabel=publicEvents.length===events.length&&(events.length>0||eventSource?.authority==='public')
+    ?t('公开来源活动日历','Public-source event calendar'):publicEvents.length?t('公开来源与人工活动记录','Public sources and maintained event records'):t('人工维护的活动日历','Maintained event calendar');
+   const verificationNote=publicVerified===events.length?t('所列活动日期已按公开来源核对。','Listed event dates have been checked against public sources.')
+    :publicVerified?t('部分活动日期已按公开来源核对，其余请按各条记录的核实状态使用。','Some event dates have been checked against public sources; use the verification status shown for each remaining record.')
+    :events.some(event=>!event.verified)?t('标记“未核实”的活动日期仍待确认。','Dates marked unverified still need confirmation.')
+    :t('活动核实状态依据人工记录。','Event verification status is based on maintained records.');
+   stored.push({evidence:{id:`e${stored.length+1}`,kind:'events',title:t('本地活动线索','Local event leads'),source:eventLabel,capturedAt:stamp(),period:{start:eventSource?.coverage.from||deps.period.start,end:eventSource?.coverage.to||deps.period.end},href:'/app/explore',facts:events.length?[...events.slice(0,6).map(e=>`${e.start}${e.end!==e.start?`–${e.end}`:''} · ${e.title}${e.verified?'':`（${t('未核实','unverified')}）`}`),verificationNote+t('请以主办方最新公告为准；活动记录不代表客流会增加。',' Follow the organisers’ latest announcements; event records do not establish an increase in visitor demand.')]:[t('本窗口未返回匹配的活动记录；无返回记录不代表没有活动。','No matching event records were returned for this window; this does not mean no events exist.')]},data:{events}});
    const anchors=bundle.anchors,observed=anchors.filter(a=>a.status==='observed'&&a.amountCny!==null);
    const dates=[...new Set(anchors.map(a=>a.stayDate))].sort();
    stored.push({evidence:{id:`e${stored.length+1}`,kind:'competitor',title:t('已保存的竞品报价依据','Saved competitor quote evidence'),source:bundle.sources.find(source=>source.id==='competitor')?.note||t('已保存报价记录','Saved quote records'),capturedAt:stamp(),period:{start:dates[0]||deps.period.start,end:dates.at(-1)||deps.period.end},href:'/app/explore',facts:observed.length?[...observed.slice(0,6).map(a=>`${a.name} · ${a.stayDate} · ¥${a.amountCny}${a.roomType?` · ${a.roomType}`:''}`),t('每条只代表该店该日的一次报价观察，不能合并成区间、均价或涨跌趋势','Each row is one quote observation for one stay date; not a range, average or trend')]:[t('本窗口没有有效竞品锚点','No valid competitor anchor in this window')]},data:{anchors}});
@@ -198,7 +206,7 @@ export async function runDecisionAgent(deps:AgentDependencies):Promise<DecisionA
   if(estimatedTokens+estimate>20000&&modelProvider==='course'&&process.env.DEEPSEEK_API_KEY){modelProvider='deepseek_official';estimatedTokens=0;addStep(t('切换备用模型服务','Switch to fallback model service'),'completed',t('课程调用预算接近上限，由官方备用服务完成汇总','Course token budget nearly used; official fallback will complete the synthesis'));}
   if(estimatedTokens+estimate>28000)throw new Error('analysis_token_budget');estimatedTokens+=estimate;
   const previousProvider=modelProvider;
-  const resultProvider=await modelChat(payload,{fetcher:deps.fetcher,signal,timeoutMs:45000,preferOfficial:modelProvider==='deepseek_official'}),response=resultProvider.response;
+  const resultProvider=await modelChat(payload,{transport:deps.modelTransport,purpose:'analysis',fetcher:deps.fetcher,signal,timeoutMs:45000,preferOfficial:modelProvider==='deepseek_official'}),response=resultProvider.response;
   if(resultProvider.provider!==previousProvider)estimatedTokens=estimate;
   modelProvider=resultProvider.provider;
   if(resultProvider.fallback)addStep(t('切换备用模型服务','Switch to fallback model service'),'completed',t('课程网关暂不可用，使用 DeepSeek 官方服务继续同一调查','Course gateway unavailable; continuing the same investigation with official DeepSeek'));

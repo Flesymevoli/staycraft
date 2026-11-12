@@ -21,7 +21,11 @@
     "demo:imports": "node scripts/prepare-import-demo.mjs --prepare-demo",
     "desktop:dev": "node desktop/dev.cjs",
     "desktop:hosted": "electron desktop/main.cjs --hosted",
-    "desktop:sample": "node desktop/dev.cjs --sample"
+    "desktop:sample": "node desktop/dev.cjs --sample",
+    "desktop:runtime:build": "node desktop/build-runtime.cjs",
+    "desktop:standalone": "electron desktop/main.cjs --standalone",
+    "qa:desktop-runtime": "node scripts/qa-desktop-runtime.cjs",
+    "qa:desktop-runtime:electron": "electron scripts/qa-desktop-runtime-electron.cjs"
   },
   "dependencies": {
     "@supabase/ssr": "0.12.7",

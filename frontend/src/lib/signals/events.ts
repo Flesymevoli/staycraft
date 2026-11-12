@@ -32,7 +32,7 @@ export function isDemoEventProperty(location:string){
  return /太仓市娄江新城.*西浦北里.*虚构/.test(location);
 }
 
-function straightLineKm(first:EventPoint,second:EventPoint){
+export function straightLineKm(first:EventPoint,second:EventPoint){
  const radians=Math.PI/180;
  const latitude=(first.latitude-second.latitude)*radians;
  const longitude=(first.longitude-second.longitude)*radians;
@@ -87,11 +87,15 @@ export function collectEvents(input:EventsInput):EventsResult{
  const matching=eventsInWindow(validateEvents(usingCalendar?EVENT_CALENDAR:input.events!,observedAt),window);
  const center=input.scope?.center;
  const demoEstimate=usingCalendar&&input.scope?.demoProperty===true;
- const events=!input.scope?matching:matching.flatMap(event=>{
+ const scoped=!input.scope?matching:matching.flatMap(event=>{
   const venue=usingCalendar?venues.get(event.id):undefined;
   const distance=validCoordinates(center)&&venue?straightLineKm(center,venue.point):demoEstimate?venue?.demoDistanceKm:undefined;
   return distance===undefined||distance>EVENT_RADIUS_KM?[]:[{...event,distanceKm:Math.round(distance*10)/10}];
  });
+ // A bundled calendar keeps its actual collection date; opening it again is not a refresh.
+ const events=scoped.map(event=>now.getTime()-Date.parse(event.observedAt)>7*86400000
+  ? {...event,source:{...event.source,confidence:'low' as const,note:`${event.source.note??''}此记录已超过 7 天未更新，出行前请核对官网是否改期。`}}
+  : event);
  const coverage:Coverage={from:window.start,to:window.end,kind:events.length?'partial':'none'};
  const allVerified=events.length>0&&events.every(event=>event.verified);
  const authority=usingCalendar||events.length>0&&events.every(event=>event.source.authority==='public')?'public':'manual';
@@ -101,5 +105,6 @@ export function collectEvents(input:EventsInput):EventsResult{
   : input.scope&&!center&&!demoEstimate
    ? '未取得筛选中心的坐标，无法判断活动距离；无返回记录不代表没有活动。'
    : '现有日历中没有匹配当前日期和范围的记录；无返回记录不代表没有活动。';
- return {events,source:{id:'events',authority,observedAt:latestEvent??observedAt,coverage,confidence:allVerified?'medium':'low',note}};
+ const stale=events.some(event=>now.getTime()-Date.parse(event.observedAt)>7*86400000);
+ return {events,source:{id:'events',authority,observedAt:latestEvent??observedAt,coverage,confidence:allVerified&&!stale?'medium':'low',note:note+(stale?'部分记录已超过 7 天未更新，请核对官网。':'')}};
 }

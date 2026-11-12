@@ -1,7 +1,7 @@
 import {isDeepStrictEqual} from 'node:util';
 import {prepareCtripBatch} from '@/lib/market/desktop-sync';
 import {operatorSample} from '@/lib/operator-sample';
-import {marketScopeNote} from '@/lib/market/snapshot-scope';
+import {marketScopeNote,normalizeMarketLocation} from '@/lib/market/snapshot-scope';
 import {boundedBody,requireSameOrigin,verifiedProperty,WorkspaceError,workspaceFailure} from '@/lib/workspace-access';
 
 export const dynamic='force-dynamic';
@@ -21,8 +21,11 @@ async function syncAccount(){
 
 export async function GET(){
  try{
-  const {propertyId,user}=await syncAccount();
-  return Response.json({propertyId,userId:user.id},{headers});
+  const {supabase,propertyId,user}=await syncAccount();
+  const {data,error}=await supabase.from('property_details').select('profile').eq('property_id',propertyId).maybeSingle();
+  if(error)throw new WorkspaceError('market_sync_unavailable',503);
+  const location=typeof data?.profile?.location==='string'?data.profile.location:'';
+  return Response.json({propertyId,userId:user.id,location},{headers});
  }catch(error){return workspaceFailure(error)}
 }
 
@@ -41,7 +44,12 @@ export async function POST(request:Request){
   const {data:details,error:profileError}=await supabase.from('property_details').select('profile').eq('property_id',propertyId).maybeSingle();
   if(profileError)throw new WorkspaceError('market_sync_unavailable',503);
   const location=typeof details?.profile?.location==='string'?details.profile.location:'';
-  const inserted=await supabase.from(table).insert({...batch,property_id:propertyId,note:marketScopeNote(location)}).select(receipt).single();
+  if(body.collectionLocation!==undefined&&(typeof body.collectionLocation!=='string'||!normalizeMarketLocation(body.collectionLocation)||normalizeMarketLocation(body.collectionLocation)!==normalizeMarketLocation(location))){
+   throw new WorkspaceError('market_sync_location_changed',409);
+  }
+  // Older clients did not capture the address. Keep their location unknown instead of
+  // retrospectively assigning a possibly changed address to those quotes.
+  const inserted=await supabase.from(table).insert({...batch,property_id:propertyId,note:marketScopeNote(body.collectionLocation===undefined?'':location)}).select(receipt).single();
   if(!inserted.error&&inserted.data)return Response.json({status:'saved',batch:inserted.data},{status:201,headers});
   if(inserted.error?.code!=='23505')throw new WorkspaceError('market_sync_unavailable',503);
 

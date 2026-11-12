@@ -20,6 +20,7 @@ function load(relative) {
 }
 
 const { buildHeadline } = load('decisions/headline');
+const { buildOpportunities, selectPriorityOpportunities } = load('decisions/opportunity');
 const {metricLabel,metricUnit}=load('decisions/labels');
 let checks = 0;
 const check = (value, message) => { assert.ok(value, message); checks += 1; };
@@ -62,7 +63,8 @@ eq(headline.kpis.map(item => item.value), ['38%', '52%', '-14 pp'], 'pace kpis s
 
 // price/volume divergence gets its own headline, ahead of booking pace.
 const price = { ...pace, id: 'price_volume_divergence:2026-11-17:2026-11-23:average_price', kind: 'price_volume_divergence', metric: { name: 'average_price', unit: 'cny', value: 640 }, baseline: { kind: 'prior_period', value: 600, samples: 12 } };
-headline = buildHeadline({ signals: [pace, price], zh: true });
+const nights = {...price,id:'price_volume_divergence:2026-11-17:2026-11-23:room_nights',metric:{name:'room_nights',unit:'room_nights',value:20},baseline:{kind:'prior_period',value:30,samples:12}};
+headline = buildHeadline({ signals: [pace, price, nights], zh: true });
 eq(headline.source, 'price_volume_divergence', 'price divergence outranks booking pace');
 check(headline.conclusion.includes('背离') && headline.conclusion.includes('调价'), 'price headline names the divergence and the action');
 check(headline.reason.includes('¥640') && headline.reason.includes('¥600'), 'price reason cites both averages');
@@ -77,9 +79,45 @@ eq(headline.source, 'channel_mix', 'channel mix is the last deterministic fallba
 check(headline.conclusion.includes('直客'), 'channel name is localised, not a raw value');
 check(headline.reason.includes('100%'), 'channel reason cites the share');
 
+// A real priority-card selection is authoritative for both conclusion and date window.
+const highRisk = {...channel, severity:'high', confidence:'high'};
+const lowGap = {...gap, severity:'medium'};
+const mixedSignals = [lowGap, highRisk, {...pace, metric:{...pace.metric,value:null}, unknowns:['缺少可比快照']}];
+const mixedOpportunities = buildOpportunities({signals:mixedSignals});
+headline = buildHeadline({signals:mixedSignals,opportunities:mixedOpportunities,dailyMetrics,zh:true});
+eq(headline.source,'channel_mix','a higher-priority risk also leads the headline');
+eq(headline.window,selectPriorityOpportunities(mixedOpportunities,2)[0].window,'headline and first priority card share their window');
+check(headline.gaps.includes('缺少可比快照'),'other signals retain their data-gap messages');
+const laterGap = {...gap,id:'gap_window:2026-11-20:2026-11-25',window:{start:'2026-11-20',end:'2026-11-25'},metric:{...gap.metric,value:6},severity:'high'};
+const gapSignals = [lowGap,laterGap];
+const gapOpportunities = buildOpportunities({signals:gapSignals});
+headline = buildHeadline({signals:gapSignals,opportunities:gapOpportunities,zh:true});
+eq(headline.window,laterGap.window,'same-family windows choose the same higher-priority gap for headline and card');
+eq(buildHeadline({signals:[lowGap,highRisk],opportunities:[],zh:true}).source,'gap_window','no valid opportunity preserves the established signal fallback');
+eq(buildHeadline({signals:[lowGap,highRisk],opportunities:[{...mixedOpportunities[0],basis:[]}],zh:true}).source,'gap_window','unsupported stored cards cannot override the fallback');
+
 // Null metric values cannot support a claim.
 eq(buildHeadline({ signals: [gap.metric.value === null ? gap : { ...gap, metric: { ...gap.metric, value: null } }], zh: true }), null, 'a null metric cannot produce a headline');
 eq(buildHeadline({ signals: [{ ...pace, metric: { ...pace.metric, value: null } }], zh: true }), null, 'a null pace metric cannot produce a headline');
+
+// Missing comparison baselines cannot establish a decline or divergence in saved runs.
+for(const value of [null,0,NaN,Infinity]){
+ const brokenPace={...pace,baseline:{...pace.baseline,value}};
+ const brokenPrice={...price,baseline:{...price.baseline,value}};
+ for(const zh of [true,false]){
+  eq(buildHeadline({signals:[brokenPace],zh}),null,`invalid pace baseline ${value} has no conclusion`);
+  eq(buildHeadline({signals:[brokenPrice,nights],zh}),null,`invalid price baseline ${value} has no conclusion`);
+  eq(buildHeadline({signals:[price,{...nights,baseline:{...nights.baseline,value}}],zh}),null,`invalid nights baseline ${value} has no conclusion`);
+  const fallback=buildHeadline({signals:[brokenPace,brokenPrice,nights,channel],opportunities:[],zh});
+  eq(fallback.source,'channel_mix','valid current channel concentration remains available without historical comparisons');
+  check(!/NaN|Infinity/.test(JSON.stringify(fallback)),'fallback never renders nonfinite numbers');
+ }
+}
+eq(buildHeadline({signals:[price],zh:true}),null,'price without its room-night pair cannot establish divergence');
+eq(buildHeadline({signals:[nights],zh:true}),null,'room-night count cannot be interpreted as a price');
+eq(buildHeadline({signals:[price,{...nights,window:gap.window}],zh:true}),null,'price and volume from different windows cannot be paired');
+eq(buildHeadline({signals:[nights,price],zh:true}).source,'price_volume_divergence','reversed complete price pair remains supported');
+eq(buildHeadline({signals:[gap],zh:true}).source,'gap_window','an open-room gap needs no historical baseline');
 
 // Gaps come from sources and unknowns.
 headline = buildHeadline({ signals: [gap], sources: [

@@ -2,8 +2,8 @@
 const assert=require('node:assert/strict'),fs=require('node:fs'),Module=require('node:module'),path=require('node:path'),ts=require('typescript');
 const source=path.resolve(__dirname,'../src'),window={start:'2026-11-18',end:'2026-11-20'};
 const demoAddress='江苏省苏州市太仓市娄江新城 · 西浦北里（虚构演示地址）',mapPoint='121.130745,31.453539';
-const mapCalls=[],unexpectedRequests=[],scopes=[];
-let address='真实测试地址',sample=false,geocode=mapPoint,mapFailure=false,email='owner@example.invalid',signedIn=true,profileError=false;
+const mapCalls=[],calendarCalls=[],unexpectedRequests=[],scopes=[];
+let address='真实测试地址',sample=false,geocode=mapPoint,mapFailure=false,calendarFailure=false,email='owner@example.invalid',signedIn=true,profileError=false;
 const envKeys=['AMAP_MAPS_API_KEY','STAYCRAFT_SAMPLE_LIVE_AMAP','DEMO_LOGIN_EMAIL','SEARCH_API_KEY'];
 const previousEnv=Object.fromEntries(envKeys.map(key=>[key,process.env[key]])),previousFetch=global.fetch;
 class WorkspaceError extends Error {constructor(code,status){super(code);this.status=status;}}
@@ -25,12 +25,13 @@ const workspace={
  boundedBody:request=>request.arrayBuffer(),WorkspaceError,
  workspaceFailure:error=>Response.json({error:error.message},{status:error.status??503,headers:{'Cache-Control':'no-store'}}),
 };
-const cache=new Map([[path.join(source,'lib/operator-sample.ts'),{operatorSample:()=>sample}]]);
+const cache=new Map([[path.join(source,'lib/operator-sample.ts'),{operatorSample:()=>sample,isDemoWorkspace:mail=>sample||!!process.env.DEMO_LOGIN_EMAIL&&mail===process.env.DEMO_LOGIN_EMAIL}]]);
 function load(file){
  if(cache.has(file))return cache.get(file);
  const mod=new Module(file);
  mod.require=name=>{
   if(name==='@/lib/workspace-access')return workspace;
+  if(name==='@/lib/desktop-external-signals')return {desktopSignalsEnabled:()=>false};
   if(name.startsWith('@/'))return load(path.join(source,name.slice(2))+'.ts');
   if(name.startsWith('.'))return load(path.resolve(path.dirname(file),name)+'.ts');
   throw new Error('Unexpected dependency '+name);
@@ -40,6 +41,13 @@ function load(file){
 }
 const {POST}=load(path.join(source,'app/api/workspace/discovery/route.ts'));
 global.fetch=async(url,options)=>{
+ if(['https://www.namoc.cn/namoc/zhanlan/zl_list.shtml','https://www.zjam.org.cn/Site/Exbition/ExbitionList.aspx?type=1'].includes(String(url))){
+  calendarCalls.push(String(url));assert.equal(options.method,'GET');assert.equal(options.credentials,'omit');assert.equal(options.redirect,'manual');assert.deepEqual(Object.keys(options.headers),['Accept']);
+  if(calendarFailure)return new Response(null,{status:503});
+  const html=String(url).includes('namoc.cn')?`<ul id="zlhglb"><li><h3><a href="/namoc/zhanlan/202611/${'a'.repeat(32)}.shtml" title="隔离北京测试展">测试</a></h3><p>展览时间：2026-11-18至2026-11-20</p><p>展览场地：1号厅</p></li></ul>`
+   :'<table id="dlExbition">'+[['2918','2026/11/1','2026/11/21'],['2917','2026/11/3','2026/11/15']].map(([id,start,end])=>`<tr><td><a href="ExbitionDetail.aspx?etid=${id}&amp;type=1" title="隔离杭州测试展${id}"><h3>测试</h3></a><p>展览时间：${start} 至 ${end}<br>展厅：1号厅<br>展览联系方式：000</p></td></tr>`).join('')+'</table>';
+  return new Response(html.replace(/[^\x00-\x7F]/g,char=>'&#'+char.charCodeAt(0)+';'),{headers:{'Content-Type':'text/html'}});
+ }
  if(String(url)!=='https://mcp.amap.com/mcp?key=isolated-test-key'){unexpectedRequests.push(String(url));throw Error('Unexpected network');}
  const {params:{name,arguments:args}}=JSON.parse(options.body);mapCalls.push({name,args});
  assert.equal(name,'maps_geo','Activity discovery must not request POIs');
@@ -70,8 +78,10 @@ async function discover(overrides={},origin='http://localhost'){
  assert(response.body.events.every(event=>event.verified&&event.distanceKm<2));
  response=await discover({start:'2026-11-22',end:'2026-11-22',coordinates:{latitude:30.233414,longitude:120.152256}});
  assert.deepEqual(response.body.events,[]);
- response=await discover({coordinates:{latitude:39.9,longitude:116.4}});
+ response=await discover({coordinates:{latitude:23.1,longitude:113.3}});
  assert.deepEqual(response.body.events,[]);assert.equal(response.body.eventSource.coverage.kind,'none');
+ response=await discover({coordinates:{latitude:39.925255,longitude:116.408939}});assert.equal(response.status,200);assert.equal(response.body.events.length,1);assert(response.body.events[0].distanceKm<2);assert.match(response.body.eventSource.note,/本次已读取中国美术馆/);
+ calendarFailure=true;response=await discover({start:'2026-11-11',end:'2026-11-14',coordinates:{latitude:30.233414,longitude:120.152256}});assert.equal(response.status,200);assert.equal(response.body.events.length,2);assert.match(response.body.eventSource.note,/保留原采集时间/);assert.equal(response.body.eventSource.observedAt,'2026-11-11T02:19:23.053Z');calendarFailure=false;
  response=await discover({start:'2026-11-21',end:'2026-11-21'});
  assert.equal(response.body.events.length,3);assert(!response.body.events.some(event=>event.end<response.body.start));
  mapFailure=true;response=await discover();
@@ -84,9 +94,9 @@ async function discover(overrides={},origin='http://localhost'){
  assert.equal(response.status,200);assert.equal(response.body.events.length,4);assert(response.body.events.every(event=>Number.isFinite(event.distanceKm)));
  address='江苏省苏州市太仓市其他民宿';response=await discover();
  assert.equal(response.status,503);assert.deepEqual(response.body.events,[]);
- sample=true;address=demoAddress;response=await discover();assert.equal(response.status,200);
+ sample=true;address=demoAddress;const beforeSampleCalendars=calendarCalls.length;response=await discover();assert.equal(response.status,200);response=await discover({coordinates:{latitude:39.925255,longitude:116.408939}});assert.deepEqual(response.body.events,[]);assert.equal(calendarCalls.length,beforeSampleCalendars,'sample mode never refreshes live official calendars');
  sample=false;address='';response=await discover();assert.equal(response.status,422);
- response=await discover({coordinates:{latitude:39.9,longitude:116.4}});assert.equal(response.status,200);assert.deepEqual(response.body.events,[]);
+ response=await discover({coordinates:{latitude:23.1,longitude:113.3}});assert.equal(response.status,200);assert.deepEqual(response.body.events,[]);
  response=await discover({start:'2026-13-01'});assert.equal(response.status,400);
  response=await discover({coordinates:{latitude:91,longitude:0}});assert.equal(response.status,400);
  response=await discover({propertyId:'another-property'});assert.equal(response.status,400);

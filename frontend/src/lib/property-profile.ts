@@ -34,6 +34,13 @@ export function validateProfile(input: unknown): PropertyProfile | null {
   return result;
 }
 
+// An unset optional checkout needs no persisted key and stays compatible with older schemas.
+// Nonempty values are kept, so a schema mismatch fails instead of losing the owner's time.
+export function profileForStorage(profile: PropertyProfile): PropertyProfile {
+  const {checkout,...rest}=profile;
+  return checkout ? {...rest,checkout} : rest;
+}
+
 export type ImportCandidate = { key: keyof PropertyProfile; value: string; source: string };
 const aliases: Record<string, keyof PropertyProfile> = {
   name: "name", propertyname: "name", 民宿名称: "name", 名称: "name",

@@ -4,13 +4,18 @@ const {composePromotionPlan,validPromotionPlan,promotionFinding,promotionTarget,
 const {validPromotion}=load(path.resolve('src/lib/promotion.ts'));
 Object.assign(process.env,{MODEL_BASE_URL:'https://test.invalid',MODEL_API_KEY:'mock-only',MODEL_NAME:'mock'});
 const period={start:'2026-11-10',end:'2026-11-11'},facts=[{id:'property',text:'测试小院'},{id:'location',text:'沙溪古镇'}];
-const json={title:'古镇小住计划',audience:'考虑短途出行的双人客群',angle:'介绍区位与房型',publishTiming:'入住前一周准备内容',factIds:['property','location']};
+const json={title:'古镇小住计划',audience:'考虑短途出行的双人客群',angle:'介绍区位与房型',factIds:['property','location']};
 const respond=value=>async()=>Response.json({choices:[{finish_reason:'stop',message:{content:JSON.stringify(value)}}]});
 const diagnosis={runId:'11111111-1111-4111-8111-111111111111',findingId:'finding-1'};
 const finding={id:'finding-1',conclusion:'两天仍有空房',action:'规划推广',evidenceIds:['e1'],nextAction:{kind:'plan_promotion',target:'promotion',period,evidenceIds:['e1']}};
 const run={period,findings:[finding],evidence:[{id:'e1'}],dailyMetrics:[{date:period.start,available:2},{date:period.end,available:1}]};
 (async()=>{
  const plan=await composePromotionPlan(facts,period,'zh',{model:true,diagnosis,fetcher:respond(json)});assert.equal(plan.engine,'model_v1');assert(validPromotionPlan({...plan,angle:'介绍区位\n和房型'}));
+ assert.equal(plan.publishTiming,'根据目标入住日期安排，发布前核对房态');
+ assert.equal((await composePromotionPlan(facts,period,'en',{model:true,fetcher:respond(json)})).publishTiming,'Plan around the stay dates and check availability before posting');
+ for(const publishTiming of ['建议在2026年10月中旬通过微信公众号发布推文，提前一个月吸引周末短途客。','入住前一周准备内容','Publish on October 15, 2026','根据目标入住日期安排，发布前核对房态']){
+  await assert.rejects(()=>composePromotionPlan(facts,period,'zh',{model:true,fetcher:respond({...json,publishTiming})}),/promotion_plan_unavailable/,'model-authored timing must not be silently replaced and labeled successful');
+ }
  for(const bad of [{...json,factIds:['invented']},{...json,extra:'bad'},{...json,title:'每晚99元'}])await assert.rejects(()=>composePromotionPlan(facts,period,'zh',{model:true,fetcher:respond(bad)}));
  const fullBrief={...period,language:'zh',channel:'wechat',goal:'rooms',sourceIds:[]};
  const summary=await composePromotionPlan(facts,fullBrief,'zh',{model:false});assert.equal(summary.engine,'rules_v1');assert(validPromotionPlan(summary));
@@ -35,5 +40,5 @@ const run={period,findings:[finding],evidence:[{id:'e1'}],dailyMetrics:[{date:pe
  assert.throws(()=>promotionFinding(run,'finding-1','2026-11-12'));
  const draft={id:diagnosis.runId,brief:{language:'zh',channel:'wechat',goal:'rooms',...period,sourceIds:[]},content:'古镇小住计划',engine:'model_v1',createdAt:new Date().toISOString(),basis:[]};
  assert(validPromotion({sources:[],drafts:[draft]}));assert(validPromotion({sources:[],drafts:[{...draft,plan}]}));assert(!validPromotion({sources:[],drafts:[{...draft,plan:{...plan,end:'2026-11-12'}}]}));
- console.log('PASS promotion plan: mock model output validation, fact references, multiline edits, explicit summary, diagnosis date/evidence/vacancy guards, legacy and plan draft compatibility. No live calls.');
+ console.log('PASS promotion plan: model output validation, code-owned publishing guidance, rejection of fabricated/past model schedules, fact references, multiline edits, explicit summary, diagnosis date/evidence/vacancy guards, legacy and plan draft compatibility. No live calls.');
 })().catch(e=>{console.error(e);process.exitCode=1});

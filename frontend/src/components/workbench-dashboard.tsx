@@ -24,6 +24,13 @@ import type {DecisionAgentResponse,DecisionAgentRun} from "@/lib/decision-agent-
 type CachedRun={run?:DecisionAgentRun;time:number;stale?:boolean;pending?:Promise<DecisionAgentResponse>};
 const diagnoses=new Map<string,CachedRun>();
 const cacheKey=(scope:string,zh:boolean)=>`${scope}:${zh?'zh':'en'}`;
+const diagnosisChanges=['staycraft-stays-changed','staycraft-activity-changed','staycraft-inventory-changed','staycraft-profile-changed','staycraft-import-changed','staycraft-market-synced'];
+// Cached diagnoses outlive the homepage. Keep their invalidation listeners alive
+// too, so changes on the market, property or import pages cannot reuse old data.
+if(typeof window!=='undefined'){
+ const invalidate=()=>{for(const entry of diagnoses.values()){entry.stale=true;entry.time=0;}};
+ diagnosisChanges.forEach(name=>window.addEventListener(name,invalidate));
+}
 function requestDiagnosis(scope:string,zh:boolean,force:boolean):Promise<DecisionAgentResponse>{
  const key=cacheKey(scope,zh),current=diagnoses.get(key);
  if(current?.pending){
@@ -57,7 +64,7 @@ export function WorkbenchDashboard({scope,zh,displayName}:{scope:string;zh:boole
  const t=(en:string,cn:string)=>zh?cn:en;
  const refresh=useCallback(async(force=false)=>{setBusy(true);setError('');try{const result=await requestDiagnosis(scope,zh,force);setRun(result.run);setDataChanged(false);}catch(e){setError(e instanceof Error?e.message:'agent_unavailable')}finally{setBusy(false)}},[scope,zh]);
  useEffect(()=>{let active=true;async function open(){setBusy(true);setError('');setRun(null);try{const response=await requestDiagnosis(scope,zh,false);if(active){setRun(response.run);setDataChanged(false)}}catch(e){if(active)setError(e instanceof Error?e.message:'agent_unavailable')}finally{if(active)setBusy(false)}}void open();return()=>{active=false}},[scope,zh]);
- useEffect(()=>{const changed=()=>{const entry=diagnoses.get(cacheKey(scope,zh));if(entry){entry.stale=true;entry.time=0;}setDataChanged(true);retryMetrics();void refresh(false)};const events=['staycraft-stays-changed','staycraft-activity-changed','staycraft-inventory-changed','staycraft-profile-changed','staycraft-import-changed','staycraft-market-synced'];events.forEach(name=>window.addEventListener(name,changed));return()=>events.forEach(name=>window.removeEventListener(name,changed));},[scope,zh,retryMetrics,refresh]);
+ useEffect(()=>{const changed=()=>{setDataChanged(true);retryMetrics();void refresh(false)};diagnosisChanges.forEach(name=>window.addEventListener(name,changed));return()=>diagnosisChanges.forEach(name=>window.removeEventListener(name,changed));},[retryMetrics,refresh]);
  const operating=run?.metrics||(metrics?{bookedPct:metrics.booked_pct,bookedRoomNights:metrics.booked_room_nights,capacityRoomNights:metrics.capacity_room_nights,availableRoomNights:metrics.available_room_nights,amountCents:metrics.amount_cents??null,activeRooms:metrics.active_rooms}:null);
  useCollectionHint(desktop&&!busy&&!error&&run?.market&&run.market.count===0&&!run.market.snapshot?`${run.market.start}/${run.market.end}`:null);
  const period=run?.period||(metrics?{start:metrics.period_start,end:metrics.period_end}:null);

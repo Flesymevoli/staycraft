@@ -47,7 +47,7 @@ function describe(basis:DetectorSignal[],attached:Attachments,zh:boolean):{title
  const missing=zh?primary.unknowns[0]??'缺少必要数据':'required data is missing';
  const coverage=coverageText(basis,attached,zh);
  if(primary.kind==='booking_pace'){
-  if(value===null)return {title:localized(`未来 ${days} 天预订进度待核对`,`Review booking pace for the next ${days} days`,zh),claim:localized(`预订进度暂无法判断：${missing}。补齐房量和上周同期预订记录后，即可比较这段入住日期的预订进展。`,`Booking pace cannot be judged yet: ${missing}. Add capacity and a same-lead-time snapshot before deciding whether pace is behind.`,zh),coverage};
+  if(value===null||!hasSupportedOpportunityBasis(basis))return {title:localized(`未来 ${days} 天预订进度待核对`,`Review booking pace for the next ${days} days`,zh),claim:localized(`预订进度暂无法判断：${missing}。补齐房量和上周同期预订记录后，即可比较这段入住日期的预订进展。`,`Booking pace cannot be judged yet: ${missing}. Add capacity and a same-lead-time snapshot before deciding whether pace is behind.`,zh),coverage};
   return {title:localized(`未来 ${days} 天预订偏慢，优先推广空房日期`,`Bookings for the next ${days} days trail the prior snapshot; promote open dates`,zh),claim:localized(`${window.start}—${window.end} 已订 ${pctText(value)}，上周同星期、同提前量为 ${baseline===null?'未知':pctText(baseline)}（可比 ${samples} 天）。建议围绕未订满的日期推出短住方案，并完善渠道展示。`,`${window.start}—${window.end} is ${pctText(value)} booked, compared with ${baseline===null?'an unavailable prior rate':pctText(baseline)} at the same lead time a week earlier (${samples} comparable days). Prepare a short-stay offer and refresh listings for the open dates.`,zh),coverage};
  }
  if(primary.kind==='gap_window'){
@@ -65,11 +65,11 @@ function describe(basis:DetectorSignal[],attached:Attachments,zh:boolean):{title
   const shift=baseline===null?null:value-baseline;
   return {title:localized(`${channelText} 占比 ${pctText(value)}，核对渠道结构`,`${channelText} accounts for ${pctText(value)}; review channel mix`,zh),claim:localized(`${channelText} 占本窗口已知来源订单 ${pctText(value)}${baseline===null?'':`（前窗口 ${pctText(baseline)}）`}${shift===null?'':`，变化 ${signed(shift)} 个百分点`}。建议先核对各渠道订单是否齐全，再比较曝光、房价与退改条件。`,`${channelText} takes ${pctText(value)} of orders with a known source${baseline===null?'':` (prior window ${pctText(baseline)})`}${shift===null?'':`, a change of ${signed(shift)} percentage points`}. Check that each channel is fully represented, then compare listing exposure, rates and refund terms.`,zh),coverage};
  }
- const price=basis.find(signal=>signal.id.includes('average_price'))??primary,nights=basis.find(signal=>signal.id.includes('room_nights'))??price;
- if(price.metric.value===null||nights.metric.value===null||price.baseline.value===null||nights.baseline.value===null)return {title:localized('量价关系暂不可比','Price and volume cannot be compared yet',zh),claim:localized(`量价关系暂无法判断：${missing}。先补齐已订间夜与订单金额。`,`Price and volume cannot be judged: ${missing}. Add booked room nights and order amounts.`,zh),coverage};
+ const price=basis.find(signal=>signal.metric.name==='average_price')??primary,nights=basis.find(signal=>signal.metric.name==='room_nights')??price;
+ if(price.metric.value===null||nights.metric.value===null||price.baseline.value===null||nights.baseline.value===null||!hasSupportedOpportunityBasis(basis))return {title:localized('量价关系暂不可比','Price and volume cannot be compared yet',zh),claim:localized(`量价关系暂无法判断：${missing}。先补齐已订间夜与订单金额。`,`Price and volume cannot be judged: ${missing}. Add booked room nights and order amounts.`,zh),coverage};
  const priceChange=(price.metric.value-price.baseline.value)/price.baseline.value*100,nightChange=(nights.metric.value-nights.baseline.value)/nights.baseline.value*100;
  const note=priceChange>0?localized('建议核对高价房型的成交占比，再比较同日期同行报价，选择需要调整的房型和日期。','Review the share of higher-priced room types and comparable quotes for the same dates before choosing what to adjust.',zh):localized('建议核对新增间夜来自哪些房型和渠道，再评估优惠是否值得延续。','Identify which room types and channels contributed the additional nights before extending the offer.',zh);
- return {title:localized('均价与间夜走势不同，核对房型和渠道贡献','Rates and room nights moved apart; review room and channel mix',zh),claim:localized(`均价 ${moneyText(price.baseline.value)}→${moneyText(price.metric.value)} 元（${signed(priceChange)}%），间夜 ${nights.baseline.value}→${nights.metric.value}（${signed(nightChange)}%）。${note}`,`Average price moved ${moneyText(price.baseline.value)}→${moneyText(price.metric.value)} CNY (${signed(priceChange)}%) while room nights moved ${nights.baseline.value}→${nights.metric.value} (${signed(nightChange)}%). ${note}`,zh),coverage};
+ return {title:localized('预订均价与间夜走势不同，核对房型和渠道贡献','Booked rates and room nights moved apart; review room and channel mix',zh),claim:localized(`平均预订房价 ${moneyText(price.baseline.value)}→${moneyText(price.metric.value)} 元（${signed(priceChange)}%），间夜 ${nights.baseline.value}→${nights.metric.value}（${signed(nightChange)}%）。${note}`,`Average booked rate moved ${moneyText(price.baseline.value)}→${moneyText(price.metric.value)} CNY (${signed(priceChange)}%) while room nights moved ${nights.baseline.value}→${nights.metric.value} (${signed(nightChange)}%). ${note}`,zh),coverage};
 }
 
 function chooseActions(missing:boolean,attached:Attachments,kind:DetectorSignal['kind']):OpportunityAction[]{
@@ -99,8 +99,40 @@ export function buildOpportunities(input:OpportunityInput):Opportunity[]{
  const groups=new Map<string,DetectorSignal[]>();
  for(const signal of signals){const key=`${signal.kind}|${signal.window.start}|${signal.window.end}`;const group=groups.get(key);if(group)group.push(signal);else groups.set(key,[signal]);}
  const opportunities=[...groups.values()].map(basis=>toOpportunity(basis,input.bundle,input.now));
- opportunities.sort((left,right)=>RANK[maxLevel(right.basis)]-RANK[maxLevel(left.basis)]||left.window.start.localeCompare(right.window.start)||left.id.localeCompare(right.id));
- return opportunities.slice(0,3);
+ return selectPriorityOpportunities(opportunities);
+}
+
+// Validate the evidence a claim requires, including older saved runs.
+// Channel concentration and open-room gaps do not require a historical baseline.
+export function hasSupportedOpportunityBasis(basis:readonly DetectorSignal[]):boolean{
+ const primary=basis[0];
+ if(!primary||basis.some(signal=>signal.kind!==primary.kind||signal.window.start!==primary.window.start||signal.window.end!==primary.window.end||
+  signal.metric.value===null||!Number.isFinite(signal.metric.value)||
+  (signal.baseline.value!==null&&!Number.isFinite(signal.baseline.value))))return false;
+ if(primary.kind==='booking_pace')return basis.every(signal=>signal.baseline.value!==null&&signal.baseline.value>0);
+ if(primary.kind==='price_volume_divergence'){
+  const price=basis.find(signal=>signal.metric.name==='average_price'),nights=basis.find(signal=>signal.metric.name==='room_nights');
+  return Boolean(price&&nights&&[price,nights].every(signal=>signal.metric.value!==null&&signal.metric.value>0&&signal.baseline.value!==null&&signal.baseline.value>0));
+ }
+ return true;
+}
+
+// Apply the same selection to new runs and stored runs shown on the overview.
+// Missing-data signals stay in the run's evidence; they are not actionable cards.
+export function selectPriorityOpportunities(items:readonly Opportunity[],limit=3):Opportunity[]{
+ const count=Number.isFinite(limit)?Math.max(0,Math.trunc(limit)):3;
+ if(count===0)return [];
+ const ranked=items.filter(item=>hasSupportedOpportunityBasis(item.basis))
+  .sort((left,right)=>RANK[maxLevel(right.basis)]-RANK[maxLevel(left.basis)]||left.window.start.localeCompare(right.window.start)||left.id.localeCompare(right.id));
+ const families=new Set<DetectorSignal['kind']>();
+ const unique=ranked.filter(item=>{const family=item.basis[0].kind;if(families.has(family))return false;families.add(family);return true;});
+ const selected=new Set<Opportunity>();
+ if(count>=2){
+  for(const kind of ['risk','opportunity'] as const){const first=unique.find(item=>item.kind===kind);if(first)selected.add(first);}
+ }
+ for(const item of unique){if(selected.size>=count)break;selected.add(item);}
+ // Return the original objects so saved-plan and promotion context remain intact.
+ return unique.filter(item=>selected.has(item));
 }
 
 export function renderOpportunityText(opportunity:Opportunity,zh:boolean):RenderedOpportunity{

@@ -3,6 +3,7 @@
 import type {DetectorSignal,Opportunity} from './types';
 import type {SourceRef} from '../signals/types';
 import {channelLabel} from './labels';
+import {hasSupportedOpportunityBasis,selectPriorityOpportunities} from './opportunity';
 
 export type Headline = {
   conclusion: string;
@@ -40,9 +41,13 @@ function collectGaps(sources: SourceRef[], signals: DetectorSignal[], zh: boolea
 }
 
 export function buildHeadline(input: { signals?: DetectorSignal[]; opportunities?: Opportunity[]; sources?: SourceRef[]; dailyMetrics?: Array<{date:string;available:number|null}>; zh: boolean }): Headline | null {
-  const signals = input.signals || [], zh = input.zh;
-  const first = (kind: DetectorSignal['kind']) => signals.find(signal => signal.kind === kind);
-  const gaps = collectGaps(input.sources || [], signals, zh);
+  const allSignals = input.signals || [], zh = input.zh;
+  const priority = selectPriorityOpportunities(input.opportunities || [], 1)[0];
+  const signals = priority?.basis ?? allSignals;
+  const first = (kind: DetectorSignal['kind'], metricName?: string) => signals.find(signal => signal.kind === kind &&
+    (!metricName || signal.metric.name === metricName) && hasSupportedOpportunityBasis(signals.filter(other =>
+      other.kind === kind && other.window.start === signal.window.start && other.window.end === signal.window.end)));
+  const gaps = collectGaps(input.sources || [], allSignals, zh);
 
   const gap = first('gap_window');
   if (gap && gap.metric.value !== null) {
@@ -63,7 +68,7 @@ export function buildHeadline(input: { signals?: DetectorSignal[]; opportunities
     };
   }
 
-  const price = first('price_volume_divergence');
+  const price = first('price_volume_divergence','average_price');
   if (price && price.metric.value !== null) {
     const baseline = price.baseline.value;
     const round = (value: number) => Math.round(value);

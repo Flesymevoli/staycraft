@@ -1,12 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import {useId, useState, type ReactNode} from "react";
+import {useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode} from "react";
 import {CalendarDays, FileText, Zap} from "lucide-react";
 import type {DecisionAgentRun} from "@/lib/decision-agent-types";
 import type {Opportunity} from "@/lib/decisions/types";
 import {buildHeadline} from "@/lib/decisions/headline";
-import {renderOpportunityText} from "@/lib/decisions/opportunity";
+import {renderOpportunityText, selectPriorityOpportunities} from "@/lib/decisions/opportunity";
 import {metricLabel, metricUnit} from "@/lib/decisions/labels";
 import type {BookingMetrics} from "./booking-metrics";
 import {useRevenueOverview} from "./revenue-overview";
@@ -40,12 +40,43 @@ type ChartDay = Pick<BookingMetrics["daily"][number], "date" | "booked" | "booke
 
 function OccupancyChart({daily, zh}: {daily: ChartDay[]; zh: boolean}) {
   const gradientId = useId();
-  const [selected, setSelected] = useState<string | null>(null);
+  const tooltipId = useId();
+  const figureRef = useRef<HTMLElement>(null);
+  const tooltipRef = useRef<HTMLElement>(null);
+  const [selected, setSelected] = useState<{date: string; source: "pointer" | "focus" | "touch"} | null>(null);
+  const highlightedIndex = daily.findIndex(day => day.date === selected?.date && day.booked_pct !== null);
+  const highlighted = daily[highlightedIndex];
+  const point = (index: number, value: number) => [30 + index * 325 / Math.max(1, daily.length - 1), 120 - value * 0.9];
+  const [tooltipX, tooltipY] = highlighted ? point(highlightedIndex, highlighted.booked_pct!) : [0, 0];
+  useLayoutEffect(() => {
+    const figure = figureRef.current, tooltip = tooltipRef.current;
+    if (!highlighted || !figure || !tooltip) return;
+    const positionTooltip = () => {
+      const bounds = figure.getBoundingClientRect(), box = tooltip.getBoundingClientRect();
+      const x = tooltipX / 380 * bounds.width, y = tooltipY / 155 * bounds.height;
+      const above = y - box.height - 12;
+      // Anchor the callout to the selected observation, then keep it inside the chart.
+      tooltip.style.left = `${Math.max(4, Math.min(x - box.width / 2, bounds.width - box.width - 4))}px`;
+      tooltip.style.top = `${Math.max(4, Math.min(above >= 4 ? above : y + 12, bounds.height - box.height - 4))}px`;
+    };
+    positionTooltip();
+    const resize = new ResizeObserver(positionTooltip);
+    resize.observe(figure);
+    resize.observe(tooltip);
+    return () => resize.disconnect();
+  }, [highlighted, tooltipX, tooltipY, zh]);
+  useEffect(() => {
+    if (!selected) return;
+    const dismiss = (event: KeyboardEvent) => {if (event.key === "Escape") setSelected(null);};
+    const dismissOutside = (event: PointerEvent) => {
+      if (selected.source === "touch" && event.target instanceof Node && !figureRef.current?.contains(event.target)) setSelected(null);
+    };
+    document.addEventListener("keydown", dismiss);
+    document.addEventListener("pointerdown", dismissOutside);
+    return () => {document.removeEventListener("keydown", dismiss); document.removeEventListener("pointerdown", dismissOutside);};
+  }, [selected]);
   const usable = daily.filter(day => day.booked_pct !== null);
   if (!usable.length) return <div className="chart-empty">{zh ? "补齐房量与订单后，可查看每日预订分布。" : "Add inventory and bookings to see the daily booking pattern."}</div>;
-  const highlighted = daily.find(day => day.date === selected && day.booked_pct !== null)
-    ?? usable.reduce((peak, day) => (day.booked_pct ?? 0) > (peak.booked_pct ?? 0) ? day : peak);
-  const point = (index: number, value: number) => [30 + index * 325 / Math.max(1, daily.length - 1), 120 - value * 0.9];
   // Keep missing dates as gaps instead of drawing an invented observation.
   const segments: number[][][] = [];
   daily.forEach((day, index) => {
@@ -53,8 +84,10 @@ function OccupancyChart({daily, zh}: {daily: ChartDay[]; zh: boolean}) {
     if (index === 0 || daily[index - 1].booked_pct === null) segments.push([]);
     segments[segments.length - 1].push(point(index, day.booked_pct));
   });
-  return <figure className="hero-chart">
-    <svg viewBox="0 0 380 155" role="img" aria-label={zh ? "每日预订占用率，选择圆点查看明细" : "Daily booked occupancy. Select a point for details."}>
+  return <figure className="hero-chart" ref={figureRef} onPointerDown={event => {
+    if (event.pointerType === "touch" && !(event.target as Element).closest(".hero-chart-point")) setSelected(null);
+  }}>
+    <svg viewBox="0 0 380 155" role="group" aria-label={zh ? "每日预订占用率，悬停或选择圆点查看明细" : "Daily booked occupancy. Hover or select a point for details."}>
       <defs><linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#6554e8" stopOpacity="0.26"/><stop offset="100%" stopColor="#6554e8" stopOpacity="0"/></linearGradient></defs>
       {[30, 75, 120].map(y => <line key={y} x1="20" y1={y} x2="360" y2={y} stroke="#eceaf5" strokeDasharray={y === 120 ? undefined : "3 4"}/>)}
       {segments.map((points, index) => <g key={index}>
@@ -65,14 +98,24 @@ function OccupancyChart({daily, zh}: {daily: ChartDay[]; zh: boolean}) {
         const [x, y] = point(index, day.booked_pct ?? 0);
         const weekend = [0, 6].includes(new Date(`${day.date}T12:00:00Z`).getUTCDay());
         return <g key={day.date}>
-          {day.booked_pct !== null && <circle cx={x} cy={y} r={weekend ? 5 : 3.5} fill={weekend ? "#ffdc32" : "#6554e8"} stroke="#6554e8" strokeWidth={weekend ? 2 : 0}
-            tabIndex={0} role="button" aria-label={`${day.date}: ${day.booked_pct}%`} onFocus={() => setSelected(day.date)} onMouseEnter={() => setSelected(day.date)} onClick={() => setSelected(day.date)}
-            onKeyDown={event => {if (event.key === "Enter" || event.key === " ") {event.preventDefault(); setSelected(day.date);}}}/>} 
+          {day.booked_pct !== null && <>
+            <circle aria-hidden="true" cx={x} cy={y} r={weekend ? 5 : 3.5} fill={weekend ? "#ffdc32" : "#6554e8"} stroke="#6554e8" strokeWidth={weekend ? 2 : 0}/>
+            <circle className="hero-chart-point" data-date={day.date} cx={x} cy={y} r="12" fill="transparent"
+              tabIndex={0} role="button" aria-label={`${day.date}: ${day.booked_pct}%, ${zh ? `已订 ${day.booked} / 可售房量 ${day.capacity ?? "—"}` : `${day.booked} booked / ${day.capacity ?? "—"} capacity`}`}
+              aria-describedby={highlighted?.date === day.date ? tooltipId : undefined}
+              onPointerEnter={event => {if (event.pointerType !== "touch") setSelected({date: day.date, source: "pointer"});}}
+              onPointerLeave={event => {if (event.pointerType !== "touch") setSelected(current => current?.source === "pointer" ? null : current);}}
+              onPointerDown={event => {if (event.pointerType === "touch") setSelected(current => current?.date === day.date && current.source === "touch" ? null : {date: day.date, source: "touch"});}}
+              onFocus={event => {if (event.currentTarget.matches(":focus-visible")) setSelected({date: day.date, source: "focus"});}}
+              onBlur={() => setSelected(current => current?.source === "focus" ? null : current)}
+              onClick={event => {if (event.detail === 0) setSelected({date: day.date, source: "focus"});}}
+              onKeyDown={event => {if (event.key === "Enter" || event.key === " ") {event.preventDefault(); setSelected({date: day.date, source: "focus"});}}}/>
+          </>}
           {(index % 2 === 0 || index === daily.length - 1) && <text x={x} y="145" textAnchor="middle" fontSize="10" fill="#73737f">{compactDate(day.date)}</text>}
         </g>;
       })}
     </svg>
-    <figcaption aria-live="polite"><strong>{compactDate(highlighted.date)} · {highlighted.booked_pct}%</strong><span>{zh ? `已订 ${highlighted.booked} / 可售房量 ${highlighted.capacity ?? "—"}` : `${highlighted.booked} booked / ${highlighted.capacity ?? "—"} capacity`}</span></figcaption>
+    {highlighted && <figcaption ref={tooltipRef} id={tooltipId} role="tooltip"><strong>{compactDate(highlighted.date)} · {highlighted.booked_pct}%</strong><span>{zh ? `已订 ${highlighted.booked} / 可售房量 ${highlighted.capacity ?? "—"}` : `${highlighted.booked} booked / ${highlighted.capacity ?? "—"} capacity`}</span></figcaption>}
   </figure>;
 }
 
@@ -111,7 +154,9 @@ export function GeminiWorkbenchHome({scope, run, metrics, zh, busy, error, onRet
   const booked = metrics?.booked_room_nights ?? run?.metrics.bookedRoomNights;
   const capacity = metrics?.capacity_room_nights ?? run?.metrics.capacityRoomNights;
   const roomTypes = overview.revenue?.breakdowns.roomTypes.filter(type => type.completed.roomNights > 0) ?? [];
-  const opportunities = run?.opportunities ?? [];
+  const opportunities = selectPriorityOpportunities(run?.opportunities ?? []);
+  const featuredOpportunities = selectPriorityOpportunities(opportunities, 2);
+  const remainingOpportunities = opportunities.filter(item => !featuredOpportunities.some(featured => featured.id === item.id));
   const sources = run?.signalSources ?? [];
   const internalEvidence = run?.evidence.filter(evidence => ["metrics", "inventory", "bookings", "revenue"].includes(evidence.kind)) ?? [];
   const sourceNames = {
@@ -158,8 +203,8 @@ export function GeminiWorkbenchHome({scope, run, metrics, zh, busy, error, onRet
           </div>}
         </div>
       </article>
-      {opportunities.length > 0 ? <><div className="opp-grid">{opportunities.slice(0, 2).map(opportunity => <OpportunityTile key={opportunity.id} opportunity={opportunity} runId={run!.id} zh={zh} onSavePlan={onSavePlan} onReport={onReport}/>)}</div>
-        {opportunities.length > 2 && <details className="more-opportunities"><summary>{zh ? `查看其余 ${opportunities.length - 2} 项机会与风险` : `View ${opportunities.length - 2} more opportunities & risks`}</summary><div className="opp-grid">{opportunities.slice(2).map(opportunity => <OpportunityTile key={opportunity.id} opportunity={opportunity} runId={run!.id} zh={zh} onSavePlan={onSavePlan} onReport={onReport}/>)}</div></details>}</>
+      {opportunities.length > 0 ? <><div className="opp-grid">{featuredOpportunities.map(opportunity => <OpportunityTile key={opportunity.id} opportunity={opportunity} runId={run!.id} zh={zh} onSavePlan={onSavePlan} onReport={onReport}/>)}</div>
+        {remainingOpportunities.length > 0 && <details className="more-opportunities"><summary>{zh ? `查看其余 ${remainingOpportunities.length} 项机会与风险` : `View ${remainingOpportunities.length} more opportunities & risks`}</summary><div className="opp-grid">{remainingOpportunities.map(opportunity => <OpportunityTile key={opportunity.id} opportunity={opportunity} runId={run!.id} zh={zh} onSavePlan={onSavePlan} onReport={onReport}/>)}</div></details>}</>
         : <article className="bento-card"><h3 className="card-title">{zh ? "优先经营机会" : "Priority Opportunities"}</h3><p className="empty-copy">{busy ? (zh ? "正在结合订单与周边信号识别机会…" : "Reviewing bookings and nearby signals…") : (zh ? "当前数据尚未形成可执行机会，可补充订单与市场报价后重新分析。" : "No actionable opportunities yet. Add bookings and market quotes, then review again.")}</p></article>}
       <article className="bento-card"><div className="card-header"><div><h3 className="card-title">{zh ? "实时检测信号与数据来源" : "Detector Signals & Evidence Sources"}</h3><p className="card-subtitle">{zh ? "结合本店订单、可售房量与已获取的周边信号，查看每项判断的依据" : "Trace each judgment to your bookings, sellable inventory and available local signals"}</p></div></div>
         <div className="clean-list">{sources.map((source, index) => <div className="clean-row" key={`${source.id}-${index}`}><div className="row-left"><span className="row-badge-icon">{source.authority === "internal" ? "DATA" : source.id === "weather" ? "WTH" : source.id === "events" ? "EVT" : "OTA"}</span><div className="row-meta"><strong>{sourceNames[source.id]}</strong><small>{source.coverage.from} — {source.coverage.to}</small></div></div><div className="row-right"><span className={`pill ${source.coverage.kind === "complete" ? "pill-emerald" : "pill-amber"}`}>{coverageNames[source.coverage.kind]}</span></div></div>)}</div>

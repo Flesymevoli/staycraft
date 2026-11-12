@@ -6,7 +6,7 @@ export function sampleCookieOptions(){return operatorSample()?{name:"staycraft-o
 
 // Live AI in the loopback sample is an explicit operator opt-in.
 export function operatorModelEnabled(){
- return process.env.MODEL_ENABLED==='1'&&process.env.FORMAL_MODEL_ENABLED==='1'&&(!operatorSample()||process.env.STAYCRAFT_SAMPLE_LIVE_MODEL==='1');
+ return (process.env.STAYCRAFT_DESKTOP_RUNTIME==='1'&&process.env.MODEL_ENABLED!=='0'&&process.env.FORMAL_MODEL_ENABLED!=='0'&&process.env.STAYCRAFT_HOSTED!=='1'&&!operatorSample())||process.env.MODEL_ENABLED==='1'&&process.env.FORMAL_MODEL_ENABLED==='1'&&(!operatorSample()||process.env.STAYCRAFT_SAMPLE_LIVE_MODEL==='1');
 }
 export function isDemoWorkspace(email?:string){
  const configured=process.env.DEMO_LOGIN_EMAIL?.trim().toLowerCase();

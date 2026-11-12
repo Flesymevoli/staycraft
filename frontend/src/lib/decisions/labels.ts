@@ -6,7 +6,7 @@ export const METRIC_LABELS: Record<string, [string, string]> = {
   open_room_nights: ['可售间夜', 'Available room-nights'],
   cancellation_rate: ['取消率', 'Cancellation rate'],
   top_channel_share: ['单一渠道占比', 'Top channel share'],
-  average_price: ['平均成交价', 'Average price'],
+  average_price: ['平均预订房价', 'Average booked rate'],
   room_nights: ['间夜', 'Room nights'],
   booking_pace: ['预订进度', 'Booking pace'],
 };

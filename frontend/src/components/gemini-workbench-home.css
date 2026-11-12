@@ -601,10 +601,12 @@
 .gemini-workbench-home.gemini-workbench-home .workspace-assistant-composer form button {
   font-size:12px; flex-shrink:0; border:0; border-radius:999px; padding:7px 10px; color:white; background:var(--violet);
 }
-.gemini-workbench-home .hero-chart { position: relative; min-width: 0; padding-top: 46px; }
+.gemini-workbench-home .hero-chart { position: relative; min-width: 0; margin: 0; }
 .gemini-workbench-home .hero-chart svg { display: block; width: 100%; overflow: visible; }
-.gemini-workbench-home .hero-chart circle { cursor: pointer; }
-.gemini-workbench-home .hero-chart figcaption { position: absolute; right: 6px; top: 0; display: grid; border-radius: 8px; padding: 6px 10px; font-size: 10px; background: #18181b; color: white; }
+.gemini-workbench-home .hero-chart-point { cursor: pointer; }
+.gemini-workbench-home .hero-chart-point:focus { outline: none; }
+.gemini-workbench-home .hero-chart-point:focus-visible { outline: none; stroke: #6554e8; stroke-width: 1.5; fill: #6554e8; fill-opacity: .1; }
+.gemini-workbench-home .hero-chart figcaption { position: absolute; left: 0; top: 0; z-index: 1; display: grid; max-width: calc(100% - 8px); border-radius: 8px; padding: 6px 10px; font-size: 10px; line-height: 1.5; background: #18181b; color: white; pointer-events: none; }
 .gemini-workbench-home .hero-chart figcaption span { color: #ffdc32; }
 .gemini-workbench-home :is(.chart-empty, .empty-copy) { color: var(--muted); font-size: 13px; line-height: 1.8; }
 .gemini-workbench-home .chart-empty { padding: 36px 18px; background: #faf9fc; border-radius: 12px; }

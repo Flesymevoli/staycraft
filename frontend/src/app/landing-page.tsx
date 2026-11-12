@@ -88,7 +88,7 @@ export function LandingPage() {
   return <div ref={root} className="landing" lang={zh ? "zh-CN" : "en"}>
     <a className="landing-skip" href="#landing-main">{zh ? "跳至主要内容" : "Skip to content"}</a>
     <header className="landing-header">
-      <Image src="/brand/staycraft-violet-yellow.png" alt="StayCraft" width={2172} height={724} priority/>
+      <Image src="/brand/StayCraft-main-HD.png" alt="StayCraft" width={4102} height={1058} priority unoptimized/>
       <div><button className="landing-language" type="button" aria-label={zh ? "Switch to English" : "切换到中文"} onClick={() => setLanguage(zh ? "en" : "zh")}>{zh ? "EN" : "中文"}</button><Link href="/login">{login}</Link></div>
     </header>
     <main id="landing-main" tabIndex={-1}>

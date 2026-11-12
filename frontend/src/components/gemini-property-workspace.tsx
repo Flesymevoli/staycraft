@@ -33,7 +33,7 @@ export function GeminiPropertyWorkspace({scope, zh, readOnly, account}: {
   const [undo, setUndo] = useState<{roomId: string; inventory: PropertyInventory} | null>(null);
   useEffect(() => {
     const sync = () => {
-      if (window.location.hash === "#room-types") setDrawer("types");
+      if (window.location.hash === "#room-types" || /^#room-type-[a-f0-9-]{36}$/i.test(window.location.hash)) setDrawer("types");
       if (window.location.hash === "#property-profile") setDrawer("profile");
     };
     const timer = setTimeout(sync, 0);
@@ -82,7 +82,7 @@ export function GeminiPropertyWorkspace({scope, zh, readOnly, account}: {
   function closeDrawer() {
     setDrawer(null);
     setProfileDirty(false);
-    if (["#room-types", "#property-profile"].includes(window.location.hash)) window.history.replaceState(null, "", window.location.pathname + window.location.search);
+    if (["#room-types", "#property-profile"].includes(window.location.hash) || /^#room-type-[a-f0-9-]{36}$/i.test(window.location.hash)) window.history.replaceState(null, "", window.location.pathname + window.location.search);
   }
   return <div className="gemini-property-workspace">
     <DesktopPageToolbar><div className="gemini-property-tools"><button type="button" onClick={() => setDrawer("types")}><Settings2 size={15}/>{t("Room types & rates", "房型与挂牌价")}</button><button type="button" onClick={() => setDrawer("account")}><UserRound size={15}/>{t("Account settings", "账户设置")}</button></div></DesktopPageToolbar>

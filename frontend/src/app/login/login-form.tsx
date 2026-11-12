@@ -44,7 +44,7 @@ export function LoginForm({ configured,prototypeAvailable=true,confirmationFaile
   return <div className="auth-page" lang={language==='zh'?'zh-CN':'en'}>
     <a className="auth-skip" href="#auth-main">{language==='zh'?'跳至登录表单':'Skip to sign-in form'}</a>
     <header className="auth-header">
-      <Link href="/" className="auth-brand" aria-label={language==='zh'?'StayCraft 首页':'StayCraft home'}><Image src="/brand/staycraft-violet-yellow.png" alt="StayCraft" width={2172} height={724} priority /></Link>
+      <Link href="/" className="auth-brand" aria-label={language==='zh'?'StayCraft 首页':'StayCraft home'}><Image src="/brand/StayCraft-main-HD.png" alt="StayCraft" width={4102} height={1058} priority unoptimized /></Link>
       <button type="button" className="auth-language" aria-label={language==='zh'?'切换为英文':'Switch to Chinese'} onClick={() => setLanguage(language === "en" ? "zh" : "en")}>{language === "en" ? "中文" : "EN"}</button>
     </header>
     <aside className="auth-intro"><span>STAYCRAFT / DECISION WORKBENCH</span><h2>{language==='zh'?'每一个经营判断，\n都有迹可循。':'Every decision,\nbacked by evidence.'}</h2><p>{language==='zh'?'把订单、房态和酒店市场报价连在一起。AI 主动调查，你专注于下一步。':'Connect bookings, room data and hotel market prices. AI investigates so you can focus on your next move.'}</p><ol><li>{language==='zh'?'整合你的经营数据':'Connect your business data'}</li><li>{language==='zh'?'让 AI 主动展开调查':'Let AI investigate proactively'}</li><li>{language==='zh'?'带着依据，决定下一步':'Choose your next step with evidence'}</li></ol></aside>

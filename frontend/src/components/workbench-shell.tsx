@@ -77,7 +77,7 @@ export function WorkbenchShell({children,...session}:WorkspaceSession & {childre
  return <WorkspaceSessionContext.Provider value={session}><OperatorSampleContext value={sample}><div className="native-shell workspace-shell workbench-shell" data-desktop-theme={desktop?"soft":undefined}>
   <a className="workbench-skip" href="#workspace-main">{t("Skip to content","跳到主要内容")}</a>
   <aside className="workbench-sidebar" aria-label={t("Workspace navigation","工作台导航")}>
-   <Link href="/app" className="workbench-brand" aria-label="StayCraft"><Image src="/brand/staycraft-violet-yellow.png" width={210} height={70} alt="StayCraft" priority unoptimized/></Link>
+   <Link href="/app" className="workbench-brand" aria-label="StayCraft"><Image src="/brand/StayCraft-sidebar-HD.png" width={3105} height={717} alt="StayCraft" priority unoptimized/></Link>
    <nav className="workbench-primary-nav" data-workbench-nav aria-label={t("Main navigation","主导航")}>{desktop?<><span className="desktop-nav-label">{t("Operations","核心经营")}</span>{sections.slice(0,4).map(item=>navLink(item))}<span className="desktop-nav-label">{t("Settings","配置与资产")}</span>{navLink(sections[4])}</>:sections.map(item=>navLink(item))}</nav>
    {desktop&&<DesktopCollectionHint key={`${session.userId}:${connection.status==="linked"?connection.propertyId:"unassigned"}`} zh={zh} onOpen={()=>setCollectionOpen(true)}/>}
    <div className="workbench-sidebar-bottom"><Link href="/app/mine" className="workbench-user"><span><UserRound size={18}/></span><div><strong>{propertyName}</strong><small>{accountIdentity}</small></div></Link></div>

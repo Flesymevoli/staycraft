@@ -13,8 +13,9 @@ export function amapCoordinates(latitude:number,longitude:number){
  const rad=latitude/180*pi,magic=1-.00669342162296594323*Math.sin(rad)**2,sqrt=Math.sqrt(magic);
  return `${(longitude+lon/(6378245/sqrt*Math.cos(rad)*pi)*180).toFixed(6)},${(latitude+lat/((6378245*(1-.00669342162296594323))/(magic*sqrt)*pi)*180).toFixed(6)}`;
 }
-export async function amapTool(name:string,args:Record<string,unknown>,signal?:AbortSignal,fetcher:typeof fetch=fetch){
- const key=process.env.AMAP_MAPS_API_KEY;if(!key)throw Error('amap_not_configured');
+export type AmapOptions={key?:string;fetcher?:typeof fetch};
+export async function amapTool(name:string,args:Record<string,unknown>,signal?:AbortSignal,fetcher:typeof fetch=fetch,options?:AmapOptions){
+ const key=options&&Object.hasOwn(options,'key')?options.key:process.env.AMAP_MAPS_API_KEY;if(!key)throw Error('amap_not_configured');
  const url=new URL('https://mcp.amap.com/mcp');url.searchParams.set('key',key);
  const response=await fetcher(url,{method:'POST',redirect:'manual',cache:'no-store',signal:signal?AbortSignal.any([signal,AbortSignal.timeout(15000)]):AbortSignal.timeout(15000),headers:{'Content-Type':'application/json',Accept:'application/json, text/event-stream'},body:JSON.stringify({jsonrpc:'2.0',id:1,method:'tools/call',params:{name,arguments:args}})});
  if(!response.ok)throw Error('amap_unavailable');
@@ -39,9 +40,9 @@ export function placeResults(data:{pois?:Record<string,unknown>[]}){
  const seen=new Set<string>();
  return (Array.isArray(data.pois)?data.pois:[]).filter(p=>{if(typeof p.id!=='string'||typeof p.name!=='string')return false;const code=String(p.typecode||'');if(code.startsWith('05')||code.startsWith('15')&&!/^150[1278]/.test(code))return false;const identity=`${p.name}|${p.address||''}`;if(seen.has(p.id)||seen.has(identity))return false;seen.add(p.id);seen.add(identity);return true}).slice(0,6).map(p=>({id:String(p.id),name:String(p.name).slice(0,120),address:typeof p.address==='string'?p.address.slice(0,200):'',category:/大学|学院|高校/.test(String(p.name))?'高校访客':/会展|展览|会议/.test(String(p.name))?'会展访客':/站|机场|枢纽/.test(String(p.name))?'交通出行客群':'景区短住客群',url:`https://uri.amap.com/marker?poiid=${encodeURIComponent(String(p.id))}&name=${encodeURIComponent(String(p.name))}&src=StayCraft&callnative=0`}));
 }
-export async function amapGeocode(location:string,signal?:AbortSignal):Promise<string>{
+export async function amapGeocode(location:string,signal?:AbortSignal,options?:AmapOptions):Promise<string>{
  const clean=location.replace(/（[^）]*虚构[^）]*）/g,'').replace(/周边$/,'').trim();
- const geo=await amapTool('maps_geo',{address:clean},signal),point=(geo.results||geo.geocodes)?.[0]?.location;
+ const geo=await amapTool('maps_geo',{address:clean},signal,options?.fetcher??fetch,options),point=(geo.results||geo.geocodes)?.[0]?.location;
  if(!amapPoint(point))throw Error('amap_location_unknown');
  return point;
 }

@@ -2,7 +2,7 @@ const assert=require('node:assert/strict'),fs=require('node:fs'),path=require('n
 // Load the TypeScript modules in-memory; no build step and no network.
 function load(file){const target=path.resolve(__dirname,'../src/lib',file),mod=new Module(target);mod.require=name=>name.startsWith('.')?load(path.resolve(path.dirname(target),name)+'.ts'):require(name);mod._compile(ts.transpileModule(fs.readFileSync(target,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText,target);return mod.exports;}
 const {detectBookingPace,detectCancellationRate,detectChannelMix,detectPriceVolumeDivergence,detectGapWindow,detectAll,THRESHOLDS}=load('decisions/detectors.ts');
-const {buildOpportunities,renderOpportunityText,localized}=load('decisions/opportunity.ts');
+const {buildOpportunities,selectPriorityOpportunities,renderOpportunityText,localized}=load('decisions/opportunity.ts');
 
 const DAY=86400000;
 const iso=time=>new Date(time).toISOString().slice(0,10);
@@ -135,11 +135,12 @@ try {
  checkOpportunities(sorted,'opp ordering');
  assert.deepEqual(sorted.map(opportunity=>opportunity.basis[0].kind),['cancellation_rate','channel_mix','gap_window']);
  const sameLevel=buildOpportunities({signals:[signal('booking_pace','medium','2026-11-20','2026-11-26'),signal('booking_pace','medium','2026-11-19','2026-11-25')]});
- assert.deepEqual(sameLevel.map(opportunity=>opportunity.window.start),['2026-11-19','2026-11-20']);
+ assert.deepEqual(sameLevel.map(opportunity=>opportunity.window.start),['2026-11-19'],'one card per detector family, earliest equal-priority window first');
  const five=buildOpportunities({signals:Array.from({length:5},(_,index)=>signal('gap_window','low',`2026-11-${19+index}`,'2026-11-25'))});
- checkOpportunities(five,'opp limit');assert.equal(five.length,3);
+ checkOpportunities(five,'opp limit');assert.equal(five.length,1,'repeated gap windows cannot fill the priority list');
  const dataGap=buildOpportunities({signals:[signal('booking_pace','low','2026-11-19','2026-12-02',{value:null,confidence:'low',unknowns:['缺少房量数据']})]});
- checkOpportunities(dataGap,'opp data');assert.equal(dataGap[0].actions[0].target,'data');
+ checkOpportunities(dataGap,'opp data');assert.deepEqual(dataGap,[],'missing evidence is not an actionable opportunity');
+ assert.deepEqual(buildOpportunities({signals:allEmpty}),[],'an empty account cannot acquire risk cards from missing data');
  const diagnosis=buildOpportunities({signals:[signal('booking_pace','high','2026-11-19','2026-12-02',{value:70})]});
  checkOpportunities(diagnosis,'opp diagnosis');assert.equal(diagnosis[0].actions[0].target,'diagnosis');
  const events=[{id:'event-inside',title:'本地展览',start:'2026-11-20',end:'2026-11-21',category:'exhibition'},{id:'event-outside',title:'远方活动',start:'2026-12-10',end:'2026-12-12',category:'other'}];
@@ -167,7 +168,7 @@ try {
 
  // Bilingual rendering without changing the Opportunity contract.
  assert.equal(localized('中文','English',true),'中文');assert.equal(localized('中文','English',false),'English');
- for(const opportunity of [pair[0],promotion[0],dataGap[0]]){
+ for(const opportunity of [pair[0],promotion[0],missingGap[0]]){
   const zh=renderOpportunityText(opportunity,true),en=renderOpportunityText(opportunity,false);
   assert.ok(/[\u4e00-\u9fa5]/.test(zh.title+zh.claim),'zh text');
   assert.ok(/[A-Za-z]/.test(en.title+en.claim),'en text');
@@ -175,5 +176,49 @@ try {
   assert.notEqual(zh.title,en.title,'titles differ by language');
   assert.notEqual(zh.claim,en.claim,'claims differ by language');
  }
- console.log('PASS decisions: 5 detectors x trigger/no-trigger/insufficient(null), empty & all-null data, month/year boundaries, channel concentration, gap 3 vs 2 nights, evidenceIds, THRESHOLDS, detectAll, opportunity ordering/limit/empty, data/market/promotion/diagnosis targets, overlap filtering, localized bilingual rendering.');
+
+ // Both categories must survive the server cap and the two-card desktop overview.
+ const crowded=buildOpportunities({signals:[
+  ...divergent,...rateOnly,...single,
+  signal('gap_window','medium','2026-11-19','2026-11-21',{value:3}),
+  signal('gap_window','medium','2026-11-23','2026-11-25',{value:3}),
+ ]});
+ checkOpportunities(crowded,'balanced server cap');
+ assert.equal(crowded.length,3);
+ assert.equal(crowded.filter(item=>item.kind==='risk').length,2);
+ assert.equal(crowded.filter(item=>item.kind==='opportunity').length,1,'higher severity risks cannot consume every slot');
+ const featured=selectPriorityOpportunities(crowded,2);
+ assert.deepEqual(new Set(featured.map(item=>item.kind)),new Set(['risk','opportunity']),'two-card overview retains both categories');
+ assert.ok(featured.every(item=>crowded.includes(item)),'selection preserves original object, actions and reference IDs');
+ assert.deepEqual(selectPriorityOpportunities(crowded,1),[crowded[0]],'single slot keeps highest-priority valid candidate');
+ assert.deepEqual(selectPriorityOpportunities(crowded,0),[]);
+ const legacy=[...five,...sorted,...crowded];
+ const legacyBefore=legacy.map(item=>item.id);
+ const selectedLegacy=selectPriorityOpportunities(legacy);
+ assert.equal(new Set(selectedLegacy.map(item=>item.basis[0].kind)).size,selectedLegacy.length,'stored duplicate families are filtered too');
+ assert.deepEqual(legacy.map(item=>item.id),legacyBefore,'selection must not reorder the persisted run');
+ const noEvidence={...crowded[0],basis:[]};
+ const nonFinite={...crowded[0],basis:[{...crowded[0].basis[0],metric:{name:'missing',unit:'pct',value:NaN}}]};
+ const partialPair={...pair[0],basis:pair[0].basis.map((item,index)=>index?{...item,metric:{...item.metric,value:null}}:item)};
+ assert.deepEqual(selectPriorityOpportunities([noEvidence,nonFinite,partialPair]),[],'empty, invalid and incomplete price/volume evidence stays out of priority cards');
+ for(const value of [null,0,NaN,Infinity]){
+  const invalidPair={...pair[0],basis:pair[0].basis.map((item,index)=>index?item:{...item,baseline:{...item.baseline,value}})};
+  const invalidPace={...diagnosis[0],basis:diagnosis[0].basis.map(item=>({...item,baseline:{...item.baseline,value}}))};
+  assert.deepEqual(selectPriorityOpportunities([invalidPair,invalidPace]),[],`missing or invalid comparison baseline ${value} cannot support a priority card`);
+  for(const zh of [true,false]){
+   const copy=renderOpportunityText(invalidPair,zh),paceCopy=renderOpportunityText(invalidPace,zh);
+   assert.ok(!/NaN|Infinity/.test(JSON.stringify([copy,paceCopy])),'legacy cards never render invalid percentage calculations');
+   assert.ok(zh?copy.title.includes('暂不可比'):copy.title.includes('cannot be compared'),'legacy price card acknowledges missing comparison');
+   assert.ok(zh?paceCopy.claim.includes('暂无法判断'):paceCopy.claim.includes('cannot be judged'),'legacy pace card acknowledges missing comparison');
+  }
+ }
+ assert.deepEqual(selectPriorityOpportunities([{...pair[0],basis:pair[0].basis.slice(0,1)}]),[],'one half of a price/volume pair is insufficient');
+ assert.deepEqual(selectPriorityOpportunities([{...pair[0],basis:pair[0].basis.map((item,index)=>index?{...item,window:gapWindow}:item)}]),[],'price and volume must refer to the same window');
+ assert.equal(buildOpportunities({signals:single}).length,1,'current channel concentration remains supported without a prior baseline');
+ assert.equal(buildOpportunities({signals:[actionableGap]}).length,1,'open-room availability remains supported without a prior baseline');
+ const onlyRisks=buildOpportunities({signals:[...divergent,...rateOnly,...single]});
+ assert.equal(onlyRisks.length,3,'a category is not invented when all supported candidates are risks');
+ assert.ok(onlyRisks.every(item=>item.kind==='risk'));
+ assert.equal(allEmpty.length,5,'missing-data detector signals remain available to the evidence panel');
+ console.log('PASS decisions: 5 detectors x trigger/no-trigger/insufficient(null), empty & all-null data, month/year boundaries, channel concentration, gap 3 vs 2 nights, evidenceIds, THRESHOLDS, detectAll, balanced risk/opportunity selection, family dedupe, stored runs, missing-evidence filtering, stable plan/promotion references, data/market/promotion/diagnosis targets, overlap filtering, localized bilingual rendering.');
 } catch (error) { console.error(error); process.exitCode = 1; }

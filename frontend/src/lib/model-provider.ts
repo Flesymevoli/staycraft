@@ -1,6 +1,9 @@
 // Invoked only by server-side model operations. No secrets are returned or logged.
 export type ModelProvider='course'|'deepseek_official';
-export async function modelChat(body:Record<string,unknown>,options:{fetcher?:typeof fetch;signal?:AbortSignal;preferOfficial?:boolean;timeoutMs?:number;fallbackOnIncomplete?:boolean}={}){
+export type ModelPurpose='analysis'|'report'|'review'|'promotion'|'plan'|'priorities';
+export type ModelTransport=(body:Record<string,unknown>,options:{signal?:AbortSignal;timeoutMs?:number;purpose:ModelPurpose})=>Promise<{response:Response;provider:ModelProvider;fallback:boolean}>;
+export async function modelChat(body:Record<string,unknown>,options:{fetcher?:typeof fetch;signal?:AbortSignal;preferOfficial?:boolean;timeoutMs?:number;fallbackOnIncomplete?:boolean;transport?:ModelTransport;purpose?:ModelPurpose}={}){
+ if(options.transport)return options.transport(body,{signal:options.signal,timeoutMs:options.timeoutMs,purpose:options.purpose??'analysis'});
  const officialKey=process.env.DEEPSEEK_API_KEY,primaryReady=Boolean(process.env.MODEL_BASE_URL&&process.env.MODEL_API_KEY&&process.env.MODEL_NAME);
  async function send(provider:ModelProvider){
   const official=provider==='deepseek_official',base=official?'https://api.deepseek.com':process.env.MODEL_BASE_URL!,key=official?officialKey:process.env.MODEL_API_KEY;
