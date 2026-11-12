@@ -1,0 +1,14 @@
+node_modules/
+out/qa/
+out/*.mp4
+analysis/*.wav
+
+# Local render output, dependency caches, and exploratory analysis
+/out/
+/analysis/
+/.tmp-render/
+/.npm-cache/
+/.pip-cache/
+/tmp-probe/
+/tmp-*.py
+/tools/pylibs/
