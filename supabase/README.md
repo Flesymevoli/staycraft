@@ -1,58 +1,24 @@
-# Supabase 当前结构与迁移
+# 数据库迁移与测试
 
-更新：2026-10-23。当前模型为一个Auth账号拥有一家民宿，不再使用早期成员归属方案。
+当前经营应用通过 Next.js 服务端与 Supabase Auth、数据库和存储交互。运行入口见 [frontend/README.md](../frontend/README.md)。
 
-## 当前结构
+## 代码入口
 
-- properties.owner_user_id唯一，资料在property_details。
-- room_types与rooms为房型/实际客房规范化来源；property_inventory旧快照只读兼容。
-- direct_bookings含住宿日期、订单价格快照、预订/取消审核状态、显式stay_state及入住/退房时间。
-- conversations/messages提供站内会话；reply_drafts保留人工审核草稿。
-- room-photos为私有桶，图片只能通过获授权路径读取。
+- [migrations/](migrations/)：表、约束、RLS、受控 RPC 和增量迁移的实现来源。
+- [tests/](tests/)：SQL 权限与业务规则测试；执行前核对夹具、连接目标和回滚方式。
+- [账号权限校验](../frontend/src/lib/workspace-access.ts)：服务端确认当前用户及民宿归属。
 
-2026-10-23只读核对：properties/property_details/room_types/rooms/direct_bookings/conversations/messages均启用RLS；预订指标、入住/退房、取消审核、直订与客人消息公开RPC包装为invoker，内部权限检查保留。未修改真实订单或账号。完整字段见migrations，当前范围见docs/CURRENT_BASELINE.md。
+## 数据边界
 
-## 远端迁移记录
+- 一账号一民宿，由 `properties.owner_user_id` 关联；民宿资料位于 `property_details`。
+- `room_types` 与 `rooms` 保存房型和实际客房，订单保留房型、价格和住宿日期快照。调整资料不能重新解释历史订单。
+- 读写受 RLS、服务端权限与 RPC 约束；文件存储同样按账号和民宿授权。
+- 演练数据仅进入明确的测试账号或隔离数据库，不用真实经营记录做夹具。
 
-当前项目husrpqalpjjswpvrkxet，Management API返回的记录如下。本地同名SQL时间戳可能不同，不能据此推断未执行。
+## 应用迁移前
 
-| 远端版本 | 名称 |
-|---|---|
-| 20261022002652 | property_inventory |
-| 20261022002912 | direct_bookings |
-| 20261022012130 | single_account_property |
-| 20261022012849 | normalized_rooms |
-| 20261022013109 | booking_room_index |
-| 20261022100854 | guest_conversations |
-| 20261022134911 | conversation_reply_drafts |
-| 20261022141826 | booking_metrics |
-| 20261023023304 | booking_stays |
-| 20261023024506 | cancellation_review |
-| 20261023024604 | guest_review_projection |
-| 20261023093937 | reply_automation |
-| 20261023094124 | reply_automation_fact_gate |
-| 20261023094716 | booking_amounts |
-| 20261023095944 | operation_activity |
+本地迁移是源码记录，不等于远端待执行清单。部分早期迁移的本地和远端时间戳不一致；先核对实际结构与迁移记录，不凭文件名推断是否已应用，不盲目重跑初始化 SQL 或 `db push`。
 
-早期properties/property_details由控制台初始化，未完整登记CLI历史。不要重跑local/staycraft-setup.sql、不要直接db push、不要删除表来修复迁移历史。新环境需要按依赖核对所有SQL、扩展、grants、RLS及存储；迁移历史对账必须比较实际schema后单独处理。当前发布使用已核对的现有项目，不声称空白项目一键重建已验收。
+生产迁移需要当前具体任务授权。保留现有数据，优先采用可兼容的增量修复；代码回退不意味着数据库可以自动降级。新建空白项目需要核对扩展、依赖、grants、RLS 和存储配置，不能把历史成功记录当作一键初始化保证。
 
-supabase/tests为事务回滚夹具，原验证结果见docs/DEVELOPMENT_STATUS.md；它们不替代实际两账号浏览器隔离验收。安全扫描仍有Auth泄漏密码保护未启用提醒。
-
-## 回滚
-
-代码可回退Git检查点；数据库不自动降级。先导出备份，保留订单与图片，用增量前向修复。营业额已只读接通当前账号已完成订单；正式模型/自动发送仍关闭。部署步骤见docs/DEPLOYMENT.md。
-
-2026-10-23自动化增量：本地20261023093119_reply_automation对应远端20261023093937；另有reply_automation_fact_gate加数据库敏感请求硬校验。新增reply_automation_settings（默认false）、reply_automation_events（owner RLS、claim不授予读取），conversations人工接管字段与messages自动来源字段。匿名RPC仅凭客人自己的会话能力处理最新问题，回复由数据库当前时间事实构造，不接收任意文案。public包装函数为invoker，受限definer在private；SQL验证supabase/tests/reply_automation.sql始终rollback。不盲目重复旧迁移。
-
-后续增量booking_amounts扩展同一stable invoker指标RPC的金额/均价字段；operation_activity由private受限trigger记录真实事务结果，authenticated仅SELECT+owner RLS，无写入授权，无历史回填。验证脚本booking_amounts.sql、booking_amount_cents.sql、operation_activity.sql均为虚构事务回滚。
-
-
-新增迁移本地→远端映射：20261023093119→20261023093937（reply_automation）、20261023094052→20261023094124（fact_gate）、20261023094403→20261023094716（booking_amounts）、20261023095440→20261023095944（operation_activity）。当前15条远端记录；本地与远端名称/结构需一起核对，时间戳差异不表示待执行。新增设置/自动事件/操作记录均启用owner RLS，审计不能由普通客户端伪造。真实账号自动设置保持关闭。
-
-新增guest_property_profile迁移：本地20261023155131→远端20261023155324，扩展profile可选guestNotes且保留旧约束；公开RPC仅投影location/breakfast/checkin/guestNotes为notes，绝不返回旧notes、owner或房间数。虚构事务回滚及匿名权限测试通过，远端现16条记录。
-
-## 2026-10-30 推广工作区
-
-已新增promotion_workspaces（owner_user_id RLS），远端与本地版本一致为20261030090350。仅当前账号可读写自己的来源和草稿，普通客户端无DELETE权限。supabase/tests/promotion_workspace.sql在正式库以虚构夹具事务回滚通过，无持久化测试用户。普通演示Auth通过本地生产UI保存/重开与退出重登验证，临时内容已还原。本地参考资料不属于产品数据；模型Secret不进入仓库。
-
-此前旧迁移时间戳差异仍需按实际schema另行对账，不盲目db push。新表已单独应用，不需要再执行。本轮只准备代码，未更新公开Worker。
+连接信息和服务端密钥保存在私有配置，不写入文档或客户端。纯文档维护无需连接数据库、运行迁移或测试夹具。

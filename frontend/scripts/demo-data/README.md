@@ -1,53 +1,25 @@
-# Demo 订单数据（虚构，隔离使用）
+# 虚构订单样本
 
-**全部为虚构数据**，仅用于本地演示与隔离测试，不得导入真实环境，也不代表任何真实订单。
+这些数据用于本地隔离样本或明确的测试账号，不得导入真实经营账号。文件夹名是脚本路径；当前产品所称“demo 版”仍指 Gemini 静态演示。
 
-## 由生成器产出，日期随当天平移
+## 生成与导入
 
-`node scripts/demo-data/generate-demo-orders.cjs` 生成 `orders-baseline.csv` 与 `orders-update.csv`。
-**不要手改这两个 CSV**，改规则请改生成器。
+在 `frontend/` 执行：
 
-两个必须满足的约束：
-
-1. **房型/房号与演示民宿一致**（`scripts/operator-sample-data.cjs:9-14`）：`花园大床房 520/晚 · 庭院双床房 580/晚 · 湖景家庭房 760/晚`，房号 `101/102/103/201/202`（203 未启用）。金额按挂牌价 × 晚数。用其它房型名会被真实导入 RPC 拒绝。
-2. **不能与演示民宿自带的预订撞房**。那批预订是"相对当天"生成的，所以固定日期的 CSV 在 Demo 当天必然冲突。生成器先读样本已占用房晚，再挑空闲房间排入。
-
-## 结构
-
-| 文件 | 行数 | 内容 |
-|---|---|---|
-| `orders-baseline.csv` | 26 | 16 单已完成住宿（近 6 周）+ 10 单未来预订 |
-| `orders-update.csv` | 28 | 全量最新快照：24 单未变 + 2 单变更 + 2 单新增 |
-
-固定模板（`frontend/src/lib/booking-csv.ts:1`）：
-`channel,external_id,room_type,room_number,arrival,departure,status,total,currency,source_updated_at`
-`channel` 用平台名、`external_id` 用平台单号形态、`source_updated_at` 为 ISO 时间（含 Z）。
-
-## 二次导入的预期（单号由生成器动态分配，运行时看生成器输出）
-
-| 类型 | 数量 | 预期 |
-|---|---|---|
-| 未变 | 24 | 判为重复，不重复创建 |
-| 改期 | 1 | 更新现有订单的日期与房号，不新建 |
-| 取消 | 1 | 标记取消并保留历史，不删除记录 |
-| 新增 | 2 | 新建 |
-
-再次导入 `orders-baseline.csv`：全部判为重复，订单与任务数量不变。
-
-## 端到端演练
-
+```sh
+node scripts/demo-data/generate-demo-orders.cjs
 ```
-cd frontend
-node scripts/qa-demo-e2e.cjs
+
+生成器读取 [operator-sample-data.cjs](../operator-sample-data.cjs) 的房型、房号和已有预订，按当前日期生成 `orders-baseline.csv` 与 `orders-update.csv`。它会覆盖这两个生成文件；调整样本逻辑请改生成器，不手改生成结果。
+
+样本的房型、房号必须与导入目标一致；用于新测试账号时先准备匹配的房型和客房。上传后先核对预览，再确认导入，不将固定演示数据视为当前账号的真实经营事实。
+
+CSV 字段、大小与行数限制以 [booking-csv.ts](../../src/lib/booking-csv.ts) 为准，列为：
+
+```text
+channel,external_id,room_type,room_number,arrival,departure,status,total,currency,source_updated_at
 ```
-需要能起进程与浏览器的完整权限（受限沙箱下 next start / Playwright 会 spawn EPERM）。
-脚本会：清理隔离 run 存档 → 重新生成 CSV → 起 127.0.0.1:3114 非 rich 样本服务器 →
-登录 → 诊断（3 信号 / 2 机会）→ 机会卡/证据面板 → 保存计划 → 刷新持久化 → 勾选 → 回看三态 →
-导入 baseline → 导入 update（改期/取消/新增/重复）→ 断言改期日期与取消状态 → 截图。
-它只用内存假库与假登录、关闭模型，不连接正式经营库。
 
-## 口径提醒
+先导入 baseline，再导入 update，用于验证重复订单、改期、取消和新增；以生成器输出与页面预览为准。金额是订单总额，不是实收；取消记录保留历史，未分房记录不能自动冒充分房完成。
 
-- 金额是订单总额，不是实收；取消单保留原金额用于对账，不计入住宿收入。
-- `room_number` 为空表示待分房，不得自动分配房间（部分历史单故意留空）。
-- 这些文件不进入生产数据；演示结束不写入真实库。
+隔离演练脚本为 [qa-demo-e2e.cjs](../qa-demo-e2e.cjs)，使用内存夹具、关闭模型。脚本的存在或历史结果不代表当前页面已经通过验收；按任务检查兼容性后再运行。通用运行方式见 [frontend/README.md](../../README.md)。
