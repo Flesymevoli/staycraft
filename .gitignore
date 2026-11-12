@@ -1,9 +1,13 @@
 # Local reference materials stay outside the product repository.
 /deliverables/
 /课程背景.md
-/AGENTS.md
-/TODO.md
-/docs/
+/docs/*
+!/docs/SESSION_HANDOFF.md
+!/docs/CURRENT_BASELINE.md
+!/docs/ENGINEERING_GUIDE.md
+!/docs/UI_GUIDELINES.md
+!/docs/UI_PARITY_AUDIT.md
+!/docs/DESIGN.md
 /archive/
 
 # Generated visual checks and reference renders
@@ -27,3 +31,7 @@ Thumbs.db
 
 /frontend/.vercel/
 /.vercel/
+
+# Local exports, screenshots, diagnostics, and review artifacts
+/artifacts/
+/tmp/

@@ -1,3 +1,5 @@
+> 历史阶段文档（2026-11-10标记）：下文状态与验证仅对应原记录日期，不是当前部署或待办。当前入口：[工程指南](../docs/ENGINEERING_GUIDE.md)、[当前基线](../docs/CURRENT_BASELINE.md)。
+
 # 收入诊断报告链路（本地验收版，2026-11-05）
 
 本轮复用现有 Agent Loop、模型封装、Supabase 权限和 RollingGo，不改全站架构。尚未部署。

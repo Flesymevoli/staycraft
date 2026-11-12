@@ -51,3 +51,8 @@ next-env.d.ts
 
 # Local public-price collection evidence
 /.price-monitor/
+
+/.next-desktop/
+
+# Additional isolated local QA build output
+/.next-real-qa/
