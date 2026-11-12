@@ -47,7 +47,7 @@ async function decisionInputs(account:Awaited<ReturnType<typeof verifiedProperty
   if(location&&desktopSignalsEnabled()&&!isDemoWorkspace(user.email))return (await readDesktopEvents({account,location,start,end,signal})).events;
   const center=location?await propertyPoint(location,user.email,signal):null;
   const input={window:{start,end},scope:{center}};
-  return (isDemoWorkspace(user.email)?collectEvents(input):await fetchEvents({...input,signal})).events;
+  return (isDemoWorkspace(user.email)?collectEvents(input):await fetchEvents({...input,location,signal,resolveVenue:(address,venueSignal)=>propertyPoint(address,undefined,venueSignal)})).events;
  };
  const readQuotes=async()=>(await readSavedMarketSnapshot(supabase,propertyId,user.email)).quotes;
  const [bookingResult,eventResult,quoteResult,runResult]=await Promise.allSettled([

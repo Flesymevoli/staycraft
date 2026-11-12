@@ -158,7 +158,7 @@ export async function POST(request:Request){try{
    if(!point)return {weather:[],events:[],anchors:marketContext.anchors,sources:[marketContext.source,
     {id:'weather',authority:'internal',observedAt:new Date().toISOString(),coverage:{from:window.start,to:window.end,kind:'none'},confidence:'low',note:'缺少可用坐标，本轮不取天气信号'},
     {id:'events',authority:'internal',observedAt:new Date().toISOString(),coverage:{from:window.start,to:window.end,kind:'none'},confidence:'low',note:'缺少可用坐标，本轮不取周边活动'}]};
-   const bundle=await collectSignals({latitude:point.latitude,longitude:point.longitude,anchorEntries:[],window,liveEvents:!demo,signal:extra?AbortSignal.any([request.signal,extra]):request.signal});
+   const bundle=await collectSignals({latitude:point.latitude,longitude:point.longitude,location:profile.data?.profile?.location,anchorEntries:[],window,liveEvents:!demo,signal:extra?AbortSignal.any([request.signal,extra]):request.signal});
    return {...bundle,anchors:marketContext.anchors,sources:[...bundle.sources.filter(source=>source.id!=='competitor'),marketContext.source]};
   }
   });await updates;run.status='limited';run.phase='investigated';if(state==='started')historyAvailable=await store.finish(run);if(!historyAvailable)throw new WorkspaceError('history_unavailable',503);return run;

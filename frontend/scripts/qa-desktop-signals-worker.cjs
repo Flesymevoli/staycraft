@@ -18,7 +18,7 @@ function harness(options={}){
   SIGNALS_RATE_LIMITER:{limit:async({key})=>{limits.push(key);return {success:!options.userLimited}}},...options.env};
  const fetcher=async(resource,init={})=>{
   const url=new URL(resource instanceof Request?resource.url:String(resource)),headers=new Headers(init.headers),method=init.method||'GET';
-  calls.push({url,headers,method,redirect:init.redirect,cache:init.cache});
+  calls.push({url,headers,method,redirect:init.redirect,cache:init.cache,body:init.body});
   if(options.hang)return new Promise(()=>{});
   if(url.origin===env.SUPABASE_URL){
    check(method==='GET','all database/auth access is read-only');
@@ -32,15 +32,32 @@ function harness(options={}){
    if(url.pathname==='/rest/v1/property_details'){
     profiles++;
     check(url.searchParams.get('property_id')===`eq.${PROPERTY}`,'profile filter pinned');
-    return json([{profile:{location:options.emptyLocation?'':options.changedLocation&&profiles>1?'另一个城市':LOCATION,checkoutTime:'11:00',futureUnknownField:{kept:true}}}]);
+    return json([{profile:{location:options.emptyLocation?'':options.changedLocation&&profiles>1?'另一个城市':options.location??LOCATION,checkoutTime:'11:00',futureUnknownField:{kept:true}}}]);
    }
    throw Error('Unexpected Supabase request');
   }
-  check(!headers.has('authorization')&&!headers.has('cookie')&&!headers.has('apikey'),'credentials never reach external providers');
+  if(url.origin==='https://api.deepseek.com'){
+   check(url.href==='https://api.deepseek.com/v1/tools/search'&&method==='POST','only fixed official search endpoint; no chat/model endpoint');
+   const key=env.SEARCH_API_KEY||(env.EVENT_SEARCH_ENABLED==='1'?env.DEEPSEEK_API_KEY:'');
+   check(!!key&&headers.get('authorization')==='Bearer '+key,'search receives only its configured server credential');
+   check(!headers.has('cookie')&&!headers.has('apikey'),'search receives no session cookie or unrelated API credential');
+   const body=JSON.parse(init.body);
+   check(body.need_content===true&&body.count===5,'search requests bounded full page content');
+   check(body.query.startsWith(options.searchArea+' '),'search query uses administrative area');
+   check(!body.query.includes(options.location)&&!body.query.includes('88号')&&!body.query.includes('私人民宿'),'property street number and name are not sent to search');
+   check(!JSON.stringify({headers:[...headers],body}).includes(TOKEN)&&!JSON.stringify({headers:[...headers],body}).includes(env.AMAP_MAPS_API_KEY),'search receives neither account JWT nor private map key');
+   check(!body.query.includes(USER)&&!body.query.includes(PROPERTY),'search receives no account or property identifiers');
+   if(options.searchLimited)return json({error:'rate_limited'},429);
+   const venue=options.venue||options.searchArea+'文化路12号';
+   const fullPage=`<script type="application/ld+json">${JSON.stringify({'@context':'https://schema.org','@type':'ExhibitionEvent',name:'通用搜索隔离测试展',startDate:'2026-11-13',endDate:'2026-11-18',location:{'@type':'Place',name:'测试文化馆',address:venue}})}</script>`;
+   return json({results:[{title:'通用搜索隔离测试展',url:'https://events.example.org/'+encodeURIComponent(options.searchArea),snippet:'摘要与发布时间不是活动时间：2028-01-01。',date:'2028-01-01',rerank_score:2,content:fullPage,site_name:'隔离活动来源'}]});
+  }
+  check(!headers.has('authorization')&&!headers.has('cookie')&&!headers.has('apikey'),'credentials never reach map/weather/calendar providers');
   if(url.origin==='https://mcp.amap.com'){
    check(url.pathname==='/mcp'&&method==='POST','fixed geocoding endpoint');
    check(url.searchParams.get('key')===env.AMAP_MAPS_API_KEY,'explicit private binding used');
    const body=JSON.parse(init.body);check(body.params.name==='maps_geo','only geocoding capability');
+   if(options.searchArea)check([options.location,options.venue||options.searchArea+'文化路12号'].includes(body.params.arguments.address),'geocoder receives property or extracted event venue only');
    if(options.mapRedirect)return new Response(null,{status:302,headers:{Location:'https://untrusted.example'}});
    if(options.mapOversize)return new Response('x'.repeat(262145));
    if(options.mapInvalid)return json({error:{message:'upstream private-map-fixture '+TOKEN}},500,{'set-cookie':'stolen=yes'});
@@ -80,6 +97,7 @@ async function main(){
   const result=await response.json();
   check(!response.headers.has('set-cookie'),'no provider cookies forwarded');
   check(!JSON.stringify(result).includes(TOKEN)&&!JSON.stringify(result).includes('private-map-fixture'),'no credential in response');
+  for(const key of [state.env.SEARCH_API_KEY,state.env.DEEPSEEK_API_KEY].filter(Boolean))check(!JSON.stringify(result).includes(key),'search credential never appears in returned events');
   for(const call of state.calls)check(call.redirect==='manual'&&call.cache==='no-store','private, nonredirecting upstream request');
   return {...state,response,result};
  }
@@ -104,6 +122,32 @@ async function main(){
   check(result.result.source.observedAt==='2026-11-11T02:19:23.053Z'&&result.result.source.note.includes('保留原采集时间'),'failed refresh cannot claim fresh observations');
   check(result.calls.every(call=>call.url.origin!=='https://untrusted.example'),'calendar redirects are not followed');
  }
+ // A city with no bespoke calendar still works through the shared search/extraction path.
+ const generic=(district,extra={})=>({location:`广东省广州市${district}测试路88号私人民宿`,searchArea:`广东省广州市${district}`,point:'113.2800,23.1200',...extra});
+ let genericOptions=generic('越秀区');
+ result=await invoke({...eventInput,location:genericOptions.location},genericOptions);
+ check(result.response.status===200&&result.result.events.length===0&&result.result.source.note.includes('尚未就绪'),'unconfigured search is explicit, not a claim of no local activities');
+ check(!result.calls.some(call=>call.url.origin==='https://api.deepseek.com'),'unconfigured search makes no search/model request');
+ genericOptions=generic('越秀区',{env:{DEEPSEEK_API_KEY:'disabled-search-fixture'}});
+ result=await invoke({...eventInput,location:genericOptions.location},genericOptions);
+ check(!result.calls.some(call=>call.url.origin==='https://api.deepseek.com'),'existing model credential alone does not enable event search');
+ genericOptions=generic('越秀区',{env:{SEARCH_API_KEY:'search-only-fixture',DEEPSEEK_API_KEY:'unused-model-fixture'}});
+ result=await invoke({...eventInput,location:genericOptions.location},genericOptions);
+ check(result.response.status===200&&result.result.events.length===1,'generic full-content activity reaches desktop result in an unadapted city');
+ check(result.result.events[0].title==='通用搜索隔离测试展'&&result.result.events[0].start==='2026-11-13'&&result.result.events[0].end==='2026-11-18','event evidence uses full content rather than snippet/publication date');
+ check(result.result.events[0].verified&&result.result.events[0].id.startsWith('web-event-')&&result.result.events[0].distanceKm===0,'extracted venue is geocoded and distance checked');
+ check(result.calls.filter(call=>call.url.origin==='https://mcp.amap.com').length===2,'both property and extracted activity venue are located');
+ check(result.calls.filter(call=>call.url.origin==='https://api.deepseek.com').length===1,'exactly one bounded search request');
+ genericOptions=generic('天河区',{env:{EVENT_SEARCH_ENABLED:'1',DEEPSEEK_API_KEY:'enabled-search-fixture'}});
+ result=await invoke({...eventInput,location:genericOptions.location},genericOptions);
+ check(result.response.status===200&&result.result.events.length===1&&result.calls.some(call=>call.url.origin==='https://api.deepseek.com'),'explicit opt-in may use official DeepSeek credential');
+ genericOptions=generic('海珠区',{searchLimited:true,env:{SEARCH_API_KEY:'limited-search-fixture'}});
+ result=await invoke({...eventInput,location:genericOptions.location},genericOptions);
+ check(result.response.status===200&&result.result.events.length===0&&result.result.source.note.includes('搜索暂未成功'),'search 429 safely returns available fallback plus unavailable explanation');
+ check(result.calls.filter(call=>call.url.origin==='https://mcp.amap.com').length===1,'failed search does not invent or geocode a venue');
+ genericOptions=generic('荔湾区',{changedLocation:true,env:{SEARCH_API_KEY:'changed-search-fixture'}});
+ result=await invoke({...eventInput,location:genericOptions.location},genericOptions);
+ check(result.response.status===409&&!result.result.events&&result.calls.some(call=>call.url.origin==='https://api.deepseek.com'),'address changed during discovery returns 409 without old-address facts');
  for(const body of [{...initial,days:17},{...initial,days:0},{...initial,days:'7'},{...initial,start:'2026-02-30'},{...initial,propertyId:'bad'},{...initial,version:2},{...eventInput,end:'2026-12-10'},{...eventInput,end:'2026-11-11'},...['coordinates','url','headers','model','extra','end'].map(key=>({...initial,[key]:'unexpected'})),{...eventInput,days:7}]){
   result=await invoke(body);check(result.response.status===400&&result.calls.length===0,'invalid input rejected before network');
  }

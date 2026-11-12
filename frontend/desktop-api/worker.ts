@@ -11,6 +11,9 @@ export type SignalsEnv={
  SUPABASE_URL:string;
  SUPABASE_PUBLISHABLE_KEY:string;
  AMAP_MAPS_API_KEY:string;
+ SEARCH_API_KEY?:string;
+ DEEPSEEK_API_KEY?:string;
+ EVENT_SEARCH_ENABLED?:string;
  AUTH_RATE_LIMITER:Limiter;
  SIGNALS_RATE_LIMITER:Limiter;
 };
@@ -64,9 +67,10 @@ function checkedFetch(fetcher:typeof fetch,signal:AbortSignal,allow:(url:URL,met
   // carrying the user's JWT or the private map key; reject every 3xx below.
   const response=await aborted(fetcher(resource,{...init,redirect:'manual',cache:'no-store',signal:combined}),combined);
   if(response.redirected||response.status>=300&&response.status<400)throw new Failure('upstream_unavailable',503);
-  if(Number(response.headers.get('content-length')??0)>262144){void response.body?.cancel();throw new Failure('upstream_unavailable',503)}
+  const maxBytes=262144;
+  if(Number(response.headers.get('content-length')??0)>maxBytes){void response.body?.cancel();throw new Failure('upstream_unavailable',503)}
   let data:Uint8Array;
-  try{data=await bytes(response.body,262144,combined)}catch(error){if(error instanceof Failure&&error.status===413)throw new Failure('upstream_unavailable',503);throw error}
+  try{data=await bytes(response.body,maxBytes,combined)}catch(error){if(error instanceof Failure&&error.status===413)throw new Failure('upstream_unavailable',503);throw error}
   return new Response(data.byteLength?new Uint8Array(data).buffer:null,{status:response.status,statusText:response.statusText,headers:response.headers});
  };
 }
@@ -123,7 +127,10 @@ export async function handleSignalsRequest(request:Request,env:SignalsEnv,depend
   const context={version:1,userId:auth.user.id,propertyId:input.propertyId,location,window:{start:input.start,end:input.end},kind:input.kind};
   let result:Record<string,unknown>;
   if(input.kind==='events'){
-   const events=await fetchEvents({window:context.window,scope:{center:point},now,fetcher:externalFetch,signal});
+   const searchKey=env.SEARCH_API_KEY||(env.EVENT_SEARCH_ENABLED==='1'?env.DEEPSEEK_API_KEY:'');
+   const searchFetch=checkedFetch(fetcher,signal,(target,method,forwarded)=>target.href==='https://api.deepseek.com/v1/tools/search'&&method==='POST'&&!!searchKey&&forwarded.get('authorization')==='Bearer '+searchKey&&!forwarded.has('cookie'));
+   const events=await fetchEvents({window:context.window,scope:{center:point},location,now,fetcher:externalFetch,signal,searchKey:searchKey??'',searchFetcher:searchFetch,
+    resolveVenue:async(address,venueSignal)=>amapPoint(await amapGeocode(address,venueSignal,{key:env.AMAP_MAPS_API_KEY,fetcher:externalFetch}))});
    result={...context,events:events.events,source:events.source};
   }else{
    const weather=await fetchWeather({...point,days:Math.min(16,offset+input.days),fetcher:externalFetch,signal,now});

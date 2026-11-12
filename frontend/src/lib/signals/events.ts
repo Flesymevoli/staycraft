@@ -57,7 +57,7 @@ function eventFrom(raw:unknown,observedAt:string):LocalEvent|null{
  const authority=rawSource?.authority==='public'?'public':'manual';
  const fallback=verified?'活动日期已核实':'活动日期尚未核实';
  const note=text(rawSource?.note,240)??fallback;
- return {id,title,start,end,venue,distanceKm,category:category as EventCategory,sourceUrl,observedAt:at,verified,source:{id:'events',authority,observedAt:at,coverage:{from:start,to:end,kind:'partial'},confidence:verified?'medium':'low',note}};
+ return {id,title,start,end,venue,distanceKm,category:category as EventCategory,sourceUrl,observedAt:at,verified,source:{id:'events',authority,observedAt:at,coverage:{from:start,to:end,kind:'partial'},confidence:verified&&rawSource?.confidence!=='low'?'medium':'low',note}};
 }
 
 export function validateEvents(events:unknown[],observedAt=new Date().toISOString()):LocalEvent[]{
@@ -98,13 +98,14 @@ export function collectEvents(input:EventsInput):EventsResult{
   : event);
  const coverage:Coverage={from:window.start,to:window.end,kind:events.length?'partial':'none'};
  const allVerified=events.length>0&&events.every(event=>event.verified);
+ const lowConfidence=events.some(event=>event.source.confidence==='low');
  const authority=usingCalendar||events.length>0&&events.every(event=>event.source.authority==='public')?'public':'manual';
  const latestEvent=events.reduce<string|undefined>((latest,event)=>!latest||Date.parse(event.observedAt)>Date.parse(latest)?event.observedAt:latest,undefined);
  const note=events.length
-  ? `${allVerified?'所列活动日期已核实':'部分活动日期可能未经核实'}。${demoEstimate&&!center?'距离为虚构演示民宿的直线估算。':''}活动记录不代表客流会增加。`
+  ? `${allVerified?(lowConfidence?'所列活动日期据网页整理，请以主办方为准':'所列活动日期已核实'):'部分活动日期可能未经核实'}。${demoEstimate&&!center?'距离为虚构演示民宿的直线估算。':''}活动记录不代表客流会增加。`
   : input.scope&&!center&&!demoEstimate
    ? '未取得筛选中心的坐标，无法判断活动距离；无返回记录不代表没有活动。'
    : '现有日历中没有匹配当前日期和范围的记录；无返回记录不代表没有活动。';
  const stale=events.some(event=>now.getTime()-Date.parse(event.observedAt)>7*86400000);
- return {events,source:{id:'events',authority,observedAt:latestEvent??observedAt,coverage,confidence:allVerified&&!stale?'medium':'low',note:note+(stale?'部分记录已超过 7 天未更新，请核对官网。':'')}};
+ return {events,source:{id:'events',authority,observedAt:latestEvent??observedAt,coverage,confidence:allVerified&&!lowConfidence&&!stale?'medium':'low',note:note+(stale?'部分记录已超过 7 天未更新，请核对官网。':'')}};
 }

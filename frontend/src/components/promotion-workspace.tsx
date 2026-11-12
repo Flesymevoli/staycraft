@@ -6,7 +6,7 @@ import {useSearchParams} from "next/navigation";
 import {drawPromotionCopy} from "@/lib/promotion-library";
 import {DecisionAdvice} from "./decision-advice";
 import {ArrowRight,Copy,Trash2,Save,RefreshCw} from "lucide-react";
-import {emptyPromotion,matchingSources,validBrief,validPromotion,type PromotionBrief,type PromotionDraft,type PromotionState} from "@/lib/promotion";
+import {emptyPromotion,matchingSources,sourceMatchesLocation,validBrief,validPromotion,type PromotionBrief,type PromotionDraft,type PromotionState} from "@/lib/promotion";
 import {bookingPeriod} from "@/lib/booking-period";
 import {workspaceDay} from "@/lib/demo-period";
 import {NearbyDiscovery} from './nearby-discovery';
@@ -24,7 +24,7 @@ function initialBrief(zh:boolean,start:string|null,end:string|null,demo:boolean)
  const weekEnd=new Date(Date.parse(date)+6*86400000).toISOString().slice(0,10);
  return {language:zh?"zh":"en",channel:"wechat",goal:"rooms",start:period?.start??date,end:period?.end??weekEnd,sourceIds:[]};
 }
-type Stored={state:PromotionState;revision:string|null};
+type Stored={state:PromotionState;revision:string|null;location?:string};
 type CopyMode="template"|"live"|"library";
 const draftMode=(draft:PromotionDraft):CopyMode=>draft.engine==="library_v1"?"library":draft.engine==="model_v1"?"live":"template";
 export function PromotionWorkspace({zh,demo=false}:{zh:boolean;demo?:boolean}){
@@ -42,7 +42,8 @@ export function PromotionWorkspace({zh,demo=false}:{zh:boolean;demo?:boolean}){
  const [planEvidence,setPlanEvidence]=useState("");
  // null permits the initial diagnosis link; user-selected draft/date context wins thereafter.
  const [userContext,setUserContext]=useState<{diagnosis?:PromotionPlan['diagnosis']}|null>(null);
- const evidenceKey=JSON.stringify([brief.start,brief.end,brief.sourceIds]);
+ const location=stored.location??'';
+ const evidenceKey=JSON.stringify([brief.start,brief.end,brief.sourceIds,location]);
  const plan=planEvidence===evidenceKey?savedPlan:null;
  const [mode,setMode]=useState<CopyMode>("template");
  const [versions,setVersions]=useState<Partial<Record<CopyMode,{draft:PromotionDraft;dirty:boolean}>>>({});
@@ -59,22 +60,25 @@ export function PromotionWorkspace({zh,demo=false}:{zh:boolean;demo?:boolean}){
  function updatePlan(next:PromotionPlan|null){setPlan(next);setPlanEvidence(evidenceKey)}
 
  const [settingsOpen,setSettingsOpen]=useState(false);
- const editor=useRef<HTMLTextAreaElement>(null),alive=useRef(true);
+ const editor=useRef<HTMLTextAreaElement>(null),alive=useRef(true),scopeVersion=useRef(0);
+ useEffect(()=>{const refresh=()=>{scopeVersion.current++;setBrief(value=>({...value,sourceIds:[]}));setPlan(null);setUserContext({});setLoading(true);setDecisionVersion(value=>value+1)};window.addEventListener('staycraft-profile-changed',refresh);return()=>window.removeEventListener('staycraft-profile-changed',refresh)},[]);
  function focusEditor(){requestAnimationFrame(()=>{const field=editor.current;if(field){field.focus({preventScroll:true});field.setSelectionRange(0,0);field.scrollTop=0}})}
  useEffect(()=>{alive.current=true;return()=>{alive.current=false}},[]);
  const hasUnsaved=dirty||Object.values(versions).some(version=>version?.dirty);
  useEffect(()=>{if(!hasUnsaved)return;const leave=(event:BeforeUnloadEvent)=>event.preventDefault();const navigate=(event:MouseEvent)=>{if(event.defaultPrevented||event.button!==0||event.ctrlKey||event.metaKey||event.shiftKey||event.altKey)return;const anchor=(event.target as Element)?.closest?.("a[href]");if(!(anchor instanceof HTMLAnchorElement)||anchor.target==="_blank"||anchor.hasAttribute("download"))return;const url=new URL(anchor.href);if(url.href===window.location.href||url.pathname===window.location.pathname&&url.search===window.location.search)return;if(!window.confirm(zh?"当前草稿尚未保存，确定离开吗？":"Your draft has unsaved changes. Leave this page?")){event.preventDefault();event.stopPropagation()}};window.addEventListener("beforeunload",leave);document.addEventListener("click",navigate,true);return()=>{window.removeEventListener("beforeunload",leave);document.removeEventListener("click",navigate,true)}},[hasUnsaved,zh]);
  async function load(){setLoading(true);setLoadError(false);try{const response=await fetch("/api/workspace/promotion",{cache:"no-store"});if(!response.ok)throw new Error();const next=await response.json() as Stored;if(!validPromotion(next.state))throw new Error();if(alive.current){setStored(next);setConflict(false)}}catch{if(alive.current)setLoadError(true)}finally{if(alive.current)setLoading(false)}}
  useEffect(()=>{const controller=new AbortController();fetch("/api/workspace/promotion",{cache:"no-store",signal:controller.signal}).then(async response=>{if(!response.ok)throw new Error();const next=await response.json() as Stored;if(!validPromotion(next.state))throw new Error();if(!controller.signal.aborted){setStored(next);setLoading(false);setLoadError(false)}}).catch(()=>{if(!controller.signal.aborted){setLoadError(true);setLoading(false)}});return()=>controller.abort()},[decisionVersion]);
- const message=(code:string)=>code==="promotion_model_unavailable"?t("AI writing is unavailable. You can still draft from your property facts.","暂时无法使用 AI 创意生成，仍可根据本店资料整理文案。"):code==="promotion_changed"?t("The saved workspace changed elsewhere. Your text is kept. Load the latest version, then save again.","其他页面修改了已保存内容，当前文字已保留。读取最新版本后再保存。") :code==="promotion_setup_required"?t("Add your property location and an active room first.","请先完善民宿位置并添加启用客房。") :code==="promotion_source_required"?t("Select at least one saved source that covers these dates.","请选择适用于本次日期的已保存线索。") :code==="promotion_diagnosis_unavailable"?t("Availability has changed. Refresh the workbench opportunity before drafting.","这段日期的房量已有变化，请更新工作台机会后再生成。"):code==="promotion_too_long"?t("Select fewer sources to keep the draft within 4,000 characters.","请选择更少线索，保持文案在 4000 字以内。") :t("Could not complete this action. Your current text is kept; try again.","操作未完成，当前文字已保留，请重试。");
+ const message=(code:string)=>code==='promotion_location_changed'?t('The property address changed. Reload local clues before selecting one.','民宿地址已变化，请重新读取当地活动后选用。'):code==="promotion_model_unavailable"?t("AI writing is unavailable. You can still draft from your property facts.","暂时无法使用 AI 创意生成，仍可根据本店资料整理文案。"):code==="promotion_changed"?t("The saved workspace changed elsewhere. Your text is kept. Load the latest version, then save again.","其他页面修改了已保存内容，当前文字已保留。读取最新版本后再保存。") :code==="promotion_setup_required"?t("Add your property location and an active room first.","请先完善民宿位置并添加启用客房。") :code==="promotion_source_required"?t("Select at least one saved source that covers these dates.","请选择适用于本次日期的已保存线索。") :code==="promotion_diagnosis_unavailable"?t("Availability has changed. Refresh the workbench opportunity before drafting.","这段日期的房量已有变化，请更新工作台机会后再生成。"):code==="promotion_too_long"?t("Select fewer sources to keep the draft within 4,000 characters.","请选择更少线索，保持文案在 4000 字以内。") :t("Could not complete this action. Your current text is kept; try again.","操作未完成，当前文字已保留，请重试。");
  async function persist(next:PromotionState){
+  const scope=scopeVersion.current;
   if(!validPromotion(next)){setError(t("Check the text lengths and date ranges. Keep at most 20 drafts and 12 sources.","请核对文字长度与日期范围，最多保存 20 份草稿、12 条线索。"));return false}
   setBusy(true);setError("");setNotice("");
-  try{const response=await fetch("/api/workspace/promotion",{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify({state:next,revision:stored.revision})});const data=await response.json();if(!response.ok){if(response.status===409)setConflict(true);throw new Error(data.error)}setStored(data);return true}catch(e){setError(message(e instanceof Error?e.message:""));return false}finally{setBusy(false)}
+  try{const response=await fetch("/api/workspace/promotion",{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify({state:next,revision:stored.revision})});const data=await response.json();if(!response.ok){if(response.status===409)setConflict(true);throw new Error(data.error)}if(scope!==scopeVersion.current)return false;setStored(data);return true}catch(e){setError(message(e instanceof Error?e.message:""));return false}finally{setBusy(false)}
  }
- async function useNearbySource(reference:{title:string;url:string;summary:string;start?:string;end?:string}){
-  const existing=stored.state.sources.find(s=>s.url===reference.url&&s.title===reference.title&&s.start<=brief.end&&s.end>=brief.start);
+ async function useNearbySource(reference:{title:string;url:string;summary:string;start?:string;end?:string;location?:string}){
+  const existing=stored.state.sources.find(s=>sourceMatchesLocation(s,location)&&s.url===reference.url&&s.title===reference.title&&s.start<=brief.end&&s.end>=brief.start);
   if(loading||loadError)return;
+  if(!reference.location||!sourceMatchesLocation(reference,location)){setError(message('promotion_location_changed'));return;}
   const source={...reference,id:existing?.id??crypto.randomUUID(),start:reference.start??brief.start,end:reference.end??brief.end,checkedOn:workspaceDay(demo)};
   if((!existing||existing.summary!==source.summary||existing.start!==source.start||existing.end!==source.end)&&
     !await persist({...stored.state,sources:[source,...stored.state.sources.filter(item=>item.id!==source.id)].slice(0,12)}))return;
@@ -90,7 +94,7 @@ export function PromotionWorkspace({zh,demo=false}:{zh:boolean;demo?:boolean}){
   });
  }
  const discard=()=>!dirty||window.confirm(t("Discard unsaved draft changes?","放弃当前未保存的草稿修改吗？"));
- function changeDate(key:"start"|"end",value:string){setUserContext({});setPlan(null);setBrief(previous=>{const next={...previous,[key]:value};return {...next,sourceIds:matchingSources(stored.state.sources,next).map(s=>s.id).slice(0,1)}})}
+ function changeDate(key:"start"|"end",value:string){setUserContext({});setPlan(null);setBrief(previous=>{const next={...previous,[key]:value};return {...next,sourceIds:matchingSources(stored.state.sources,next,location).map(s=>s.id).slice(0,1)}})}
  const draws=useRef<Record<string,number[]>>({});
  const drawnText=useRef<Partial<Record<CopyMode,{id:string;text:string}>>>({});
  async function generate(factualOnly=mode==="template"){
@@ -108,11 +112,13 @@ export function PromotionWorkspace({zh,demo=false}:{zh:boolean;demo?:boolean}){
   if(mode!=="library"){
    setBusy(true);setGenerating(true);setError("");setNotice("");setOfferFactual(false);
    try{
+    const scope=scopeVersion.current;
     const response=await fetch("/api/workspace/promotion/generate",{
      method:"POST",headers:{"Content-Type":"application/json"},
      body:JSON.stringify({...current,...(factualOnly?{factualOnly:true}:{requireModel:true}),...(currentPlan?{plan:currentPlan}:{})})
     });
     const result=await response.json();
+    if(scope!==scopeVersion.current)return;
     if(!response.ok)throw Error(result.error);
     const engine=result.draft?.engine;
     const expected=factualOnly?engine==="rules_v1":engine==="model_v1";
@@ -154,9 +160,9 @@ export function PromotionWorkspace({zh,demo=false}:{zh:boolean;demo?:boolean}){
  const applyDiagnosisPeriod=useCallback((start:string,end:string)=>setBrief(previous=>{
   if(previous.start===start&&previous.end===end)return previous;
   const next={...previous,start,end};
-  return {...next,sourceIds:matchingSources(stored.state.sources,next).map(source=>source.id).slice(0,1)};
- }),[stored.state.sources]);
- const selectedSources=matchingSources(stored.state.sources,brief);
+  return {...next,sourceIds:matchingSources(stored.state.sources,next,location).map(source=>source.id).slice(0,1)};
+ }),[stored.state.sources,location]);
+ const selectedSources=matchingSources(stored.state.sources,brief,location);
  const selectedSource=selectedSources[0];
  const draftContent=draft?.content??"";
  const draftTitle=(draftContent.split("\n").find(line=>line.trim())||"").trim();
@@ -166,9 +172,9 @@ export function PromotionWorkspace({zh,demo=false}:{zh:boolean;demo?:boolean}){
  function openDraft(item:PromotionDraft){
   const nextMode=draftMode(item);
   if(!discard()||nextMode!==mode&&versions[nextMode]?.dirty&&!window.confirm(t("Replace the unsaved draft in that writing mode?","该文案方式还有一份未保存草稿，确定打开已保存内容替换它吗？")))return;
-  const sources=matchingSources(stored.state.sources,item.brief).map(source=>source.id).slice(0,1);
+  const sources=matchingSources(stored.state.sources,item.brief,location).map(source=>source.id).slice(0,1);
   setUserContext({diagnosis:item.plan?.diagnosis});
-  setDraft(structuredClone(item));setMode(nextMode);setVersions(v=>({...v,[mode]:undefined,[nextMode]:undefined}));setBrief({...item.brief,sourceIds:sources});setPlan(item.plan??null);setPlanEvidence(JSON.stringify([item.brief.start,item.brief.end,sources]));setDirty(false);setNotice("");setError("");focusEditor();
+  setDraft(structuredClone(item));setMode(nextMode);setVersions(v=>({...v,[mode]:undefined,[nextMode]:undefined}));setBrief({...item.brief,sourceIds:sources});setPlan(sources.length===item.brief.sourceIds.length?item.plan??null:null);setPlanEvidence(JSON.stringify([item.brief.start,item.brief.end,sources,location]));setDirty(false);setNotice("");setError("");focusEditor();
  }
  if(desktop)return <div className="gemini-promotion">
   <DesktopPageToolbar><details className="gemini-promo-period" open={settingsOpen} onToggle={event=>setSettingsOpen(event.currentTarget.open)}><summary>{t("Target stay dates","推广入住期")}：{brief.start} — {brief.end}</summary><fieldset disabled={blocked}><label>{t("Stay from","入住开始日期")}<input type="date" value={brief.start} onChange={event=>changeDate('start',event.target.value)}/></label><label>{t("Stay through","入住结束日期")}<input type="date" value={brief.end} onChange={event=>changeDate('end',event.target.value)}/></label></fieldset></details></DesktopPageToolbar>

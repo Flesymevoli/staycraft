@@ -2,8 +2,6 @@ import type {PromotionBrief} from './promotion';
 import type {buildPromotionWritingContext} from './promotion-writing-context';
 
 type WritingContext = ReturnType<typeof buildPromotionWritingContext>;
-const emoji = /[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{2B00}-\u{2BFF}]/u;
-const hype = /谁懂啊|挖到宝|藏不住了|家人们|绝美|天花板|氛围感拉满|必打卡|闭眼冲|不踩雷|全网最佳|顶级|最便宜|最好|第一名|百元住出千元|治愈所有|must[- ]visit|hidden gem|best in town|top-rated/i;
 // Protect concrete claims, not ordinary literary words such as light, stillness,
 // warmth or the wish to slow down. Aliases let grounded details be paraphrased.
 const facilities = [
@@ -19,14 +17,7 @@ const facilities = [
  ['隔音','soundproof'], ['消毒','disinfected'], ['一客一换'], ['24小时','24-hour'],
 ];
 const offers = ['免费','赠送','赠品','礼遇','折扣','打折','特价','优惠','含早','含早餐','下午茶','free breakfast','complimentary','discount','special offer'];
-// Concrete surroundings are facts too. A riverside name or address does not
-// establish trees, paving, nearby shops, animals, a bridge or a particular view.
-const surroundings = [
- ['梧桐','plane tree'], ['银杏','ginkgo'], ['柳树','willow'], ['竹林','bamboo grove'],
- ['青石板','石板路','cobblestone'], ['屋顶','rooftop'], ['鸽子','pigeon'], ['猫','cat'],
- ['桥头','桥的影子','桥影','bridge'], ['路灯','streetlight'], ['栗子','chestnut'],
- ['芦苇','reeds'], ['晒布','竹竿上的布'], ['旧版诗集'],
-];
+// Scenic details and style are creative choices, not rejection criteria.
 const quantities = /[¥￥$]\s*\d+(?:\.\d+)?|-?\d+(?:\.\d+)?\s*(?:°[CF]|℃|摄氏度|元|块|折|%|公里|千米|km|分钟|minutes|平方米|平米|㎡|米)|[一二三四五六七八九十百]+(?:折|元|公里|分钟)|(?:免费|赠送|含)\s*\d+\s*(?:份|晚|次)/gi;
 const contains = (value:string,word:string) => value.toLowerCase().includes(word.toLowerCase());
 const normalized = (value:string) => value.replace(/℃|摄氏度/g,'°C').replace(/平方米|平米|㎡/g,'㎡').replace(/\s+/g,'').toLowerCase();
@@ -61,7 +52,6 @@ export function validatePromotionCopy(content:string,brief:PromotionBrief,contex
  let prose=content.replaceAll(context.property.name,'');
  if(source)prose=prose.replaceAll(source.title,'');
  const claims=context.property.rooms.reduce((text,room)=>text.replaceAll(room.name,brief.language==='zh'?'客房':'guest room'),prose);
- if(hype.test(prose)||/[!！#]/.test(prose)||emoji.test(prose))throw Error('unsupported_copy_style');
  if(/亲测|我住过|我住的|住过一次|这次订的是|入住后发现|多次入住|无限回购|\bI (?:stayed|booked)|my stay|we stayed/i.test(prose))throw Error('invented_personal_experience');
  if(/仅剩|售罄|满房|余房|保证有房|保证入住|一定有房|确保有房|guaranteed availability|rooms left|sold out/i.test(prose))throw Error('unsupported_availability_claim');
  if(assertedAvailability(claims))throw Error('unsupported_availability_claim');
@@ -70,11 +60,6 @@ export function validatePromotionCopy(content:string,brief:PromotionBrief,contex
  if(/(?:仅设|仅有|只有).{0,20}(?:一间|1间|一套|1套)/.test(prose))throw Error('unsupported_room_count');
 
  const propertyEvidence=context.property.features.join('\n');
- const settingEvidence=propertyEvidence+'\n'+(source?.summary||'');
- for(const aliases of surroundings){
-  const mentioned=aliases.some(term=>/^[a-z ]+$/i.test(term)?new RegExp('\\b'+term+'s?\\b','i').test(prose):contains(prose,term));
-  if(mentioned&&!aliases.some(term=>contains(settingEvidence,term)))throw Error('unsupported_surroundings');
- }
  for(const claim of prose.match(/(?:水位|河水)[^。！？\n]{0,12}(?:涨到|升到|漫过)[^。！？\n]{0,15}|夜里只有水声|没有标准化的服务/g)||[])
   if(!propertyEvidence.includes(claim))throw Error('unsupported_environment_claim');
  const sizeClaims=[...claims.matchAll(/(?:房间|客房|大床房|双床房|套房|卧室|屋子|\broom\b|\bbedroom\b)[^。！？\n.!?]{0,8}(?:不大|不小|很大|很小|小巧|狭小|宽敞|面积\s*(?:约|为|是|有)?\s*\d+|\bspacious\b|\bsmall\b|\blarge\b)/gi)];

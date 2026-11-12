@@ -1,9 +1,11 @@
 import {bookingPeriod} from '@/lib/booking-period';
-import {amapCoordinates,amapPoint,validCoordinates} from '@/lib/amap-nearby';
+import {amapAddress,amapCoordinates,amapPoint,validCoordinates} from '@/lib/amap-nearby';
+import {searchConfigured} from '@/lib/local-discovery';
 import {validateProfile} from '@/lib/property-profile';
 import {collectEvents,EVENT_RADIUS_KM} from '@/lib/signals/events';
 import {fetchEvents} from '@/lib/signals/official-events';
 import {propertyPoint} from '@/lib/property-location';
+import {normalizeMarketLocation} from '@/lib/market/snapshot-scope';
 import {desktopSignalsEnabled,readDesktopEvents} from '@/lib/desktop-external-signals';
 import {isDemoWorkspace} from '@/lib/operator-sample';
 import {boundedBody,requireSameOrigin,verifiedProperty,WorkspaceError,workspaceFailure} from '@/lib/workspace-access';
@@ -38,16 +40,25 @@ export async function POST(request:Request){
   }
 
   let point:ReturnType<typeof amapPoint>=null,geocodeError:string|undefined;
+  let searchLocation=coordinates?'':location;
   if(coordinates){
    point=amapPoint(amapCoordinates(coordinates.latitude,coordinates.longitude));
+   if(!isDemoWorkspace(user.email)&&searchConfigured()){
+    try{searchLocation=await amapAddress(coordinates,request.signal)}catch{/* Keep coordinate-based calendars when the current area is unknown. */}
+   }
   }else{
    try{point=await propertyPoint(location,user?.email,request.signal)}catch(error){geocodeError=serviceError(error)}
   }
 
   const eventInput={window:{start,end},scope:{center:point}};
-  const {events,source:eventSource}=isDemoWorkspace(user.email)?collectEvents(eventInput):await fetchEvents({...eventInput,signal:request.signal});
+  const {events,source:eventSource}=isDemoWorkspace(user.email)?collectEvents(eventInput):await fetchEvents({...eventInput,location:searchLocation,resolveVenue:(address,signal)=>propertyPoint(address,undefined,signal),signal:request.signal});
+  if(!coordinates){
+   const latest=await supabase.from('property_details').select('profile').eq('property_id',propertyId).maybeSingle();
+   if(latest.error)throw new WorkspaceError('profile_unavailable',503);
+   if(normalizeMarketLocation(validateProfile(latest.data?.profile)?.location||'')!==normalizeMarketLocation(location))throw new WorkspaceError('property_location_changed',409);
+  }
   const context={
-   location:coordinates?'当前位置':location,start,end,center:coordinates?'current':'property',
+   location:coordinates?searchLocation||'当前位置':location,start,end,center:coordinates?'current':'property',
    events,eventSource,eventRadiusKm:EVENT_RADIUS_KM,
   };
   const headers={'Cache-Control':'no-store'};

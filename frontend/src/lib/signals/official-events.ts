@@ -1,6 +1,8 @@
 import {validCoordinates} from '../amap-nearby';
 import {collectEvents,eventsInWindow,EVENT_RADIUS_KM,straightLineKm,validateEvents,type EventPoint,type EventsInput,type EventsResult} from './events';
 import type {LocalEvent} from './types';
+import {fetchSearchedEvents,type VenueResolver} from './searched-events';
+import {eventSearchKey} from '../local-discovery';
 
 type Calendar={id:'namoc'|'zjam';url:string;name:string;venue:string;point:EventPoint;encoding:string};
 // Fixed public calendars only. Never send account data, a search query or the property address.
@@ -10,7 +12,7 @@ const calendars:readonly Calendar[]=[
  {id:'zjam',url:'https://www.zjam.org.cn/Site/Exbition/ExbitionList.aspx?type=1',name:'浙江美术馆',venue:'浙江美术馆 · 杭州市西湖区南山路138号',point:{latitude:30.231049,longitude:120.156894},encoding:'gbk'},
 ];
 const MAX_BYTES=262144;
-type LiveInput=EventsInput&{fetcher?:typeof fetch;signal?:AbortSignal;timeoutMs?:number};
+type LiveInput=EventsInput&{fetcher?:typeof fetch;signal?:AbortSignal;timeoutMs?:number;location?:string;resolveVenue?:VenueResolver;searchKey?:string;searchFetcher?:typeof fetch};
 
 export function isOfficialEventCalendarUrl(url:URL){return !url.username&&!url.password&&calendars.some(calendar=>url.href===calendar.url)}
 
@@ -80,7 +82,7 @@ async function readCalendar(calendar:Calendar,fetcher:typeof fetch,signal:AbortS
  return parseOfficialCalendar(html,calendar.id,observedAt);
 }
 
-export async function fetchEvents(input:LiveInput):Promise<EventsResult>{
+async function fetchCalendarEvents(input:LiveInput):Promise<EventsResult>{
  const now=input.now instanceof Date&&!Number.isNaN(input.now.getTime())?input.now:new Date();
  const fallback=collectEvents({...input,now}),center=input.scope?.center;
  // Explicit test/manual inputs are offline, and missing coordinates never fetch another city's calendar.
@@ -105,4 +107,24 @@ export async function fetchEvents(input:LiveInput):Promise<EventsResult>{
  if(!refreshed.length)return {...fallback,source:{...fallback.source,confidence:'low',note:`${fallback.source.note}${failed.join('、')}官网暂未读取成功，保留原采集时间与已有记录。`}};
  const result=collectEvents({events:combined,window:input.window,now,observedAt:now.toISOString()});
  return {...result,source:{...result.source,authority:'public',note:`${result.source.note}本次已读取${refreshed.join('、')}官网列表，仅覆盖所列场馆。${failed.length?`${failed.join('、')}未刷新，已有记录保留原采集时间。`:''}`}};
+}
+
+export async function fetchEvents(input:LiveInput):Promise<EventsResult>{
+ const fallbackPromise=fetchCalendarEvents(input);
+ const key=input.searchKey??eventSearchKey();
+ const center=input.scope?.center;
+ if(Array.isArray(input.events)||!validCoordinates(center))return fallbackPromise;
+ if(!key||!input.location||!input.resolveVenue){
+  const fallback=await fallbackPromise;
+  return {...fallback,source:{...fallback.source,note:`${fallback.source.note}通用活动搜索尚未就绪，当前仅显示已有日历来源；无记录不代表当地没有活动。`}};
+ }
+ const signal=input.signal?AbortSignal.any([input.signal,AbortSignal.timeout(input.timeoutMs??20000)]):AbortSignal.timeout(input.timeoutMs??20000);
+ const now=input.now??new Date();
+ const discovered=await untilAbort(fetchSearchedEvents({location:input.location,center,window:input.window,now,key,fetcher:input.searchFetcher??input.fetcher??fetch,signal,resolveVenue:input.resolveVenue}),signal).catch(()=>null);
+ const fallback=await fallbackPromise;
+ if(!discovered)return {...fallback,source:{...fallback.source,confidence:'low',note:`${fallback.source.note}本次通用活动搜索暂未成功，保留已有记录；可稍后重新读取。`}};
+ const urls=new Set(discovered.events.map(event=>event.sourceUrl));
+ const combined=[...discovered.events,...fallback.events.filter(event=>!urls.has(event.sourceUrl))];
+ const result=collectEvents({events:combined,window:input.window,now,observedAt:now.toISOString()});
+ return {...result,source:{...result.source,authority:'public',note:`${result.source.note}${discovered.note}`}};
 }

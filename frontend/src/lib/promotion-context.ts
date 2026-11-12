@@ -15,7 +15,7 @@ export async function promotionContext(db:SupabaseClient,propertyId:string,brief
  const profile=validateProfile(p.data?.profile),inventory=validateInventory(i.data?.inventory,propertyId);
  if(!profile?.location||!inventory?.rooms.some(r=>r.active))throw new WorkspaceError('promotion_setup_required',422);
  if(s.data&&!validPromotion(s.data.state))throw new WorkspaceError('promotion_unavailable',503);
- const sources=matchingSources(s.data?.state.sources||[],brief);
+ const sources=matchingSources(s.data?.state.sources||[],brief,profile.location);
  if(sources.length!==brief.sourceIds.length)throw new WorkspaceError('promotion_source_required',422);
  const zh=brief.language==='zh',facts=[{id:'property',text:zh?`民宿名称：${profile.name}`:`Property name: ${profile.name}`},{id:'location',text:zh?`位置：${profile.location}`:`Location: ${profile.location}`}];
  for(const [key,label,en] of [['notes','民宿说明','Property notes'],['guestNotes','客人须知','Guest information'],['checkin','入住时间','Check-in time'],['breakfast','早餐时间','Breakfast hours']] as const)if(profile[key])facts.push({id:key,text:`${zh?label:en}：${profile[key]}`});

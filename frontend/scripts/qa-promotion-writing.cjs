@@ -86,6 +86,7 @@ const noUnexpected=(copy)=>{
  equal(payload.mustInclude,[name],'exact required names are explicit in the writing input');
  check(!Object.hasOwn(payload,'facts')&&!JSON.stringify(payload).includes('独立测试账号'),'raw mixed private notes are not sent alongside the cleaned context');
  check(request.messages[0].content.includes('JSON'),'model output has a structured contract');
+ check(request.messages[0].content.includes('默认不主动写具体价格、折扣或剩余房量'),'ordinary promotion does not solicit commercial numbers');
  const twoParagraphs=`在${name}，把阅读角留给一段不看时钟的时间。书读到哪里，话聊到哪里，行程不妨慢一点。\n\n2026-11-14 若想来小住，私信日期与人数，一起核对临河大床房的安排。`;
  equal((await generate(twoParagraphs)).engine,'model_v1','two paragraphs do not need a fixed title or dawn/afternoon sequence');
  equal((await composePromotion(facts,{...brief,channel:'xiaohongshu'},name,{model:true,fetcher:async()=>response(literary)})).engine,'model_v1','legacy marketing channel no longer requires shouts, emoji or hashtags');
@@ -104,14 +105,25 @@ const noUnexpected=(copy)=>{
  const providedFeatures=literary.replace('翻过几页书，再聊聊还没说完的话，让行程也有一点留白。','看一部想看的电影，给投影仪前的时光留一点余地。早餐安排在08:00–09:30，按自己的节奏开始新的一天。');
  equal((await composePromotion(additionalFacts,brief,name,{model:true,fetcher:async()=>response(providedFeatures)})).engine,'model_v1','verified facilities and breakfast hours remain usable beyond a small scene vocabulary');
 
- const rejected=[
+ const creativeVariants=[
   ['shouting',literary+' 谁懂啊，挖到宝了'],
   ['exclamation',literary+' 欢迎来住！'],
   ['emoji',literary+' ✨'],
   ['hashtags',literary+' #旅行灵感'],
+  ['invented tree and paving',literary+' 梧桐叶子铺在青石板路上。'],
+  ['invented view and animals',literary+' 推开窗看看邻居的屋顶和飞过的鸽子。'],
+  ['invented bridge and streetlights',literary+' 路灯亮起，水面映出桥的影子。'],
+  ['invented local food',literary+' 回来时在桥头买一包热栗子。'],
+ ];
+ for(const [label,content] of creativeVariants){
+  const result=await generate(content);equal(result.engine,'model_v1',label+' remains a usable draft');equal(result.content,content,label+' is preserved');
+ }
+ const rejected=[
   ['facility',literary+' 入住后可以去泳池游泳。'],
   ['view',literary+' 客房带有落地窗。'],
   ['price',literary+' 每晚只要199元。'],
+  ['creative style cannot bypass availability',literary+' 猫在屋顶打盹 ✨ 临河大床房目前可预订！'],
+  ['creative style cannot bypass price',literary+' 梧桐叶落在石板路上，每晚只要199元！'],
   ['gift',literary+' 住下就赠送下午茶。'],
   ['discount',literary+' 连住两晚享九折。'],
   ['invented capacity',literary+' 临河大床房最多入住8人。'],
@@ -125,10 +137,6 @@ const noUnexpected=(copy)=>{
   ['invented cooking ability',literary+' 买些食材回来，在房间里简单做一顿饭。'],
   ['invented room size',literary+' 临河大床房不大，但足够两个人住得舒展。'],
   ['invented street view',literary+' 窗外是老街和安静的河道。'],
-  ['invented tree and paving',literary+' 梧桐叶子铺在青石板路上。'],
-  ['invented view and animals',literary+' 推开窗看看邻居的屋顶和飞过的鸽子。'],
-  ['invented bridge and streetlights',literary+' 路灯亮起，水面映出桥的影子。'],
-  ['invented local food',literary+' 回来时在桥头买一包热栗子。'],
   ['invented water level',literary+' 河水涨到窗台的高度。'],
   ['punctuated availability',literary+' 临河大床房，在十一月十五日那天，恰好空着。'],
  ];

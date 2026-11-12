@@ -2,9 +2,9 @@
 const assert=require('node:assert/strict'),fs=require('node:fs'),Module=require('node:module'),path=require('node:path'),ts=require('typescript');
 const source=path.resolve(__dirname,'../src'),window={start:'2026-11-18',end:'2026-11-20'};
 const demoAddress='江苏省苏州市太仓市娄江新城 · 西浦北里（虚构演示地址）',mapPoint='121.130745,31.453539';
-const mapCalls=[],calendarCalls=[],unexpectedRequests=[],scopes=[];
-let address='真实测试地址',sample=false,geocode=mapPoint,mapFailure=false,calendarFailure=false,email='owner@example.invalid',signedIn=true,profileError=false;
-const envKeys=['AMAP_MAPS_API_KEY','STAYCRAFT_SAMPLE_LIVE_AMAP','DEMO_LOGIN_EMAIL','SEARCH_API_KEY'];
+const mapCalls=[],calendarCalls=[],reverseCalls=[],searchCalls=[],unexpectedRequests=[],scopes=[];
+let address='真实测试地址',addressAfterGeocode,sample=false,geocode=mapPoint,mapFailure=false,calendarFailure=false,email='owner@example.invalid',signedIn=true,profileError=false,reverseAddress='',reverseFailure=false;
+const envKeys=['AMAP_MAPS_API_KEY','STAYCRAFT_SAMPLE_LIVE_AMAP','DEMO_LOGIN_EMAIL','SEARCH_API_KEY','EVENT_SEARCH_ENABLED'];
 const previousEnv=Object.fromEntries(envKeys.map(key=>[key,process.env[key]])),previousFetch=global.fetch;
 class WorkspaceError extends Error {constructor(code,status){super(code);this.status=status;}}
 const workspace={
@@ -41,6 +41,16 @@ function load(file){
 }
 const {POST}=load(path.join(source,'app/api/workspace/discovery/route.ts'));
 global.fetch=async(url,options)=>{
+ const target=new URL(String(url));
+ if(target.origin==='https://restapi.amap.com'&&target.pathname==='/v3/geocode/regeo'){
+  assert.equal(target.searchParams.get('key'),'isolated-test-key');assert.equal(options.redirect,'manual');
+  reverseCalls.push(target.searchParams.get('location'));
+  return reverseFailure?new Response(null,{status:503}):Response.json({status:'1',regeocode:{formatted_address:reverseAddress}});
+ }
+ if(String(url)==='https://api.deepseek.com/v1/tools/search'){
+  assert.equal(options.headers.Authorization,'Bearer isolated-search-key');
+  searchCalls.push(JSON.parse(options.body));return Response.json({results:[]});
+ }
  if(['https://www.namoc.cn/namoc/zhanlan/zl_list.shtml','https://www.zjam.org.cn/Site/Exbition/ExbitionList.aspx?type=1'].includes(String(url))){
   calendarCalls.push(String(url));assert.equal(options.method,'GET');assert.equal(options.credentials,'omit');assert.equal(options.redirect,'manual');assert.deepEqual(Object.keys(options.headers),['Accept']);
   if(calendarFailure)return new Response(null,{status:503});
@@ -52,6 +62,7 @@ global.fetch=async(url,options)=>{
  const {params:{name,arguments:args}}=JSON.parse(options.body);mapCalls.push({name,args});
  assert.equal(name,'maps_geo','Activity discovery must not request POIs');
  if(mapFailure)return new Response(null,{status:503});
+ if(addressAfterGeocode){address=addressAfterGeocode;addressAfterGeocode=undefined;}
  return Response.json({result:{content:[{type:'text',text:JSON.stringify({geocodes:[{location:geocode}]})}]}});
 };
 async function discover(overrides={},origin='http://localhost'){
@@ -61,7 +72,7 @@ async function discover(overrides={},origin='http://localhost'){
  return {status:response.status,body};
 }
 (async()=>{
- process.env.AMAP_MAPS_API_KEY='isolated-test-key';process.env.SEARCH_API_KEY='must-not-be-used';
+ process.env.AMAP_MAPS_API_KEY='isolated-test-key';delete process.env.SEARCH_API_KEY;delete process.env.EVENT_SEARCH_ENABLED;
  delete process.env.STAYCRAFT_SAMPLE_LIVE_AMAP;delete process.env.DEMO_LOGIN_EMAIL;
  let response=await discover();
  assert.equal(response.status,200);assert.equal(response.body.provider,'official_calendar');
@@ -69,6 +80,7 @@ async function discover(overrides={},origin='http://localhost'){
  assert.equal(response.body.events.length,4);assert.equal(response.body.eventSource.authority,'public');assert.equal(response.body.eventSource.coverage.kind,'partial');
  assert(response.body.events.every(event=>event.verified&&event.source.observedAt===response.body.eventSource.observedAt));
  assert.equal(mapCalls.length,1);assert.equal(response.body.events.find(event=>event.id==='tc-2026-11-artist-solo').distanceKm,0);
+ addressAfterGeocode='已修改的新地址';response=await discover();assert.equal(response.status,409);assert.equal(response.body.error,'property_location_changed');assert.equal(response.body.events,undefined,'old address activities never returned under changed profile');address='真实测试地址';
  mapCalls.length=0;
  response=await discover({coordinates:{latitude:31.456,longitude:121.125}});
  assert.equal(response.body.center,'current');assert.equal(response.body.events.length,4);assert.equal(mapCalls.length,0);
@@ -82,6 +94,20 @@ async function discover(overrides={},origin='http://localhost'){
  assert.deepEqual(response.body.events,[]);assert.equal(response.body.eventSource.coverage.kind,'none');
  response=await discover({coordinates:{latitude:39.925255,longitude:116.408939}});assert.equal(response.status,200);assert.equal(response.body.events.length,1);assert(response.body.events[0].distanceKm<2);assert.match(response.body.eventSource.note,/本次已读取中国美术馆/);
  calendarFailure=true;response=await discover({start:'2026-11-11',end:'2026-11-14',coordinates:{latitude:30.233414,longitude:120.152256}});assert.equal(response.status,200);assert.equal(response.body.events.length,2);assert.match(response.body.eventSource.note,/保留原采集时间/);assert.equal(response.body.eventSource.observedAt,'2026-11-11T02:19:23.053Z');calendarFailure=false;
+ assert.equal(reverseCalls.length,0,'No current-area lookup when generic search is not configured');
+ process.env.SEARCH_API_KEY='isolated-search-key';address='四川省成都市武侯区人民南路18号';
+ reverseAddress='广东省深圳市福田区福华路1号';response=await discover({coordinates:{latitude:22.54,longitude:114.06}});
+ assert.equal(response.status,200);assert.equal(response.body.location,reverseAddress);assert.equal(response.body.center,'current');
+ assert.equal(searchCalls.length,1);assert.match(searchCalls[0].query,/深圳市福田区/);assert(!searchCalls[0].query.includes('成都'),'GPS query cannot borrow the property city');
+ reverseAddress='山东省青岛市市南区香港中路8号';response=await discover({coordinates:{latitude:36.07,longitude:120.38}});
+ assert.equal(response.body.location,reverseAddress);assert.equal(searchCalls.length,2);assert.match(searchCalls[1].query,/青岛市市南区/);assert(!searchCalls[1].query.includes('成都')&&!searchCalls[1].query.includes('深圳'),'Moving GPS changes the search city');
+ reverseFailure=true;response=await discover({start:'2026-11-11',end:'2026-11-14',coordinates:{latitude:30.233414,longitude:120.152256}});
+ assert.equal(response.status,200);assert.equal(response.body.location,'当前位置');assert.equal(response.body.events.length,2,'Coordinate calendars survive reverse-geocoding failure');assert.equal(searchCalls.length,2,'Failed current-area lookup must not search the property city');
+ reverseFailure=false;reverseAddress='';response=await discover({coordinates:{latitude:23.1,longitude:113.3}});
+ assert.equal(response.body.location,'当前位置');assert.equal(searchCalls.length,2,'Unknown current area must not search the property city');
+ sample=true;const beforeDemoReverse=reverseCalls.length;response=await discover({coordinates:{latitude:23.1,longitude:113.3}});
+ assert.equal(reverseCalls.length,beforeDemoReverse);assert.equal(searchCalls.length,2,'Demo GPS never invokes generic providers');
+ sample=false;delete process.env.SEARCH_API_KEY;address='真实测试地址';
  response=await discover({start:'2026-11-21',end:'2026-11-21'});
  assert.equal(response.body.events.length,3);assert(!response.body.events.some(event=>event.end<response.body.start));
  mapFailure=true;response=await discover();
@@ -105,7 +131,7 @@ async function discover(overrides={},origin='http://localhost'){
  signedIn=false;const previousScopes=scopes.length,previousCalls=mapCalls.length;
  response=await discover();assert.equal(response.status,401);assert.equal(scopes.length,previousScopes);assert.equal(mapCalls.length,previousCalls);
  assert(scopes.every(value=>value==='owned-property'));assert.deepEqual(unexpectedRequests,[]);
- console.log('PASS activity-only discovery, radius/date/GPS, demo identity/address isolation, empty failures and authentication scope; no live network');
+ console.log('PASS activity-only discovery, radius/date/GPS, cross-city GPS search and lookup failure, demo identity/address isolation, empty failures and authentication scope; no live network');
 })().catch(error=>{console.error(error);process.exitCode=1;}).finally(()=>{
  global.fetch=previousFetch;
  for(const key of envKeys){if(previousEnv[key]===undefined)delete process.env[key];else process.env[key]=previousEnv[key];}

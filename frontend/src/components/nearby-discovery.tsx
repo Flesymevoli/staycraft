@@ -10,7 +10,7 @@ import './nearby-discovery.css';
 type Discovery={location?:string;start?:string;end?:string;error?:string;events?:LocalEvent[];eventSource?:SourceRef;eventRadiusKm?:number};
 function sourceLink(value:string){try{const url=new URL(value);return ['https:','http:'].includes(url.protocol)?url.href:null}catch{return null}}
 
-type Evidence = {title:string;url:string;summary:string;start?:string;end?:string};
+type Evidence = {title:string;url:string;summary:string;start?:string;end?:string;location?:string};
 const weatherUrl='https://open-meteo.com/en/docs';
 type WeatherPayload={weather?:{status:string;days:WeatherDay[];source?:SourceRef;note?:string};centerLabel?:string};
 function NearbyPanelHeading({title,dates,location,count}:{title:string;dates:string;location?:string;count?:string}){
@@ -57,7 +57,7 @@ function PropertyWeather({zh,start,end,onUseSource,selectedReferences,disabled}:
   if(!chosen)return;
   const chance=typeof chosen.precipProb==='number'&&Number.isFinite(chosen.precipProb)?t('rain chance ','降水概率 ')+Math.round(chosen.precipProb)+'%':'';
   const summary=[payload?.centerLabel,demoWeather?t('Simulated weather','模拟天气'):t('Forecast, subject to change','预报可能变化'),weatherText(chosen.code),chance,!demoWeather&&observedAt&&t('Retrieved ','获取于 ')+observedAt+t(' China time',' 北京时间')].filter(Boolean).join(' · ');
-  void onUseSource({title,url:demoWeather?'https://staycraft.online/':weatherUrl,summary,start:chosen.date,end:chosen.date});
+  void onUseSource({title,url:demoWeather?'https://staycraft.online/':weatherUrl,summary,start:chosen.date,end:chosen.date,location:payload?.centerLabel});
  }
  return <section className="property-weather" aria-label={t('Weather near your property','民宿周边天气')} aria-busy={loading}>
   <NearbyPanelHeading title={t('Weather forecast','天气预报')}
@@ -126,7 +126,7 @@ export function NearbyDiscovery({zh,start,end,onUseSource,selectedUrls,selectedR
    {events.length>0?<>
     <div className="nearby-event-list" id={eventsId}>{visibleEvents.slice(0,eventsExpanded?undefined:desktop?2:3).map(event=>{const url=sourceLink(event.sourceUrl),selected=selectedReferences?selectedReferences.some(reference=>reference.url===event.sourceUrl&&reference.title===event.title):selectedUrls.includes(event.sourceUrl);return <article className="nearby-event" key={event.id}>
      <div className="nearby-event-main"><h4>{event.title}</h4><p className="nearby-event-dates">{event.start} — {event.end}</p><p className="nearby-event-venue">{event.venue||t('Venue unavailable','地点未提供')}<span aria-hidden="true"> · </span>{eventDistance(event)}</p><div className="nearby-event-source">{activeCategory==='all'&&<span className="nearby-event-category">{EVENT_CATEGORIES[event.category][zh?0:1]}</span>}{url&&<a href={url} target="_blank" rel="noopener noreferrer" aria-label={t(`Source for ${event.title}`,`${event.title}的来源`)}>{t('Source','查看来源')}<ExternalLink size={12} aria-hidden="true"/></a>}{event.observedAt&&<span>{t('Collected','采集于')} {dateLabel(event.observedAt)}</span>}</div></div>
-     {url&&<button type="button" className="nearby-use-source" disabled={disabled||selected} onClick={()=>void onUseSource({title:event.title,url:event.sourceUrl,summary:[`${event.start} — ${event.end}`,event.venue,eventDistance(event)].filter(Boolean).join(' · ')})}>{selected?t('Added','已采用'):t('Add as evidence','加入文案证据')}</button>}
+     {url&&<button type="button" className="nearby-use-source" disabled={disabled||selected} onClick={()=>void onUseSource({title:event.title,url:event.sourceUrl,summary:[`${event.start} — ${event.end}`,event.venue,eventDistance(event)].filter(Boolean).join(' · '),start:event.start,end:event.end,location:data?.location})}>{selected?t('Added','已采用'):t('Add as evidence','加入文案证据')}</button>}
     </article>})}</div>
     {visibleEvents.length>(desktop?2:3)&&<button type="button" className="nearby-disclosure-button" aria-expanded={eventsExpanded} aria-controls={eventsId} onClick={()=>setEventsExpanded(value=>!value)}>{eventsExpanded?t('Show fewer activities','收起活动'):t(`View all ${visibleEvents.length} activities`,`展开全部 ${visibleEvents.length} 条活动`)}<ChevronDown size={15} aria-hidden="true"/></button>}
    </>:data?.error&&data.error!=='property_location_required'?<p className="nearby-events-note" role="status">{t('Could not look up activities for this address. Check the address or retry.','暂时无法按此地址查询活动，请核对地址或重试。')} <button type="button" className="nearby-disclosure-button" onClick={()=>setRetry(value=>value+1)}>{t('Retry activities','重试活动')}</button></p>:<p className="nearby-events-note" role="status">{t('The activity catalog has no matches for this address and date range.','已收录的活动中，暂无符合此地址和日期范围的结果。')}</p>}
