@@ -8,8 +8,7 @@ export function monitorDates(previous, today) {
     date.setUTCDate(date.getUTCDate() + days);
     return date.toISOString().slice(0, 10);
   };
-  // The pilot only reads the nearby visible calendar; do not accept arbitrary horizons.
-  const retained = Array.isArray(previous)
-    ? previous.filter(date => valid(date) && date >= today && date <= add(31)) : [];
-  return [...new Set([...retained.sort(), add(4), add(7)])].slice(0, 2).sort();
+  // Continuous seven-day window starting tomorrow: every night is collected separately so the
+  // market table can show per-night prices instead of an average across the stay.
+  return Array.from({length: 7}, (_, index) => add(index + 1));
 }

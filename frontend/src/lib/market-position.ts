@@ -1,8 +1,9 @@
+import {COMPARABLE_ONE_NIGHT} from './market-comparable';
 export type MarketAnalysis={start:string;end:string;low:number;high:number;ownLow:number;ownHigh:number;count:number;checkedAt:string;location:string};
 export type PricingContext={start:string;end:string;bookedPct:number|null;available:number|null;capacity:number|null};
 export function marketAnalysis(data:{start:string;end:string;hotels:{id:number;price:number|null;currency:string;conditions:string}[];ownRates?:{min:number;max:number}|null;checkedAt:string;location:string;locationPrecision?:string}):MarketAnalysis|null{
  if(data.locationPrecision&&data.locationPrecision!=='property'||Date.parse(data.end)-Date.parse(data.start)!==86400000||!data.ownRates)return null;
- const quotes=[...new Map(data.hotels.filter(h=>h.currency==='CNY'&&typeof h.price==='number'&&Number.isFinite(h.price)&&h.price>0&&/1\s*晚.*总价|total/i.test(h.conditions)).map(h=>[h.id,h.price!])).values()];
+ const quotes=[...new Map(data.hotels.filter(h=>h.currency==='CNY'&&typeof h.price==='number'&&Number.isFinite(h.price)&&h.price>0&&COMPARABLE_ONE_NIGHT.test(h.conditions)).map(h=>[h.id,h.price!])).values()];
  const {min,max}=data.ownRates;
  if(quotes.length<2||!Number.isFinite(min)||!Number.isFinite(max)||min<=0||max<min)return null;
  return {start:data.start,end:data.end,low:Math.min(...quotes),high:Math.max(...quotes),ownLow:min,ownHigh:max,count:quotes.length,checkedAt:data.checkedAt,location:data.location};

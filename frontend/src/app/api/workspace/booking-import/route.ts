@@ -1,5 +1,6 @@
 import {bookingCsvHeader,previewBookingCsv} from "@/lib/booking-csv";
-import {boundedBody,requireSameOrigin,verifiedProperty,WorkspaceError,workspaceFailure} from "@/lib/workspace-access";
+import {isDemoWorkspace} from "@/lib/operator-sample";
+import {boundedBody,requireSameOrigin,verifiedProperty,writableProperty,WorkspaceError,workspaceFailure} from "@/lib/workspace-access";
 export const dynamic="force-dynamic";
 // Preview and confirmed writes share an owner-checked PostgreSQL transaction.
 export async function GET(request:Request){try{
@@ -12,7 +13,8 @@ export async function GET(request:Request){try{
  return new Response('\uFEFF'+bookingCsvHeader+'\r\n',{headers:{"Content-Type":"text/csv; charset=utf-8","Content-Disposition":"attachment; filename=staycraft-booking-template.csv","Cache-Control":"no-store"}});
 }catch(error){return workspaceFailure(error)}}
 export async function POST(request:Request){try{
- requireSameOrigin(request);const {supabase,propertyId}=await verifiedProperty();
+ requireSameOrigin(request);const {supabase,propertyId,user}=await verifiedProperty();
+ if(isDemoWorkspace(user.email))throw new WorkspaceError('booking_import_demo_disabled',403);
  const bytes=await boundedBody(request,1100000);
  let text:string;try{text=new TextDecoder('utf-8',{fatal:true}).decode(bytes)}catch{throw new WorkspaceError('utf8_required',400)}
  let commit=false,revision:string|null=null,confirm=false;
@@ -34,7 +36,7 @@ export async function POST(request:Request){try{
  }
 }catch(error){return workspaceFailure(error)}}
 export async function PUT(request:Request){try{
- requireSameOrigin(request);const {supabase,propertyId}=await verifiedProperty();
+ requireSameOrigin(request);const {supabase,propertyId}=await writableProperty();
  let input;try{input=JSON.parse(new TextDecoder().decode(await boundedBody(request,1000)))}catch{throw new WorkspaceError('invalid_input',400)}
  if(!input||typeof input.task!=='string'||!/^[a-f0-9-]{36}$/.test(input.task))throw new WorkspaceError('invalid_input',400);
  const {error}=await supabase.rpc('complete_import_task',{p_property:propertyId,p_task:input.task});

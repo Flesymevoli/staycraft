@@ -1,0 +1,24 @@
+const fs=require('node:fs'),path=require('node:path'),Module=require('node:module'),ts=require('typescript'),assert=require('node:assert/strict');
+function load(file){const mod=new Module(file);mod.require=name=>name.startsWith('.')?load(path.resolve(path.dirname(file),name)+'.ts'):require(name);mod._compile(ts.transpileModule(fs.readFileSync(file,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText,file);return mod.exports;}
+const {buildMarketSample}=load(path.resolve(__dirname,'../src/lib/market/sample.ts'));
+const {marketInventoryAdvice}=load(path.resolve(__dirname,'../src/lib/market/rate-advice.ts'));
+const date='2026-11-14';
+const quotes=[500,550,600].map((priceCny,index)=>({id:String(index),source:'manual',sourceName:'住宿'+index,capturedAt:'2026-11-13T10:00:00Z',stayDate:date,nights:1,adults:2,priceCny,priceType:'calendar',status:'available'}));
+const sample=buildMarketSample({quotes,window:{start:date,end:date}});
+const ownRates={min:400,max:480};
+const inventory={date,capacity:5,booked:4,available:1};
+const advice=overrides=>marketInventoryAdvice({sample,ownRates,inventory,zh:true,...overrides});
+assert.match(advice({}).title,/试涨/);
+assert.match(advice({}).basis,/已订 4\/5 间.*剩余 1 间/);
+assert.match(advice({inventory:{...inventory,booked:5,available:0}}).title,/已满房/);
+assert(!advice({inventory:{...inventory,booked:0,available:5}}).title.includes('试涨'));
+assert.match(advice({ownRates:{min:700,max:900}}).title,/挂牌价偏高/);
+assert.match(advice({ownRates:null}).title,/补齐本店挂牌价/);
+for(const invalid of [null,{...inventory,date:'2026-11-15'},{...inventory,capacity:0},{...inventory,available:3},{...inventory,booked:-1}])assert.match(advice({inventory:invalid}).title,/核对当天可售房量/);
+const tooFew=buildMarketSample({quotes:quotes.slice(0,2),window:{start:date,end:date}});
+assert.match(advice({sample:tooFew}).title,/样本不足/);
+const displayOnly=buildMarketSample({quotes:quotes.map(quote=>({...quote,priceType:'display'})),window:{start:date,end:date}});
+assert.match(advice({sample:displayOnly}).title,/样本不足/);
+assert.match(advice({sample:{...sample,window:{start:date,end:'2026-11-15'}}}).title,/样本不足/);
+const english=advice({zh:false});assert.match(english.basis,/4\/5 rooms booked and 1 available/);assert(!/[\u4e00-\u9fff]/.test(english.title+english.basis+english.action));
+console.log('PASS rate advice follows same-date inventory and valid sample size; sold-out, sparse, missing, mismatched, low-price and high-price cases; no prescribed room or price amount');

@@ -80,8 +80,8 @@ export function aggregateRevenue(rows:readonly RevenueSourceRow[],period:AgentPe
   keyMetrics:[{key:'completedRoomRevenue',label:'已完成住宿房费',value:currentComplete.amountCny,unit:'CNY'},{key:'completedRoomNights',label:'已完成售出间夜',value:currentComplete.roomNights,unit:'间夜'},{key:'completedADR',label:'已完成成交均价',value:currentComplete.averageRateCny,unit:'CNY/间夜'},{key:'futureBookingValue',label:'未来预订金额',value:current.futureBooked.amountCents/100,unit:'CNY'}]};
 }
 export type AgentRevenue=ReturnType<typeof aggregateRevenue>;
-export async function readAgentRevenue(db:SupabaseClient,propertyId:string,period:AgentPeriod,signal?:AbortSignal):Promise<AgentRevenue>{
- const today=new Intl.DateTimeFormat('sv-SE',{timeZone:'Asia/Shanghai'}).format(new Date());
+export async function readAgentRevenue(db:SupabaseClient,propertyId:string,period:AgentPeriod,signal?:AbortSignal,referenceDay?:string):Promise<AgentRevenue>{
+ const today=referenceDay??new Intl.DateTimeFormat('sv-SE',{timeZone:'Asia/Shanghai'}).format(new Date());
  if(!validDate(period.start)||!validDate(period.end)||period.end<period.start)throw Error('revenue_period_invalid');
  const length=(Date.parse(period.end)-Date.parse(period.start))/DAY+1;if(length>60)throw Error('revenue_period_invalid');
  const rows:RevenueSourceRow[]=[],start=shift(period.start,-length);let expected:number|null=null;

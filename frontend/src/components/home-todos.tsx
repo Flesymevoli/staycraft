@@ -1,4 +1,5 @@
 "use client";
+import {DEMO_PERIOD} from '@/lib/demo-period';
 import {useEffect,useRef,useState} from "react";
 import Link from "next/link";
 import {useBookingStays} from "./booking-stays";
@@ -40,8 +41,9 @@ export function HomeTodos({date,today,scope,zh,urgentOnly=false}:{date:string;to
 }
 
 function shanghaiToday(){return new Intl.DateTimeFormat("sv-SE",{timeZone:"Asia/Shanghai",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date())}
-export function WorkUrgentTodos({scope,zh}:{scope:string;zh:boolean}){
+export function WorkUrgentTodos({scope,zh,demo=false}:{scope:string;zh:boolean;demo?:boolean}){
  const [date,setDate]=useState(shanghaiToday);
- useEffect(()=>{const refresh=()=>setDate(shanghaiToday());const timer=setInterval(refresh,60000);window.addEventListener("focus",refresh);return()=>{clearInterval(timer);window.removeEventListener("focus",refresh)}},[]);
- return <HomeTodos date={date} today={date} scope={scope} zh={zh} urgentOnly/>;
+ useEffect(()=>{if(demo)return;const refresh=()=>setDate(shanghaiToday());const timer=setInterval(refresh,60000);window.addEventListener("focus",refresh);return()=>{clearInterval(timer);window.removeEventListener("focus",refresh)}},[demo]);
+ const referenceDay=demo?DEMO_PERIOD.start:date;
+ return <HomeTodos date={referenceDay} today={referenceDay} scope={scope} zh={zh} urgentOnly/>;
 }

@@ -1,10 +1,10 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
-import { hasSupabaseConfig } from "@/lib/supabase/config";
+import { hasSupabaseConfig, supabaseConfig } from "@/lib/supabase/config";
 import {operatorSample} from '@/lib/operator-sample';
+import {loginEmail, normalizeUsername, usernameEmail} from '@/lib/login-identity';
 
 export async function signInDemo():Promise<LoginState>{
  const sample=operatorSample(),email=sample?'demo@example.invalid':process.env.DEMO_LOGIN_EMAIL,password=sample?'staycraft-demo':process.env.DEMO_LOGIN_PASSWORD;
@@ -19,33 +19,43 @@ export async function signInDemo():Promise<LoginState>{
 
 export type LoginState = { error: "invalid" | "unavailable" | "missing" } | undefined;
 
-export type SignupState = { error?: "missing" | "password" | "unavailable" | "sample" | "failed"; sent?: boolean } | undefined;
+export type SignupState = { error: "username" | "password" | "unavailable" | "sample" | "failed" | "taken" | "confirmation_required" } | undefined;
 
 export async function signUp(_previous: SignupState, formData: FormData): Promise<SignupState> {
-  const email = String(formData.get("email") ?? "").trim();
+  const username = normalizeUsername(String(formData.get("username") ?? ""));
   const password = String(formData.get("password") ?? "");
-  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return { error: "missing" };
+  if (!username) return { error: "username" };
   if (password.length < 8) return { error: "password" };
   if (operatorSample()) return { error: "sample" };
   if (!hasSupabaseConfig()) return { error: "unavailable" };
   let signedIn = false;
   try {
-    const origin = (await headers()).get("origin");
-    if (!origin) return { error: "unavailable" };
+    // Username identities cannot receive email. Check before creating an account.
+    const {url, publishableKey} = supabaseConfig();
+    const response = await fetch(`${url}/auth/v1/settings`, {
+      headers: {apikey: publishableKey}, cache: "no-store", signal: AbortSignal.timeout(10000),
+    });
+    if (!response.ok) return {error: "unavailable"};
+    const settings = await response.json();
+    if (settings.disable_signup || settings.external?.email === false) return {error: "unavailable"};
+    if (settings.mailer_autoconfirm !== true) return {error: "confirmation_required"};
     const supabase = await createClient();
-    const { data, error } = await supabase.auth.signUp({ email, password, options: { emailRedirectTo: new URL("/auth/callback", origin).href } });
-    if (error) return { error: "failed" };
+    const { data, error } = await supabase.auth.signUp({
+      email: usernameEmail(username), password,
+      options: {data: {username, display_name: username}},
+    });
+    if (error) return { error: error.code === "user_already_exists" || error.code === "email_exists" ? "taken" : "failed" };
     signedIn = Boolean(data.session);
   } catch { return { error: "unavailable" }; }
   if (signedIn) redirect("/app");
-  return { sent: true };
+  return { error: "confirmation_required" };
 }
 
 export async function signIn(
   _previous: LoginState,
   formData: FormData,
 ): Promise<LoginState> {
-  const email = String(formData.get("email") ?? "").trim();
+  const email = loginEmail(String(formData.get("email") ?? formData.get("username") ?? ""));
   const password = String(formData.get("password") ?? "");
   if (!email || !password) return { error: "missing" };
   if (!hasSupabaseConfig()) return { error: "unavailable" };

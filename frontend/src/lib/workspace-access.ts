@@ -1,6 +1,7 @@
 import "server-only";
 import {accountProperty} from "./account-property";
 import { createClient } from "@/lib/supabase/server";
+import {isDemoWorkspace,operatorSample} from "./operator-sample";
 
 export class WorkspaceError extends Error {
   constructor(public code: string, public status: number) { super(code); }
@@ -20,8 +21,16 @@ export async function verifiedAccount() {
 
 export async function verifiedProperty() {
   const { supabase, user } = await verifiedAccount();
-  try{const property=await accountProperty(supabase,user.id);return {supabase,propertyId:property.id as string};}
+  try{const property=await accountProperty(supabase,user.id);return {supabase,propertyId:property.id as string,user};}
   catch{throw new WorkspaceError("property_unavailable",503);}
+}
+
+export async function writableProperty() {
+  const account = await verifiedProperty();
+  if (!operatorSample() && isDemoWorkspace(account.user.email)) {
+    throw new WorkspaceError("demo_read_only", 403);
+  }
+  return account;
 }
 
 export function requireSameOrigin(request: Request) {

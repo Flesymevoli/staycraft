@@ -1,4 +1,4 @@
-import {boundedBody,requireSameOrigin,verifiedProperty,WorkspaceError,workspaceFailure} from "@/lib/workspace-access";
+import {boundedBody,requireSameOrigin,verifiedProperty,writableProperty,WorkspaceError,workspaceFailure} from "@/lib/workspace-access";
 export const dynamic="force-dynamic";
 const headers={"Cache-Control":"no-store"};
 const uuid=/^[a-f0-9]{8}-[a-f0-9]{4}-[1-5][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i;
@@ -12,7 +12,7 @@ export async function GET(request:Request){try{
  if(readError)throw readError;return Response.json({...conversation,messages},{headers});
 }catch(error){return workspaceFailure(error);}}
 export async function POST(request:Request){try{
- requireSameOrigin(request);const {supabase,propertyId}=await verifiedProperty();let body;
+ requireSameOrigin(request);const {supabase,propertyId}=await writableProperty();let body;
  try{body=JSON.parse(new TextDecoder().decode(await boundedBody(request,10000)));}catch(error){if(error instanceof WorkspaceError)throw error;throw new WorkspaceError("invalid_message",400);}
  if(!uuid.test(body?.thread||"")||!uuid.test(body?.requestId||"")||!uuid.test(body?.replyTo||"")||typeof body?.body!=="string"||!body.body.trim()||body.body.length>2000)throw new WorkspaceError("invalid_message",400);
  const {data,error}=await supabase.rpc("reply_conversation",{p_property:propertyId,p_thread:body.thread,p_request:body.requestId,p_reply_to:body.replyTo,p_body:body.body.trim()});

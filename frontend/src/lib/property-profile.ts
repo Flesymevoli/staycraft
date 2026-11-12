@@ -1,11 +1,12 @@
-export type PropertyProfile = { name: string; location: string; roomCount: string; breakfast: string; checkin: string; notes: string; guestNotes?: string };
-export const blankProfile: PropertyProfile = { name: "", location: "", roomCount: "", breakfast: "", checkin: "", notes: "", guestNotes: "" };
+export type PropertyProfile = { name: string; location: string; roomCount: string; breakfast: string; checkin: string; checkout?: string; notes: string; guestNotes?: string };
+export const blankProfile: PropertyProfile = { name: "", location: "", roomCount: "", breakfast: "", checkin: "", checkout: "", notes: "", guestNotes: "" };
 export const profileFields = [
   { key: "name", en: "Property name", zh: "民宿名称", max: 120 },
   { key: "location", en: "Location", zh: "位置", max: 300 },
   { key: "roomCount", en: "Number of rooms", zh: "客房数量", max: 3 },
   { key: "breakfast", en: "Breakfast hours", zh: "早餐时间", max: 11 },
   { key: "checkin", en: "Check-in time", zh: "入住时间", max: 5 },
+  { key: "checkout", en: "Check-out time", zh: "退房时间", max: 5 },
   { key: "notes", en: "House rules & guest information", zh: "入住规则与客人须知", max: 2000 },
   { key: "guestNotes", en: "Guest website information (public)", zh: "客人端入住须知（公开）", max: 2000 },
 ] as const;
@@ -16,7 +17,7 @@ export function validateProfile(input: unknown): PropertyProfile | null {
   if (Object.keys(values).some(key => !Object.hasOwn(blankProfile, key))) return null;
   const result = { ...blankProfile };
   for (const { key, max } of profileFields) {
-    if (key === "guestNotes" && values[key] === undefined) { result[key] = ""; continue; }
+    if ((key === "guestNotes" || key === "checkout") && values[key] === undefined) { result[key] = ""; continue; }
     if (typeof values[key] !== "string") return null;
     result[key] = values[key].trim();
     if (result[key].length > max || /\u0000/.test(result[key])) return null;
@@ -25,6 +26,7 @@ export function validateProfile(input: unknown): PropertyProfile | null {
   const clock = /^(?:[01]\d|2[0-3]):[0-5]\d$/;
   if (!result.name || (result.roomCount && !/^[1-9]\d{0,2}$/.test(result.roomCount))) return null;
   if (result.checkin && !clock.test(result.checkin)) return null;
+  if (result.checkout && !clock.test(result.checkout)) return null;
   if (result.breakfast) {
     const [start, end, extra] = result.breakfast.split("–");
     if (!start || !end || extra || !clock.test(start) || !clock.test(end) || start >= end) return null;
@@ -39,6 +41,7 @@ const aliases: Record<string, keyof PropertyProfile> = {
   roomcount: "roomCount", rooms: "roomCount", 客房数量: "roomCount", 房间数量: "roomCount",
   breakfast: "breakfast", breakfasthours: "breakfast", 早餐时间: "breakfast",
   checkin: "checkin", checkintime: "checkin", 入住时间: "checkin",
+  checkout: "checkout", checkouttime: "checkout", 退房时间: "checkout",
   notes: "notes", houserules: "notes", 入住规则: "notes", 客人须知: "notes",
 };
 const fieldKey = (value: string) => aliases[value.trim().toLowerCase().replace(/[\s_-]/g, "")];

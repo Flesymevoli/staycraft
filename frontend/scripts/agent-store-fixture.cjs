@@ -1,7 +1,7 @@
 // QA-only persistent diagnosis store. Imported exclusively by the loopback fixture server.
 const fs=require('node:fs'),path=require('node:path');
 module.exports=function(url,init,property){
- const file=path.resolve(__dirname,'../../tmp/sample-agent-runs-v2.json');
+ const file=process.env.STAYCRAFT_QA_AGENT_STORE || path.resolve(__dirname,'../../tmp/sample-agent-runs-v2.json');
  let rows=fs.existsSync(file)?JSON.parse(fs.readFileSync(file,'utf8')):[];
  const json=(v,status=200)=>new Response(JSON.stringify(v),{status,headers:{'Content-Type':'application/json'}});
  const params=url.searchParams,method=init?.method||'GET',match=row=>{if(row.property_id!==property)return false;for(const [k,v]of params){if(['select','order','limit','offset'].includes(k))continue;const raw=row[k];if(v.startsWith('eq.')&&String(raw)!==v.slice(3))return false;if(v.startsWith('in.(')&&!v.slice(4,-1).split(',').includes(String(raw)))return false;if(v.startsWith('lt.')&&!(raw<v.slice(3)))return false;if(v.startsWith('gte.')&&!(raw>=v.slice(4)))return false;}return true;};

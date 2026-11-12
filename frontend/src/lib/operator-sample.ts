@@ -8,3 +8,7 @@ export function sampleCookieOptions(){return operatorSample()?{name:"staycraft-o
 export function operatorModelEnabled(){
  return process.env.MODEL_ENABLED==='1'&&process.env.FORMAL_MODEL_ENABLED==='1'&&(!operatorSample()||process.env.STAYCRAFT_SAMPLE_LIVE_MODEL==='1');
 }
+export function isDemoWorkspace(email?:string){
+ const configured=process.env.DEMO_LOGIN_EMAIL?.trim().toLowerCase();
+ return operatorSample()||Boolean(configured&&email?.trim().toLowerCase()===configured);
+}

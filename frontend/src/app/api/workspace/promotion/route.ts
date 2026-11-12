@@ -1,6 +1,6 @@
 import {randomUUID} from "node:crypto";
 import {emptyPromotion,validPromotion} from "@/lib/promotion";
-import {boundedBody,requireSameOrigin,verifiedProperty,WorkspaceError,workspaceFailure} from "@/lib/workspace-access";
+import {boundedBody,requireSameOrigin,verifiedProperty,writableProperty,WorkspaceError,workspaceFailure} from "@/lib/workspace-access";
 export const dynamic="force-dynamic";
 const headers={"Cache-Control":"no-store"};
 export async function GET(){try{
@@ -10,7 +10,7 @@ export async function GET(){try{
  return Response.json({state:data?.state||emptyPromotion(),revision:data?.revision||null},{headers});
 }catch(error){return workspaceFailure(error)}}
 export async function PUT(request:Request){try{
- requireSameOrigin(request);const {supabase,propertyId}=await verifiedProperty();let body;
+ requireSameOrigin(request);const {supabase,propertyId}=await writableProperty();let body;
  try{body=JSON.parse(new TextDecoder().decode(await boundedBody(request,220000)))}catch{throw new WorkspaceError("invalid_promotion",400)}
  if(!body||Object.keys(body).sort().join()!=="revision,state"||!validPromotion(body.state)||!(body.revision===null||/^[a-f0-9-]{36}$/i.test(body.revision||"")))throw new WorkspaceError("invalid_promotion",400);
  const row={property_id:propertyId,state:body.state,revision:randomUUID(),updated_at:new Date().toISOString()};

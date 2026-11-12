@@ -23,7 +23,6 @@ import {WorkspaceExplore} from "./workspace-explore";
 import "./workspace-theme.css";
 
 export type WorkspaceSection = "home" | "work" | "analysis" | "explore" | "mine" | "promotion";
-export {WorkbenchShell as WorkspaceClient} from "./workbench-shell";
 export type WorkspaceConnection = { status: "unavailable" | "unassigned" } | { status: "linked"; propertyName: string;propertyId:string };
 const sections = [
   { id: "home", en: "Home", zh: "首页", href: "/app", icon: "home-inactive", active: "home" },

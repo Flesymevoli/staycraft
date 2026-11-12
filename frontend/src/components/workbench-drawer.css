@@ -1,0 +1,30 @@
+.workbench-drawer {
+  position:fixed; inset:0; width:100vw; max-width:none; height:100dvh; max-height:none;
+  margin:0; padding:0; border:0; background:transparent; color:var(--ink,#303039);
+  overflow:hidden;
+}
+.workbench-drawer::backdrop { background:rgba(20,18,38,.36); backdrop-filter:blur(4px); }
+.workbench-drawer-panel {
+  width:min(620px,94vw); height:100%; margin-left:auto; display:flex; flex-direction:column;
+  background:#fff; border-left:1px solid var(--line,#efedf3); box-shadow:-16px 0 48px #14122629;
+  animation:workbench-drawer-enter 220ms cubic-bezier(.23,1,.32,1);
+}
+.workbench-drawer-panel > header { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:20px 26px; border-bottom:1px solid var(--line,#efedf3); }
+.workbench-drawer-panel > header h2 { margin:0; font-size:19px; font-weight:600; }
+.workbench-drawer-panel > header button { width:34px; height:34px; flex-shrink:0; border:1px solid var(--line,#efedf3); border-radius:50%; display:grid; place-items:center; background:#f8f7fb; cursor:pointer; }
+.workbench-drawer-body { flex:1; min-height:0; overflow:auto; overscroll-behavior:contain; padding:22px 26px 40px; }
+.workbench-drawer-body .mo-collection > summary { display:none; }
+.workbench-drawer-body .desktop-collection { padding:18px; border:1px solid #efedf3; border-radius:16px; background:#faf9fc; }
+.workbench-drawer-body .desktop-collection textarea { width:100%; min-height:120px; margin:12px 0; }
+.workbench-drawer-body .promotion-actions { display:flex; flex-wrap:wrap; gap:10px; }
+.workbench-drawer-body .wb-finding { padding:18px 0; border-bottom:1px solid #efedf3; }
+.workbench-drawer[data-closing] .workbench-drawer-panel { animation:workbench-drawer-exit 220ms cubic-bezier(.23,1,.32,1) forwards; }
+@keyframes workbench-drawer-enter { from { transform:translateX(40px); opacity:.5; } to { transform:translateX(0); opacity:1; } }
+@keyframes workbench-drawer-exit { to { transform:translateX(40px); opacity:0; } }
+@media(prefers-reduced-motion:reduce) { .workbench-drawer-panel,.workbench-drawer[data-closing] .workbench-drawer-panel { animation:none; } }
+.workbench-drawer-body .mo-collection > .desktop-collection {
+  position: static;
+  width: 100%;
+  margin: 0;
+  box-sizing: border-box;
+}

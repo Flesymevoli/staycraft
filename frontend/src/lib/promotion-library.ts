@@ -26,14 +26,16 @@ const discovery = [
    "Autumn has a way of slipping past\n\nPull out a light jacket and find someone who likes to walk slowly. Take the long way, pick out a fallen leaf, and enjoy autumn somewhere beyond your feed. 🍂\n\n📍 Comment “autumn” and your travel dates for availability.\n\n#AutumnBreak #WeekendWalk"],
 ];
 
-export function drawPromotionCopy(brief:PromotionBrief, used:number[]) {
-  const bank = brief.channel === 'wechat' ? ordinary : discovery;
+const bank = [...ordinary, ...discovery];
+
+export function drawPromotionCopy(language: PromotionBrief["language"], used: number[]) {
   const indices = bank.map((_, index) => index);
   const remaining = indices.filter(index => !used.includes(index));
   const options = remaining.length ? remaining : indices.filter(index => index !== used.at(-1));
   const chosen = options[Math.floor(Math.random() * options.length)];
   return {
-    content: bank[chosen][brief.language === 'zh' ? 0 : 1],
+    content: bank[chosen][language === 'zh' ? 0 : 1],
+    channel: chosen < ordinary.length ? 'wechat' as const : 'xiaohongshu' as const,
     used: [...(remaining.length ? used : []), chosen],
   };
 }

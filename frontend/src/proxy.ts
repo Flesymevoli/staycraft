@@ -6,7 +6,7 @@ export async function proxy(request:NextRequest){
  const path=request.nextUrl.pathname;
  if(retiredGuestPath(path))return new NextResponse(null,{status:410,headers:{"Cache-Control":"no-store"}});
  if(isHosted()){
-  const prototype=path.startsWith("/native-")||path==="/legacy"||path.endsWith(".html")||path.startsWith("/api/demo/")||path.startsWith("/api/local/");
+  const prototype=path.startsWith("/native-")||path==="/legacy"||(path.endsWith(".html")&&path!=="/concept/index.html")||path.startsWith("/api/demo/")||path.startsWith("/api/local/");
   const guest=path==="/guest"||path.startsWith("/guest/");const property=request.nextUrl.searchParams.get("property")||"";
   if(prototype||(guest&&!/^[a-f0-9]{8}-[a-f0-9]{4}-[1-5][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i.test(property)))return new NextResponse(null,{status:404,headers:{"Cache-Control":"no-store"}});
  }

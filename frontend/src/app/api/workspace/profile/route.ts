@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { validateProfile } from "@/lib/property-profile";
-import { boundedBody, requireSameOrigin, verifiedProperty, WorkspaceError, workspaceFailure } from "@/lib/workspace-access";
+import { boundedBody, requireSameOrigin, verifiedProperty,writableProperty, WorkspaceError, workspaceFailure } from "@/lib/workspace-access";
 
 export const dynamic = "force-dynamic";
 export async function GET() {
@@ -17,7 +17,7 @@ export async function GET() {
 export async function PUT(request: Request) {
   try {
     requireSameOrigin(request);
-    const { supabase, propertyId } = await verifiedProperty();
+    const { supabase, propertyId } = await writableProperty();
     let body;
     try { body = JSON.parse(new TextDecoder().decode(await boundedBody(request, 16000))); }
     catch (error) { if (error instanceof WorkspaceError) throw error; throw new WorkspaceError("invalid_profile", 400); }

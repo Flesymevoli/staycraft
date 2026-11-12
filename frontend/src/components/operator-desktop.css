@@ -1,0 +1,134 @@
+/* One operator UI, two layouts. Mobile and tablet styles remain in native-*.css. */
+@media (min-width: 1024px) {
+  .native-shell:has(> .native-page) {
+    --desktop-sidebar: 196px;
+    padding: 0 0 0 var(--desktop-sidebar);
+    background: #f7f8f9;
+    min-height: 100dvh;
+  }
+  .native-shell > .native-page {
+    width: 100%;
+    max-width: 1320px;
+    min-height: 100dvh;
+    margin: 0 auto;
+    padding: 24px 36px 42px;
+    border-radius: 0;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 24px;
+    align-content: start;
+    align-items: start;
+  }
+  .native-shell > .native-page > * { min-width: 0; grid-column: 1 / -1; }
+  .native-shell > .native-page.native-home-page {
+    background: #f8f9fb;
+  }
+  .native-shell > .native-tabbar {
+    left: 0; top: 0; bottom: 0;
+    width: var(--desktop-sidebar);
+    min-height: 100dvh;
+    border: 0; border-right: 1px solid var(--hairline);
+    border-radius: 0; padding: 38px 18px 24px;
+    transform: none; box-shadow: none;
+    background: #ffffffc9;
+    display: flex; flex-direction: column; gap: 8px;
+    overflow-y: auto;
+  }
+  .native-shell > .native-tabbar::before {
+    content: "Staycraft"; display: block;
+    padding: 0 14px 33px; color: var(--ink);
+    font-size: 25px; font-weight: 500; letter-spacing: -.055em;
+  }
+  .native-shell > .native-tabbar a {
+    flex: 0 0 auto; width: 100%; min-height: 52px;
+    flex-direction: row; justify-content: flex-start;
+    gap: 13px; padding: 12px 16px; border-radius: 16px;
+    font-size: 14px;
+  }
+  .native-shell > .native-tabbar a:hover { background: #f1f4f7; }
+  .native-shell > .native-tabbar a.is-active { background: #edf5ff; }
+  .native-shell > .native-tabbar a:last-child { margin-top: auto; }
+  .native-shell > .native-page > .native-header { height: 44px; margin: 0; border-bottom: 1px solid #e5e7eb80; padding-bottom: 10px; }
+  .native-shell .native-header .native-kicker { font-size: 11px; }
+  .native-shell .native-greeting { margin: 0; padding: 12px 0 8px; }
+  .native-shell .native-greeting h1 { font-size: 38px; }
+  .native-shell .native-calendar-section { margin: 0; }
+  .native-shell .native-dates { gap: 12px; }
+  .native-shell .native-date { flex: 0 0 54px; }
+  .native-shell .native-home-page > .room-board { grid-column: 1; grid-row: 4; margin: 0; }
+  .native-shell .room-board-surface { padding: 24px 20px 18px; }
+  .native-shell .room-floor { margin-top: 20px; }
+  .native-shell .room-grid { gap: 10px; }
+  .native-shell .native-home-page > .native-overview { grid-column: 2; grid-row: 4; margin: 0; }
+  .native-shell .native-overview > .native-card { margin-top: 16px; }
+  .native-shell .native-overview-head { margin-top: 0; }
+  .native-shell .native-home-page > .native-recent { grid-column: 1; margin-top: 0; }
+  .native-shell .native-home-page > .native-footer { margin-top: 4px; }
+  .native-shell .native-home-page > .native-assistant { margin: 0; max-width: 850px; }
+
+  .native-shell .native-work-page > .work-summary { margin: 0; }
+  .native-shell .work-summary h1 { margin: 0; font-size: 32px; }
+  .native-shell .native-work-page > .work-auto-settings { margin: 0; }
+  .native-shell .native-work-page > .work-conversations { grid-column: 1; grid-row: 4; margin: 0; }
+  .native-shell .native-work-page > .work-needs { grid-column: 2; grid-row: 4 / span 3; margin: 0; }
+  .native-shell .native-work-page > .work-working { grid-column: 1; grid-row: 5; margin: 0; }
+  .native-shell .native-work-page > .work-done { grid-column: 1; grid-row: 6; margin: 0; }
+  .native-shell .work-inbox { margin-top: 16px; }
+  .native-shell .work-thread { max-height: 440px; overflow-y: auto; }
+  .native-shell .work-notice { left: calc(50% + 98px); bottom: 24px; width: min(600px, calc(100% - 260px)); }
+
+  .native-shell .native-analysis-page { grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); }
+  .native-shell .analysis-overview { display: grid; grid-template-columns: 2fr 3fr; gap: 12px 18px; }
+  .native-shell .analysis-overview > h1, .native-shell .analysis-overview > p { grid-column: 1 / -1; margin: 0; }
+  .native-shell .analysis-overview > .native-kicker { grid-row: 3; grid-column: 1; margin: 8px 0 0; }
+  .native-shell .analysis-overview > .native-kicker:last-of-type { grid-column: 2; }
+  .native-shell .analysis-overview > .analysis-overview-grid { grid-row: 4; grid-column: 1; margin: 0; }
+  .native-shell .analysis-overview > .analysis-context-grid { grid-row: 4; grid-column: 2; margin: 0; }
+  .native-shell .analysis-overview-grid > button, .native-shell .analysis-context-grid > button { min-height: 165px; padding: 17px 13px; }
+  .native-shell .analysis-overview-grid strong { font-size: 27px; }
+  .native-shell .native-analysis-page > .analysis-selected-detail { grid-column: 1; grid-row: 3 / span 2; }
+  .native-shell .analysis-selected-detail > .analysis-main-card:first-child { margin-top: 0; }
+  .native-shell .native-analysis-page > .analysis-summary-card { grid-column: 2; grid-row: 3; margin: 0; }
+  .native-shell .native-analysis-page > .analysis-decisions { grid-column: 2; grid-row: 4; margin: 0; }
+  .native-shell .analysis-footer { margin-top: 0; }
+
+  .native-shell .native-explore-page > .explore-pulse { grid-column: 1; grid-row: 2; margin: 0; }
+  .native-shell .native-explore-page > .explore-demand { grid-column: 2; grid-row: 2; margin: 0; padding: 12px 16px 16px; border-radius: 24px; background: var(--card-surface); border: 1px solid white; }
+  .native-shell .explore-pulse-chart { max-height: 270px; }
+  .native-shell .native-explore-page > .explore-promotion { grid-column: 1; margin: 0; }
+  .native-shell .native-explore-page > .explore-price { grid-column: 2; margin: 0; padding: 24px; background: var(--card-surface); border-radius: 24px; }
+  .native-shell .native-explore-page > .explore-local { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 16px; margin: 0; }
+  .native-shell .explore-local > .explore-section-head { grid-column: 1 / -1; }
+  .native-shell .explore-local > .explore-local-card { margin: 0; }
+  .native-shell .explore-stay-carousel { gap: 18px; }
+  .native-shell .explore-stay-card { flex: 0 0 calc((100% - 36px) / 3); min-width: 0; }
+  .native-shell .explore-nearby .explore-stay-controls { display: none; }
+
+  .native-shell .native-mine-page > .mine-property-image { grid-column: 1 / -1; height: 260px; margin: 0; }
+  .native-shell .native-mine-page > :is(h1,.mine-location,.mine-description,.mine-image-caption) { margin: 0; }
+  .native-shell .native-mine-page > .mine-section { grid-column: auto; margin: 0; }
+  .native-shell .native-mine-page > .local-facts { grid-column: 1; margin: 0; }
+  .native-shell .native-mine-page > .mine-upload:not(.local-facts) { margin: 0; }
+
+  .native-shell .workspace-page > h1 { margin: 12px 0 0; }
+  .native-shell .workspace-page > .workspace-intro { margin: -10px 0 4px; }
+  .native-shell .workspace-page > .workspace-notice { margin: 0; }
+  .native-shell .workspace-page[data-section="home"] > .workspace-empty { grid-column: 1; margin: 0; }
+  .native-shell .workspace-page[data-section="home"] > .workspace-section { grid-column: 2; margin: 0; }
+  .native-shell .workspace-page[data-section="analysis"] > .workspace-metrics { grid-column: 1; }
+  .native-shell .workspace-page[data-section="analysis"] > .workspace-empty { grid-column: 2; margin: 0; }
+  .native-shell .workspace-page[data-section="work"] > .workspace-empty,
+  .native-shell .workspace-page[data-section="explore"] > .workspace-empty { max-width: 840px; width: 100%; margin: 0; }
+  .native-shell .workspace-profile { margin: 0; display: grid; grid-template-columns: minmax(240px,.8fr) minmax(0,1.2fr); gap: 24px; align-items: start; }
+  .native-shell .workspace-profile > .profile-upload { grid-column: 1; grid-row: 1; margin: 0; }
+  .native-shell .workspace-profile > .profile-preview { grid-column: 1; grid-row: 2; margin: 0; }
+  .native-shell .workspace-profile > .profile-form { grid-column: 2; grid-row: 1 / span 3; margin: 0; }
+  .native-shell .workspace-profile > .profile-connection { grid-column: 1; }
+  .native-shell .workspace-account { margin: 0; }
+  .native-shell .workspace-metric { padding: 24px; min-height: 165px; }
+}
+@media (min-width: 1440px) {
+  .native-shell:has(> .native-page) { --desktop-sidebar: 224px; }
+  .native-shell > .native-page { padding-inline: 48px; gap: 28px; }
+  .native-shell .work-notice { left: calc(50% + 112px); }
+}

@@ -1,4 +1,5 @@
 import type {AgentMarket} from './decision-agent-types';
+import {COMPARABLE_ONE_NIGHT} from './market-comparable';
 
 type HotelRecord={hotelId?:unknown;name?:unknown;price?:{hasPrice?:unknown;lowestPrice?:unknown;currency?:unknown;message?:unknown}};
 function decode(raw:string){
@@ -31,7 +32,7 @@ export async function queryPropertyMarket(location:string,start:string,end:strin
   currency:typeof h.price?.currency==='string'?h.price.currency.toUpperCase().slice(0,8):'',
   conditions:typeof h.price?.message==='string'?h.price.message.slice(0,300):'Amount basis unavailable'
  }));
- const comparable=hotels.filter(h=>h.price!==null&&h.currency==='CNY'&&/1\s*晚.*总价|1\s*night.*total|per.?night/i.test(h.conditions));
+ const comparable=hotels.filter(h=>h.price!==null&&h.currency==='CNY'&&COMPARABLE_ONE_NIGHT.test(h.conditions));
  const prices=comparable.map(h=>h.price!);
- return {start,end,count:comparable.length,currency:'CNY',low:prices.length>=2?Math.min(...prices):null,high:prices.length>=2?Math.max(...prices):null,hotels};
+ return {query:{location,rooms:1,adults:2,nights:1,limit:5},start,end,count:comparable.length,currency:'CNY',low:prices.length>=2?Math.min(...prices):null,high:prices.length>=2?Math.max(...prices):null,hotels};
 }

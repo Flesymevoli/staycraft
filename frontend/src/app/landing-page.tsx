@@ -3,9 +3,8 @@
 import Image from "next/image";
 import Link from "next/link";
 import { DataSample, MarketSample, DecisionSample } from "./landing-samples";
-import { useActionState, useEffect, useRef } from "react";
+import { useEffect, useRef } from "react";
 import { useOperatorLanguage } from "@/components/operator-language";
-import { signInDemo, type LoginState } from "./login/actions";
 
 const courtyard = "/images/landing-courtyard.webp";
 const chapters = [
@@ -80,12 +79,11 @@ function useLandingScroll() {
   }, []);
   return root;
 }
-export function LandingPage({ demoAvailable = false }: { demoAvailable?: boolean }) {
+export function LandingPage() {
   const root = useLandingScroll();
   const { language, setLanguage } = useOperatorLanguage();
   const zh = language === "zh";
-  const [state, action, pending] = useActionState<LoginState, FormData>(signInDemo, undefined);
-  const trialLabel = pending ? (zh ? "正在进入…" : "Opening…") : (zh ? "免登录试用" : "Try the demo");
+  const trialLabel = zh ? "查看概念演示" : "Explore the concept";
   const login = zh ? "登录 / 注册" : "Sign in / Register";
   return <div ref={root} className="landing" lang={zh ? "zh-CN" : "en"}>
     <a className="landing-skip" href="#landing-main">{zh ? "跳至主要内容" : "Skip to content"}</a>
@@ -98,16 +96,15 @@ export function LandingPage({ demoAvailable = false }: { demoAvailable?: boolean
         <div className="landing-intro"><h1 id="landing-title">{zh ? "看清经营，" : "See your business."}<br/>{zh ? "决定下一步。" : "Plan your next move."}</h1>
           <p>{zh ? "整理订单，看懂预订走势，调查周边报价。StayCraft 帮你判断哪些日子值得跟进，把经营建议写进推广草稿。" : "Organize bookings, track demand and explore nearby rates. StayCraft helps you decide where to focus and prepare a promotion for your stay."}</p>
           <div className="landing-actions">
-            {demoAvailable ? <form id="landing-trial" action={action}><button className="landing-cta" disabled={pending}>{trialLabel} <span aria-hidden="true">↗</span></button>
-              {state?.error && <p role="alert">{zh ? "演示暂时无法打开，请稍后重试。" : "The demo is unavailable. Please try again."}</p>}</form>
-              : <Link className="landing-cta" href="/login">{login} <span aria-hidden="true">↗</span></Link>}
+            <a className="landing-cta" href="/try">{trialLabel} <span aria-hidden="true">↗</span></a>
+            <Link className="landing-discover" href={zh ? "/download" : "/download?lang=en"}>{zh ? "下载桌面端" : "Download desktop app"} <span aria-hidden="true">↓</span></Link>
             <a className="landing-discover" href="#data">{zh ? "浏览功能" : "Explore features"} <span aria-hidden="true">↓</span></a>
           </div>
-          {demoAvailable && <small>{zh ? "直接进入演示民宿工作台，无需填写账号。" : "No sign-up needed. Explore with sample data."}</small>}
+          <small>{zh ? "无需登录，体验完整的交互概念。" : "Explore the interactive concept without signing in."}</small>
         </div>
         <div className="landing-photo"><Image src={courtyard} alt={zh ? "临河小院的树荫、茶桌与客房，民宿场景示意" : "Illustration of a canal-side guesthouse, with a shaded table and open guest room"} fill priority sizes="(max-width: 720px) 100vw, 54vw"/></div>
       </section>
-      <nav className="landing-index" aria-label={zh ? "功能章节" : "Feature chapters"}>{chapters.map((c,i) => <a href={`#${c.id}`} key={c.id}>{(zh ? ["数据可视化", "市场调研", "决策与推广"] : ["Data", "Market", "Decisions"])[i]}</a>)}{demoAvailable && <button className="index-trial" type="submit" form="landing-trial" disabled={pending}>{trialLabel} <span aria-hidden="true">↗</span></button>}</nav>
+      <nav className="landing-index" aria-label={zh ? "功能章节" : "Feature chapters"}>{chapters.map((c,i) => <a href={`#${c.id}`} key={c.id}>{(zh ? ["数据可视化", "市场调研", "决策与推广"] : ["Data", "Market", "Decisions"])[i]}</a>)}<a className="index-trial" href="/try">{trialLabel} <span aria-hidden="true">↗</span></a></nav>
       <div className="story-flow"><div className="story-stops" aria-hidden="true">{chapters.map(c => <div className="story-stop" key={c.id} id={c.id}/>)}</div>
       <div className="story-stage">{chapters.map(c => <section key={c.id} className={`story story-${c.id}`} aria-labelledby={`title-${c.id}`}>
         <div className="story-inner"><div className="story-copy"><p className="story-label">{c[language][0]}</p><h2 id={`title-${c.id}`}>{c[language][1]}</h2><p>{c[language][2]}</p></div>

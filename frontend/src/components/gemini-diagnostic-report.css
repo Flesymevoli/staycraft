@@ -1,0 +1,42 @@
+/* The three report blocks follow the approved Gemini drawerReport source. */
+.gemini-diagnostic-report { display:flex; flex-direction:column; gap:18px; min-width:0; color:#303039; overflow-wrap:anywhere; }
+.gemini-diagnostic-report * { box-sizing:border-box; }
+.gemini-diagnostic-report .gdr-heading { margin:0 0 2px; }
+.gemini-diagnostic-report .gdr-period { display:inline-block; border-radius:999px; padding:4px 8px; background:#f0edf9; color:#6554c7; font-size:11px; line-height:1.6; }
+.gemini-diagnostic-report .gdr-heading h2 { margin:8px 0 0; font-size:19px; font-weight:600; line-height:1.55; letter-spacing:0; }
+.gemini-diagnostic-report .gdr-card { min-width:0; padding:16px 18px; border:1px solid #efedf3; border-radius:16px; background:#faf9fc; }
+.gemini-diagnostic-report .gdr-card h3 { margin:0; font-size:14px; font-weight:600; line-height:1.65; letter-spacing:0; }
+.gemini-diagnostic-report .gdr-card p { margin:6px 0 0; font-size:13px; color:#565463; line-height:1.7; }
+.gemini-diagnostic-report .gdr-card .gdr-note,.gemini-diagnostic-report .gdr-note { color:#73737f; font-size:11px; line-height:1.7; }
+.gemini-diagnostic-report .gdr-card .gdr-table-period { font-size:11px; color:#73737f; }
+.gemini-diagnostic-report .gdr-table { width:100%; table-layout:fixed; border-collapse:collapse; font-size:13px; font-variant-numeric:tabular-nums; margin-top:10px; }
+.gemini-diagnostic-report .gdr-type-col { width:30%; }
+.gemini-diagnostic-report .gdr-revenue-col { width:28%; }
+.gemini-diagnostic-report .gdr-nights-col { width:16%; }
+.gemini-diagnostic-report .gdr-rate-col { width:26%; }
+.gemini-diagnostic-report .gdr-table :is(th,td) { padding:11px 8px; border-bottom:1px solid #efedf3; text-align:right; font-weight:400; line-height:1.6; }
+.gemini-diagnostic-report .gdr-table :is(th,td):first-child { text-align:left; }
+.gemini-diagnostic-report .gdr-table thead { color:#73737f; }
+.gemini-diagnostic-report .gdr-table tbody tr:last-child :is(th,td) { border-bottom:0; }
+.gemini-diagnostic-report .gdr-table td.gdr-table-empty { text-align:center; padding:22px 4px; color:#73737f; }
+.gemini-diagnostic-report .gdr-actions { padding:0 0 0 19px; margin:10px 0 0; display:grid; gap:16px; }
+.gemini-diagnostic-report .gdr-actions li { min-width:0; padding-left:1px; }
+.gemini-diagnostic-report .gdr-actions li::marker { font-size:13px; color:#6554c7; }
+.gemini-diagnostic-report .gdr-actions h4 { margin:0; font-size:13px; font-weight:600; line-height:1.7; }
+.gemini-diagnostic-report .gdr-actions small { display:block; font-size:11px; color:#73737f; margin-top:6px; }
+.gemini-diagnostic-report .gdr-action-links { display:flex; flex-wrap:wrap; gap:8px; margin-top:12px; }
+.gemini-diagnostic-report :is(.gdr-primary,.gdr-secondary) { display:inline-flex; align-items:center; justify-content:center; gap:6px; border-radius:999px; padding:8px 13px; border:1px solid #e6e1f3; background:white; color:#6554c7; text-decoration:none; font:inherit; font-size:12px; line-height:1.5; cursor:pointer; }
+.gemini-diagnostic-report .gdr-primary { color:white; border-color:#6554c7; background:#6554c7; }
+.gemini-diagnostic-report .gdr-text-button { border:0; padding:0; background:none; color:#6554c7; font:inherit; cursor:pointer; }
+.gemini-diagnostic-report .gdr-details { min-width:0; border-top:1px solid #efedf3; padding-top:10px; }
+.gemini-diagnostic-report .gdr-details>summary { padding:10px 0; font-size:12px; line-height:1.7; color:#6554c7; cursor:pointer; }
+.gemini-diagnostic-report .gdr-details-content { min-width:0; }
+.gemini-diagnostic-report .gdr-details-content :is(.wb-snapshot-table,.diagnostic-composition) { max-width:100%; overflow:auto; }
+.gemini-diagnostic-report :is(a,button,summary):focus-visible { outline:2px solid #9c8bd7; outline-offset:3px; }
+.gemini-diagnostic-report .gdr-sr-only { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip-path:inset(50%); white-space:nowrap; }
+@media(max-width:500px) {
+ .gemini-diagnostic-report .gdr-card { padding:14px 12px; }
+ .gemini-diagnostic-report .gdr-table { font-size:11px; }
+ .gemini-diagnostic-report .gdr-table :is(th,td) { padding:10px 3px; }
+ .gemini-diagnostic-report .gdr-heading h2 { font-size:17px; }
+}

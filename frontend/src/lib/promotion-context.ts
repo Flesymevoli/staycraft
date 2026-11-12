@@ -4,10 +4,11 @@ import {validateProfile} from './property-profile';
 import {validateInventory} from './property-inventory';
 import {matchingSources,validPromotion,type PromotionBrief} from './promotion';
 import {agentStore} from './decision-agent-store';
-import {promotionFinding,type PromotionPlan} from './promotion-plan';
+import {promotionTarget,type PromotionPlan} from './promotion-plan';
 import {WorkspaceError} from './workspace-access';
+import {demoMetrics,workspaceDay} from './demo-period';
 
-export async function promotionContext(db:SupabaseClient,propertyId:string,brief:PromotionBrief,diagnosis?:PromotionPlan['diagnosis']){
+export async function promotionContext(db:SupabaseClient,propertyId:string,brief:PromotionBrief,diagnosis?:PromotionPlan['diagnosis'],demo=false){
  const timeout=()=>AbortSignal.timeout(10000);
  const [p,i,s]=await Promise.all([db.from('property_details').select('profile,revision').eq('property_id',propertyId).abortSignal(timeout()).maybeSingle(),db.rpc('get_room_inventory',{p_property:propertyId}).abortSignal(timeout()),db.from('promotion_workspaces').select('state,revision').eq('property_id',propertyId).abortSignal(timeout()).maybeSingle()]);
  if(p.error||i.error||s.error)throw new WorkspaceError('promotion_unavailable',503);
@@ -25,12 +26,13 @@ export async function promotionContext(db:SupabaseClient,propertyId:string,brief
   const saved=await agentStore(db,propertyId).detail(diagnosis.runId);
   try{
    if(saved.error)throw Error('missing');
-   const today=new Intl.DateTimeFormat('sv-SE',{timeZone:'Asia/Shanghai'}).format(new Date()),finding=promotionFinding(saved.run,diagnosis.findingId,today),period=finding.nextAction!.period;
+   const today=workspaceDay(demo),{period,reason:diagnosisReason}=promotionTarget(saved.run,diagnosis,today);
    if(brief.start<period.start||brief.end>period.end)throw Error('period');
-   const {data,error}=await db.rpc('get_booking_metrics_range',{p_property:propertyId,p_start:brief.start,p_end:brief.end}).abortSignal(timeout());
+   const {data:raw,error}=await db.rpc('get_booking_metrics_range',{p_property:propertyId,p_start:brief.start,p_end:brief.end}).abortSignal(timeout());
+   const data=demo&&raw&&Array.isArray(raw.daily)?demoMetrics(raw):raw;
    const count=(Date.parse(brief.end)-Date.parse(brief.start))/86400000+1;
    if(error||!data||data.historical_inventory_unknown||data.period_start!==brief.start||data.period_end!==brief.end||!Array.isArray(data.daily)||data.daily.length!==count||data.daily.some((day:{date:string;available:number},index:number)=>day.date!==new Date(Date.parse(brief.start)+index*86400000).toISOString().slice(0,10)||!(day.available>0)))throw Error('stale');
-   reason=finding.conclusion+' '+finding.action;
+   reason=diagnosisReason;
   }catch{throw new WorkspaceError('promotion_diagnosis_unavailable',422)}
  }
  const revisions={profile:p.data?.revision,inventory:i.data?.revision,sources:s.data?.revision};

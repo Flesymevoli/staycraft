@@ -1,0 +1,39 @@
+/* view-mine layout and cards from the approved Gemini source, with its soft palette. */
+.gemini-property-workspace {color:var(--ink);min-width:0}
+.gemini-property-tools {display:flex;justify-content:flex-end;gap:10px;flex-wrap:wrap}
+.gemini-property-workspace button,.gemini-property-workspace a {font:inherit}
+.gemini-property-tools button,.property-edit-profile,.property-add-room {display:inline-flex;align-items:center;justify-content:center;gap:8px;border:1px solid var(--line-strong);border-radius:999px;background:var(--surface);color:var(--violet);padding:10px 17px;text-decoration:none;cursor:pointer;font-size:13px}
+.property-bento-grid {display:grid;grid-template-columns:minmax(0,8fr) minmax(0,4fr);gap:20px;align-items:start}
+.property-bento-card {min-width:0;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-card);padding:24px;box-shadow:var(--shadow-card)}
+.property-card-header {display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:22px;flex-wrap:wrap}
+.property-card-header h2 {font-size:16px;font-weight:500;margin:0;line-height:1.6}
+.property-card-header p {font-size:12px;color:var(--muted);line-height:1.7;margin:5px 0 0}
+.property-pill {display:inline-flex;align-items:center;border-radius:99px;padding:5px 9px;font-size:11px;line-height:1.4;white-space:normal;font-weight:400}
+.property-pill.violet {background:var(--violet-soft);color:var(--violet)}
+.property-pill.emerald {background:var(--pill-emerald-bg);color:var(--pill-emerald-text)}
+.property-pill.coral {background:var(--pill-coral-bg);color:var(--pill-coral-text)}
+.property-pill.muted {background:var(--surface-subtle);color:var(--muted)}
+.property-room-grid {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.property-room-tile {min-width:0;border:1px solid var(--line);border-radius:var(--radius-card);padding:16px;background:var(--surface)}
+.property-room-tile.is-dirty {border-color:#fecaca;background:#fffafb}
+.property-room-main {display:block;width:100%;border:0;background:transparent;text-align:left;padding:0;cursor:pointer;color:inherit}
+.property-room-top {display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.property-room-top>strong {font-size:16px;font-weight:600;overflow-wrap:anywhere}
+.property-room-main small {display:block;color:var(--muted);margin-top:9px;font-size:12px;line-height:1.7;overflow-wrap:anywhere}
+.property-room-details {display:block;margin-top:12px;font-size:11px;color:var(--violet);text-decoration:none}
+.property-clean-action {display:inline-flex;align-items:center;gap:5px;border:0;background:transparent;color:var(--violet);padding:10px 0 0;cursor:pointer;font-size:12px!important}
+.property-clean-list {margin:0}
+.property-clean-list>div {display:flex;align-items:flex-start;justify-content:space-between;gap:16px;padding:17px 0;border-bottom:1px solid var(--line);font-size:13px;line-height:1.7}
+.property-clean-list>div:last-child {border-bottom:0}
+.property-clean-list dt {color:var(--muted);flex-shrink:0}
+.property-clean-list dd {margin:0;text-align:right;font-weight:500;overflow-wrap:anywhere;min-width:0}
+.property-add-room,.property-edit-profile {margin-top:20px}
+.property-empty p,.property-feedback {font-size:13px;line-height:1.7;color:var(--muted)}
+.property-feedback button {margin-left:10px;background:none;border:0;color:var(--violet);cursor:pointer}
+.property-error {color:var(--pill-coral-text);font-size:13px}
+.gemini-property-workspace button:focus-visible,.gemini-property-workspace a:focus-visible {outline:2px solid var(--violet);outline-offset:4px}
+.gemini-property-workspace button:disabled {cursor:wait;opacity:.55}
+@media(min-width:1600px){.property-room-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:1100px){.property-bento-grid{grid-template-columns:minmax(0,1fr)}.property-room-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:800px){.property-bento-card{padding:20px}.property-room-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:520px){.property-room-grid{grid-template-columns:minmax(0,1fr)}.property-clean-list>div{flex-direction:column;gap:4px}.property-clean-list dd{text-align:left}.property-card-header{gap:10px}}

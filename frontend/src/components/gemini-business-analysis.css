@@ -1,0 +1,290 @@
+/* Extracted from the approved Gemini view-analysis styles; final refinement follows. */
+/* Semantic Pills */
+.gemini-business-analysis.gemini-business-analysis .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 9px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 650;
+      line-height: 1.35;
+      white-space: nowrap;
+      font-variant-numeric: tabular-nums;
+    }
+.gemini-business-analysis.gemini-business-analysis .pill-emerald { background: #ecf8f1; color: #1b6e44; }
+.gemini-business-analysis.gemini-business-analysis .pill-amber { background: #f9f5eb; color: #785522; }
+.gemini-business-analysis.gemini-business-analysis .pill-coral { background: #fbf0f0; color: #9c3a3a; }
+.gemini-business-analysis.gemini-business-analysis .pill-violet { background: #f3f4f6; color: #3f404a; }
+.gemini-business-analysis.gemini-business-analysis .pill-slate { background: #f3f4f6; color: #686a75; }/* Row 1: 4 Independent KPI Cards (Shopeers + Revora style) */
+.gemini-business-analysis.gemini-business-analysis .kpi-row {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 16px;
+      margin-bottom: 18px;
+    }
+.gemini-business-analysis.gemini-business-analysis .kpi-card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-card);
+      padding: 18px 20px;
+      box-shadow: var(--shadow-card);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      transition: transform 0.16s ease, border-color 0.16s ease;
+    }
+.gemini-business-analysis.gemini-business-analysis .kpi-card:hover {
+      border-color: #d6d1f5;
+    }
+.gemini-business-analysis.gemini-business-analysis .kpi-card.is-selectable { cursor: pointer; }
+.gemini-business-analysis.gemini-business-analysis .kpi-card.is-selected {
+      border-color: var(--violet);
+      background: linear-gradient(180deg, #ffffff 0%, #f9f8ff 100%);
+      box-shadow: 0 4px 18px rgba(85, 70, 217, 0.09);
+    }
+.gemini-business-analysis.gemini-business-analysis .kpi-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+.gemini-business-analysis.gemini-business-analysis .kpi-label {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--muted);
+    }
+.gemini-business-analysis.gemini-business-analysis .kpi-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      display: grid;
+      place-items: center;
+      flex-shrink: 0;
+      background: #ffffff;
+      border: 1px solid #e8eaef;
+      box-shadow: 0 1px 2px rgba(24, 24, 28, 0.03);
+      color: #2f3037;
+    }
+.gemini-business-analysis.gemini-business-analysis .kpi-icon svg { width: 17px; height: 17px; stroke-width: 1.75; }
+.gemini-business-analysis.gemini-business-analysis .kpi-icon.violet,
+.gemini-business-analysis.gemini-business-analysis .kpi-icon.amber,
+.gemini-business-analysis.gemini-business-analysis .kpi-icon.emerald,
+.gemini-business-analysis.gemini-business-analysis .kpi-icon.indigo {
+      color: #2f3037;
+      background: #ffffff;
+      border-color: #e8eaef;
+    }
+.gemini-business-analysis.gemini-business-analysis .kpi-main {
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 2px;
+    }
+.gemini-business-analysis.gemini-business-analysis .kpi-value {
+      font-size: 28px;
+      font-weight: 600;
+      letter-spacing: -0.022em;
+      font-variant-numeric: tabular-nums;
+      line-height: 1.15;
+      color: var(--ink);
+    }
+.gemini-business-analysis.gemini-business-analysis .delta-pos { color: #15803d; font-weight: 600; }
+.gemini-business-analysis.gemini-business-analysis .delta-amber { color: #b45309; font-weight: 600; }
+.gemini-business-analysis.gemini-business-analysis .kpi-sub {
+      font-size: 12px;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+.gemini-business-analysis.gemini-business-analysis .kpi-sub a {
+      color: var(--violet);
+      font-weight: 600;
+    }/* Bento 12-Col Grid (8 Left + 4 Right) */
+.gemini-business-analysis.gemini-business-analysis .bento-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.85fr) minmax(320px, 1fr);
+      gap: 18px;
+      align-items: start;
+    }
+.gemini-business-analysis.gemini-business-analysis .bento-col {
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      min-width: 0;
+    }
+.gemini-business-analysis.gemini-business-analysis .bento-card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-card);
+      padding: 22px 24px;
+      box-shadow: var(--shadow-card);
+    }
+.gemini-business-analysis.gemini-business-analysis .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+.gemini-business-analysis.gemini-business-analysis .card-title {
+      font-size: 16.5px;
+      font-weight: 600;
+      letter-spacing: -0.018em;
+      color: var(--ink);
+    }
+.gemini-business-analysis.gemini-business-analysis .card-subtitle {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 2px;
+    }/* Hero Composite Card (Shopeers Total Profit + Customers segmented bar) */
+.gemini-business-analysis.gemini-business-analysis .hero-composite-top {
+      display: grid;
+      grid-template-columns: minmax(220px, 0.95fr) minmax(0, 1.35fr);
+      gap: 22px;
+      align-items: center;
+      padding-bottom: 20px;
+      border-bottom: 1px solid var(--line);
+    }
+.gemini-business-analysis.gemini-business-analysis .hero-judgment-title {
+      font-size: 20px;
+      font-weight: 600;
+      line-height: 1.42;
+      margin: 10px 0 8px;
+      letter-spacing: -0.02em;
+      color: var(--ink);
+    }
+.gemini-business-analysis.gemini-business-analysis .hero-judgment-desc {
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.65;
+    }/* Segmented Progress Bar (Shopeers Customers / Room Type Breakdown) */
+.gemini-business-analysis.gemini-business-analysis .segmented-breakdown {
+      padding-top: 18px;
+    }
+.gemini-business-analysis.gemini-business-analysis .segmented-breakdown-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+      font-size: 13px;
+      font-weight: 650;
+    }
+.gemini-business-analysis.gemini-business-analysis .segmented-cols {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+    }
+.gemini-business-analysis.gemini-business-analysis .seg-col {
+      padding-left: 12px;
+      border-left: 2px solid var(--line);
+    }
+.gemini-business-analysis.gemini-business-analysis .seg-col.c-violet { border-left-color: var(--chart-violet); }
+.gemini-business-analysis.gemini-business-analysis .seg-col.c-lavender { border-left-color: #a599f9; }
+.gemini-business-analysis.gemini-business-analysis .seg-col.c-yellow { border-left-color: var(--yellow); }
+.gemini-business-analysis.gemini-business-analysis .seg-col strong {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 17px;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+    }
+.gemini-business-analysis.gemini-business-analysis .seg-col span {
+      display: block;
+      font-size: 12px;
+      color: var(--muted);
+      margin: 2px 0 8px;
+    }
+.gemini-business-analysis.gemini-business-analysis .seg-track {
+      height: 7px;
+      border-radius: 999px;
+      background: #f0eff7;
+      overflow: hidden;
+    }
+.gemini-business-analysis.gemini-business-analysis .seg-fill {
+      height: 100%;
+      border-radius: 999px;
+    }/* Data Table */
+.gemini-business-analysis.gemini-business-analysis .bento-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      font-variant-numeric: tabular-nums;
+    }
+.gemini-business-analysis.gemini-business-analysis .bento-table th,
+.gemini-business-analysis.gemini-business-analysis .bento-table td {
+      padding: 11px 10px;
+      border-bottom: 1px solid #f1f0f7;
+      text-align: right;
+    }
+.gemini-business-analysis.gemini-business-analysis .bento-table th:first-child,
+.gemini-business-analysis.gemini-business-analysis .bento-table td:first-child {
+      text-align: left;
+    }
+.gemini-business-analysis.gemini-business-analysis .bento-table thead th {
+      font-size: 11px;
+      font-weight: 650;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--muted);
+    }
+
+.gemini-business-analysis { color:var(--ink); font-family:"Outfit","Noto Sans SC",sans-serif; line-height:1.6; }
+.gemini-business-analysis :is(h3,p,figure) { margin:0; }
+.gemini-business-analysis button { font:inherit; cursor:pointer; }
+.gemini-business-analysis :is(a,button,circle):focus-visible { outline:2px solid #9c8bd7; outline-offset:3px; }
+.gemini-business-analysis.gemini-business-analysis .kpi-card { padding:22px; gap:12px; text-align:left; min-width:0; }
+.gemini-business-analysis.gemini-business-analysis .kpi-label { font-weight:400; color:#656572; }
+.gemini-business-analysis.gemini-business-analysis .kpi-value { font-size:30px; font-weight:500; letter-spacing:-.02em; white-space:nowrap; }
+.gemini-business-analysis.gemini-business-analysis .kpi-icon { background:#faf9fc; color:#6d687d; border-color:transparent; box-shadow:none; }
+.gemini-business-analysis.gemini-business-analysis .kpi-card.is-selected { border-color:#b8addf; box-shadow:none; background:#fcfbff; }
+.gemini-business-analysis.gemini-business-analysis .pill { font-size:11px; font-weight:400; padding:3px 7px; }
+.gemini-business-analysis.gemini-business-analysis .pill-violet { background:transparent; color:#73707e; }
+.gemini-business-analysis.gemini-business-analysis .bento-grid { gap:20px; }
+.gemini-business-analysis.gemini-business-analysis .bento-card { padding:24px; min-width:0; }
+.gemini-business-analysis.gemini-business-analysis .card-header { align-items:flex-start; }
+.gemini-business-analysis.gemini-business-analysis .card-title { font-size:16px; font-weight:500; letter-spacing:0; line-height:1.6; }
+.gemini-business-analysis.gemini-business-analysis .card-subtitle { font-size:12px; line-height:1.65; }
+.gemini-business-analysis .chart-big-value { font-size:28px; font-weight:500; line-height:1.2; color:var(--violet); font-variant-numeric:tabular-nums; white-space:nowrap; }
+.gemini-business-analysis .analysis-chart { min-width:0; }
+.gemini-business-analysis .analysis-chart svg { display:block; width:100%; height:auto; touch-action:pan-y; overflow:visible; }
+.gemini-business-analysis .analysis-chart circle { cursor:pointer; }
+.gemini-business-analysis .analysis-chart figcaption { display:flex; gap:12px; align-items:center; justify-content:space-between; color:var(--muted); font-size:12px; }
+.gemini-business-analysis :is(.analysis-chart figcaption button,.analysis-status button) { color:var(--violet); padding:4px 0; border:0; background:transparent; font-size:12px; }
+.gemini-business-analysis .analysis-chart input[type="range"] { width:100%; accent-color:var(--violet); height:16px; margin-top:8px; }
+.gemini-business-analysis.gemini-business-analysis .segmented-breakdown { padding-top:20px; margin-top:12px; border-top:1px solid var(--line); }
+.gemini-business-analysis.gemini-business-analysis .seg-col { border-left-width:1px; min-width:0; }
+.gemini-business-analysis.gemini-business-analysis .seg-col strong { font-weight:500; font-size:17px; flex-wrap:wrap; }
+.gemini-business-analysis.gemini-business-analysis .seg-col strong .pill { display:inline; margin:0; }
+.gemini-business-analysis.gemini-business-analysis .seg-track { height:5px; background:#f3f0f8; }
+.gemini-business-analysis .c-violet .seg-fill { background:#6554e8; }
+.gemini-business-analysis.gemini-business-analysis .seg-col.c-yellow { border-left-color:#c8bdde; }
+.gemini-business-analysis .c-yellow .seg-fill { background:#c8bdde; }
+.gemini-business-analysis .c-lavender .seg-fill { background:#22c55e; }
+.gemini-business-analysis .daily-table-scroll { max-width:100%; overflow-x:auto; max-height:620px; }
+.gemini-business-analysis.gemini-business-analysis .bento-table { font-size:12px; }
+.gemini-business-analysis.gemini-business-analysis .bento-table :is(th,td) { padding:11px 8px; white-space:nowrap; }
+.gemini-business-analysis.gemini-business-analysis .bento-table tbody th { font-weight:400; }
+.gemini-business-analysis.gemini-business-analysis .bento-table tr[data-weekend] { background:#fffdf0; }
+.gemini-business-analysis.gemini-business-analysis .bento-table tr[data-selected] { background:#f0ecfa; }
+.gemini-business-analysis.gemini-business-analysis .bento-table thead th { position:sticky; top:0; background:white; }
+.gemini-business-analysis .analysis-status:empty { display:none; }
+.gemini-business-analysis .analysis-status { font-size:13px; margin-bottom:14px; color:var(--muted); }
+.gemini-business-analysis .analysis-empty { padding:24px 0; font-size:13px; color:var(--muted); }
+.gemini-business-analysis .analysis-empty a { color:var(--violet); }
+.gemini-business-analysis .analysis-note { font-size:12px; color:var(--muted); margin-top:16px; }
+.gemini-business-analysis .analysis-extra { margin-top:24px; }
+.gemini-business-analysis .analysis-rate-context { display:flex; align-items:center; gap:12px 24px; flex-wrap:wrap; padding:16px 0; font-size:13px; color:var(--muted); }
+.gemini-business-analysis .analysis-rate-context strong { font-weight:500; color:var(--ink); }
+.gemini-business-analysis .analysis-rate-context a { color:var(--violet); }
+.gemini-business-analysis .analysis-revenue { border-top:1px solid var(--line); }
+.gemini-business-analysis .analysis-revenue > summary { cursor:pointer; color:var(--violet); font-size:13px; padding:14px 0; }
+@media(max-width:1200px) { .gemini-business-analysis.gemini-business-analysis .card-header { flex-wrap:wrap; } .gemini-business-analysis.gemini-business-analysis .kpi-value { font-size:26px; } }
+@media(max-width:1040px) { .gemini-business-analysis.gemini-business-analysis .bento-grid { grid-template-columns:1fr; } .gemini-business-analysis.gemini-business-analysis .kpi-row { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+@media(max-width:760px) { .gemini-business-analysis.gemini-business-analysis .bento-card { padding:20px; } .gemini-business-analysis.gemini-business-analysis .segmented-cols { grid-template-columns:1fr; } }
+@media(max-width:480px) { .gemini-business-analysis.gemini-business-analysis .kpi-row { grid-template-columns:1fr; } }
+@media(prefers-reduced-motion:reduce) { .gemini-business-analysis *, .gemini-business-analysis *::before, .gemini-business-analysis *::after { animation:none!important; transition:none!important; } }

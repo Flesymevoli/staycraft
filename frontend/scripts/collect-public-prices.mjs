@@ -6,7 +6,13 @@ import {parseCalendar,captureBarrier} from "../src/lib/competitor-observations.t
 import {root,atomicJson,saveCapture,readJson} from "./price-monitor-store.mjs";
 import {monitorDates} from "./price-monitor-dates.mjs";
 if(process.argv[2]!=="--collect-public-prices"||process.env.VERCEL||process.env.CF_PAGES||process.env.STAYCRAFT_HOSTED)throw Error("local_explicit_run_only");
-const hotels=[{id:"2132616",name:"杭州沐曦民宿(西湖店)"},{id:"1762435",name:"杭州糖堂民宿(西湖灵隐寺店)"}];
+const {readFile}=await import("node:fs/promises");
+// Prefer the discovered list (all homestays found in the city result page); fall back to one known id.
+const stored=JSON.parse(await readFile(path.join(root,"homestays.json"),"utf8").catch(()=>"[]"));
+const candidates=Array.isArray(stored)&&stored.length?stored.map(item=>({id:String(item.id),name:String(item.name)})):[{id:"121187796",name:"太仓·江外度假庄园(长江口旅游度假区店)"}];
+const requested=process.argv[3]?.split(",");
+if(requested&&(!requested.length||requested.length>10||requested.some(id=>!candidates.some(hotel=>hotel.id===id))))throw Error("invalid_hotel_batch");
+const hotels=requested?candidates.filter(hotel=>requested.includes(hotel.id)):candidates;
 await mkdir(root,{recursive:true});let lock;try{lock=await open(path.join(root,"collector.lock"),"wx")}catch{console.log("Another collection is running; no duplicate started.");process.exit(2)}
 let browser;
 let watchdog;
@@ -19,12 +25,13 @@ const job={id:crypto.randomUUID(),startedAt:new Date().toISOString(),finishedAt:
 try{
  watchdog=setTimeout(()=>{void browser?.close().catch(()=>{})},240000);
  await atomicJson("job.json",job);
- const context=await chromium.launchPersistentContext(path.join(root,"browser-profile"),{headless:true,locale:"zh-CN",viewport:{width:1280,height:900}});
+ const context=await chromium.launchPersistentContext(process.env.STAYCRAFT_PRICE_PROFILE||path.join(root,"browser-profile"),{headless:true,locale:"zh-CN",viewport:{width:1280,height:900}});
  browser=context;
  for(const hotel of hotels){
   const page=await context.newPage();let status="failed",error=null,stage="open_hotel";
   try{
-   await page.goto(`https://hotels.ctrip.com/hotels/${hotel.id}.html`,{waitUntil:"domcontentloaded",timeout:45000});
+   const response=await page.goto(`https://hotels.ctrip.com/hotels/${hotel.id}.html`,{waitUntil:"domcontentloaded",timeout:45000});
+   if([401,403,429].includes(response?.status()))throw Error("access_restricted");
    const landing=await page.locator("body").innerText();
    const barrier=captureBarrier(page.url(),landing);if(barrier)throw Error(barrier);
    stage="hotel_ready";
@@ -51,6 +58,8 @@ try{
    // The calendar appears before its public price labels finish loading.
    await page.getByRole("checkbox",{name:/The price is CNY/}).first().waitFor({timeout:15000}).catch(()=>{});
    const snapshot=await page.locator("body").ariaSnapshot();
+   const calendarBarrier=captureBarrier(page.url(),snapshot);
+   if(calendarBarrier)throw Error(calendarBarrier);
    const member=await page.getByRole("button",{name:/我的账户:/}).count()>0;
    const session=await readJson("session.json",null);
    if(member&&!session?.scope)throw Error("session_scope_missing");
@@ -65,9 +74,11 @@ try{
    await page.screenshot({path:path.join(root,`${job.id}-${hotel.id}-failed.png`)}).catch(()=>{});
    await atomicJson(`${job.id}-${hotel.id}-failure.json`,{stage,url:page.url(),detail:String(e.message).slice(0,3000),snapshot:await page.locator("body").ariaSnapshot().catch(()=>"unavailable")}).catch(()=>{});
    const failedSnapshot=await page.locator("body").ariaSnapshot().catch(()=>"");
-   error=captureBarrier(page.url(),failedSnapshot)||(["login_required","verification_required"].includes(e.message)?e.message:e.name==="TimeoutError"?"page_timeout":"collection_failed");
+   error=captureBarrier(page.url(),failedSnapshot)||(["login_required","verification_required","access_restricted"].includes(e.message)?e.message:e.name==="TimeoutError"?"page_timeout":"collection_failed");
    if(error==="login_required"||error==="verification_required")status="unavailable";}
   finally{await page.close().catch(()=>{});job.results.push({hotelId:hotel.id,name:hotel.name,status,error,...(error?{stage}:{})});await atomicJson("job.json",job);}
+  if(["login_required","verification_required","access_restricted"].includes(error))break;
+  if(hotel!==hotels.at(-1))await new Promise(resolve=>setTimeout(resolve,2500));
  }
  job.status=job.results.every(r=>r.status==="succeeded")?"succeeded":job.results.some(r=>["succeeded","partial"].includes(r.status))?"partial":"failed";
 }catch(error){job.status="failed";job.error="browser_unavailable";await atomicJson(`${job.id}-startup-failure.json`,{name:error.name,code:error.code||null,detail:String(error.message).split("\n")[0].slice(0,500)}).catch(()=>{});}

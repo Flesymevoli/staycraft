@@ -1,14 +1,29 @@
-// Browser + isolated PostgreSQL/WASM integration. Requires start-import-sample.cjs.
+// Browser + isolated PostgreSQL/WASM integration with a non-demo workspace.
 const {chromium}=require('./qa-browser.cjs'),assert=require('node:assert/strict'),path=require('node:path');
-(async()=>{const browser=await chromium.launch();try{
-const base=process.env.QA_BASE||'http://127.0.0.1:3114',context=await browser.newContext({viewport:{width:390,height:844}}),page=await context.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));
+const {spawn}=require('node:child_process');
+(async()=>{
+const base='http://127.0.0.1:3291';
+const server=spawn(process.execPath,['--require',path.resolve('scripts/qa-workspace-fixture.cjs'),'node_modules/next/dist/bin/next','dev','--hostname','127.0.0.1','--port','3291'],{
+ env:{...process.env,STAYCRAFT_QA_AUTH_FIXTURES:'1',STAYCRAFT_QA_FORMAL_STAYS:'1',STAYCRAFT_QA_IMPORT_DB:'1',STAYCRAFT_OPERATOR_SAMPLE:'0',STAYCRAFT_DESKTOP_DEV:'1',STAYCRAFT_DESKTOP_TEST_PORT:'3291',STAYCRAFT_QA_DESKTOP_SYNC:'1',NEXT_PUBLIC_SUPABASE_URL:'https://staycraft-qa.invalid',NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY:'fixture-key',DEMO_LOGIN_EMAIL:'',MODEL_ENABLED:'0',FORMAL_MODEL_ENABLED:'0'},stdio:'inherit',windowsHide:true
+});
+let browser;
+try{
+ for(let attempt=0;;attempt++){
+  if(attempt===40||server.exitCode!==null)throw Error('Import fixture server did not start');
+  try{if((await fetch(base+'/login',{signal:AbortSignal.timeout(2000)})).ok)break;}catch{}
+  await new Promise(resolve=>setTimeout(resolve,500));
+ }
+ browser=await chromium.launch();
+ const context=await browser.newContext({viewport:{width:390,height:844}}),page=await context.newPage(),errors=[];
+ page.setDefaultTimeout(10000);
+ page.on('pageerror',error=>errors.push(error.message));
 const enc=v=>Buffer.from(JSON.stringify(v)).toString('base64url');
-async function asUser(id){const token=`${enc({alg:'HS256',typ:'JWT'})}.${enc({sub:id,exp:4102444800,iat:1700000000,aud:'authenticated',role:'authenticated'})}.qa-signature`;await context.clearCookies();await context.addCookies([{name:'staycraft-operator-sample-auth',url:base,value:'base64-'+enc({access_token:token,refresh_token:'qa',expires_at:4102444800,expires_in:3600,token_type:'bearer',user:{id}})}])}
+async function asUser(id){const token=`${enc({alg:'HS256',typ:'JWT'})}.${enc({sub:id,exp:4102444800,iat:1700000000,aud:'authenticated',role:'authenticated'})}.qa-signature`;await context.clearCookies();await context.addCookies([{name:'sb-staycraft-qa-auth-token',url:base,value:'base64-'+enc({access_token:token,refresh_token:'qa',expires_at:4102444800,expires_in:3600,token_type:'bearer',user:{id}})}])}
 await page.goto(base+'/login');await page.locator('input[name=email]').fill('demo@example.invalid');await page.locator('input[name=password]').fill('staycraft-demo');await page.locator('.auth-submit').click();await page.waitForURL(base+'/app');await page.goto(base+'/app/work');
 const block=page.locator('section').filter({has:page.getByRole('heading',{name:'订单数据导入',exact:true})}).first();await block.getByText('暂无到期的导入任务。',{exact:true}).waitFor();
 assert.equal(await block.locator('.booking-import-disclosure').evaluate(el=>el.open),false);
 for(const width of [320,390,474]){await page.setViewportSize({width,height:714});assert((await block.boundingBox()).height<310,`compact import too tall at ${width}`);assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));}
-await page.setViewportSize({width:390,height:844});await page.screenshot({path:path.resolve('qa-import-compact.png'),fullPage:true});
+await page.setViewportSize({width:390,height:844});
 const today=new Intl.DateTimeFormat('sv-SE',{timeZone:'Asia/Shanghai'}).format(new Date()),day=n=>{const d=new Date(today+'T12:00:00Z');d.setUTCDate(d.getUTCDate()+n);return d.toISOString().slice(0,10)},stamp=new Date().toISOString();
 const header='channel,external_id,room_type,room_number,arrival,departure,status,total,currency,source_updated_at';
 const csv=header+`\nQA,A1,花园大床房,,${today},${day(1)},confirmed,300.01,CNY,${stamp}\nQA,H1,花园大床房,,${day(-6)},${day(-4)},completed,100.01,CNY,${stamp}`;
@@ -27,21 +42,23 @@ preview=await api('/api/workspace/booking-import',{csv:cancelled,commit:false});
 const all=await (await context.request.get(base+'/api/workspace/bookings')).json();assert.equal(all.bookings.find(b=>b.external_id==='A1').status,'cancelled');
 
 const metrics=await (await context.request.get(base+`/api/workspace/metrics?start=${day(-6)}&end=${day(-4)}`)).json();assert.equal(metrics.amount_cents,10001);assert.equal(metrics.booked_order_room_nights,2);assert.equal(metrics.booked_pct,null);const revenue=await (await context.request.get(base+'/api/workspace/revenue?month='+day(-6).slice(0,7))).json();assert(revenue.orders.some(o=>o.totalCents===10001));
-await page.goto(base+'/app/analysis');await page.locator('.booking-analysis-cards').waitFor();await page.getByLabel('开始日期',{exact:true}).fill(day(-6));await page.getByLabel('结束日期',{exact:true}).fill(day(-4));await page.getByRole('button',{name:'应用',exact:true}).click();await page.getByText(/缺少历史房量，不展示历史占用率/).waitFor();await page.locator('.booking-analysis-cards').screenshot({path:path.resolve('qa-import-analysis-card.png'),style:'.native-tabbar{visibility:hidden!important}'});await page.screenshot({path:path.resolve('qa-import-analysis.png'),fullPage:true});
+await page.goto(base+'/app/analysis');await page.locator('.booking-analysis-cards').waitFor();await page.locator('.booking-period-picker > summary').click();await page.getByLabel('开始日期',{exact:true}).fill(day(-6));await page.getByLabel('结束日期',{exact:true}).fill(day(-4));await page.getByRole('button',{name:'应用',exact:true}).click();await page.getByText(/缺少历史房量，不展示历史占用率/).waitFor();
 await page.getByLabel('开始日期',{exact:true}).fill(today);await page.getByLabel('结束日期',{exact:true}).fill(day(6));await Promise.all([page.waitForResponse(r=>r.url().includes('/api/workspace/metrics')&&r.status()===200),page.getByRole('button',{name:'应用',exact:true}).click()]);
-for(const [index,title] of ['每日预订占用率','每日已订间夜','每日预订金额','每日平均预订房价'].entries()){await page.locator('.booking-analysis-cards>button').nth(index).click();await page.getByRole('img',{name:title,exact:true}).waitFor();const slider=page.getByRole('slider',{name:'选择预订图表日期',exact:true});await slider.focus();await slider.press('ArrowRight');assert.match(await page.locator('.booking-analysis-readout>span').innerText(),/^\d{4}-\d{2}-\d{2}$/);await page.locator('#booking-analysis-detail').screenshot({path:path.resolve(`qa-analysis-metric-${index}.png`),style:'.native-tabbar{visibility:hidden!important}'})}
-await page.goto(base+'/app/explore');const decision=page.locator('section').filter({has:page.getByRole('heading',{name:'AI 建议',exact:true})}).first();assert.equal(await decision.getByRole('button',{name:'梳理行动建议',exact:true}).count(),0);const bubble=decision.getByRole('region',{name:'经营与调价建议',exact:true});await bubble.waitFor();assert.match(await bubble.innerText(),/建议调价/);assert(await bubble.locator('p').count()>2);assert.equal(await decision.locator('textarea').count(),0);await decision.getByRole('button',{name:'收藏建议',exact:true}).click();await decision.getByText('建议已收藏，并保留依据快照。',{exact:true}).waitFor();
-const stored=await (await context.request.get(base+'/api/workspace/promotion')).json();assert.equal(stored.state.drafts.length,1);assert(stored.state.drafts[0].content.includes('建议调价'));assert.equal(await page.locator('.promotion-source-form,.explore-season').count(),0);
-await page.getByText(/自动联网检索尚未接通/).waitFor();assert.equal(await page.locator('.nearby-discovery input,.nearby-discovery form').count(),0);assert((await page.locator('.nearby-discovery').innerText()).includes('太仓市沙溪古镇'));const address=await (await context.request.get(base+'/api/workspace/profile')).json();assert(address.profile.location.includes('虚构演示地址'));const automatic=await api('/api/workspace/discovery',{start:today,end:today});assert.equal(automatic.status,503);assert(automatic.data.location.includes('沙溪古镇'));assert.equal((await api('/api/workspace/discovery',{location:'另一个位置',start:today,end:today})).status,400);
-await page.locator('.promotion-draft-open').first().click();await page.getByRole('region',{name:'已收藏经营建议',exact:true}).waitFor();assert.equal(await page.locator('.promotion-editor textarea').count(),0);
-await page.getByRole('button',{name:'生成推广草稿',exact:true}).click();const marketing=page.locator('#workspace-promotion-copy');await marketing.waitFor();assert.match(await marketing.inputValue(),/把日程放一放/);assert(!(await marketing.inputValue()).includes('房型：'));await marketing.fill((await marketing.inputValue())+'\n测试保存');await page.getByRole('button',{name:'保存草稿',exact:true}).click();await page.getByText('已保存到当前账号，未发布。',{exact:true}).waitFor();
-await decision.screenshot({path:path.resolve('qa-import-decision-card.png'),style:'.native-tabbar{visibility:hidden!important}'});await page.screenshot({path:path.resolve('qa-explore-refresh.png'),fullPage:true});
-await page.getByRole('button',{name:'EN',exact:true}).click();await page.getByRole('button',{name:'Create a draft',exact:true}).click();await page.waitForFunction(()=>document.querySelector('#workspace-promotion-copy')?.value.startsWith('Leave a little room between plans'));assert.match(await marketing.inputValue(),/Leave a little room between plans/);assert(!(await marketing.inputValue()).includes('Room type:'));await page.getByRole('button',{name:'Save draft',exact:true}).click();await page.getByText('Saved to your account. Not published.',{exact:true}).waitFor();
-await page.getByRole('button',{name:'中文',exact:true}).click();
-await page.goto(base+'/app/work');await block.screenshot({path:path.resolve('qa-import-work-card.png'),style:'.native-tabbar{visibility:hidden!important}'});await page.screenshot({path:path.resolve('qa-import-work.png'),fullPage:true});for(const width of [320,390,658,1280]){await page.setViewportSize({width,height:900});assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),`overflow ${width}`)}
-await asUser('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa');const foreign=await context.request.get(base+'/api/workspace/booking-import?view=state');assert(!JSON.stringify(await foreign.json()).includes('QA'));assert.equal((await api('/api/workspace/booking-import',{csv,commit:false})).status,503);
-await context.clearCookies();assert.equal((await context.request.get(base+'/api/workspace/booking-import?view=state',{maxRedirects:0})).status(),401);
-assert.deepEqual(errors,[]);console.log('PASS browser/isolated PostgreSQL login and cancellation journey: import, retry, repeat, task, changes, stale source, historical metrics, read-only pricing bubbles, unavailable-search honesty, marketing copy/language/save, account boundary, signed-out denial and responsive layout. No cloud writes/model calls.');
-}finally{await browser.close()}})().catch(e=>{console.error(e);process.exitCode=1});
-
-
+for(const [index,title] of ['每日预订占用率','每日已订间夜','每日预订金额','每日平均预订房价'].entries()){await page.locator('.booking-analysis-cards>button').nth(index).click();await page.getByRole('img',{name:title,exact:true}).waitFor();const slider=page.getByRole('slider',{name:'选择预订图表日期',exact:true});await slider.focus();await slider.press('ArrowRight');assert.match(await page.locator('.booking-analysis-readout .chart-readout-label').innerText(),/^\d{4}-\d{2}-\d{2}$/);}
+await page.goto(base+'/app/promotion');
+await page.getByRole('button',{name:'使用模板',exact:true}).click();
+const editor=page.locator('#workspace-promotion-copy');
+await editor.fill((await editor.inputValue())+'\n隔离验收草稿');
+await page.getByRole('button',{name:'保存文案',exact:true}).click();
+await page.getByText('已保存到当前账号，未发布。',{exact:true}).waitFor();
+await page.reload();
+await page.locator('.promotion-draft-open').first().click();
+assert.match(await editor.inputValue(),/隔离验收草稿/);
+await asUser('aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa');
+const foreign=await context.request.get(base+'/api/workspace/booking-import?view=state');
+assert(!JSON.stringify(await foreign.json()).includes('QA'));
+await context.clearCookies();
+assert.equal((await context.request.get(base+'/api/workspace/booking-import?view=state')).status(),401);
+assert.deepEqual(errors,[]);
+console.log('PASS isolated browser import, correction, cancellation, metrics and promotion draft reload');
+}finally{await browser?.close();server.kill()}})().catch(error=>{console.error(error);process.exitCode=1});

@@ -10,3 +10,17 @@
 .diagnostic-inline .diagnostic-article{max-width:72ch;padding:0;margin:0;border:0;background:transparent}
 .diagnostic-inline .diagnostic-article section{margin:24px 0}
 .diagnostic-inline .diagnostic-section-data{font-size:13px;color:#565661}
+
+.wb-diagnosis-overview{max-width:72ch;margin:18px 0 8px;overflow-wrap:anywhere}
+.wb-diagnosis-label{font-size:12px;color:var(--muted,#62626c)}
+.workbench-shell .wb-diagnosis-overview h3{font-size:21px;line-height:1.5;margin:7px 0 18px;font-weight:650;letter-spacing:-.3px}
+.wb-judgment-basis p,.wb-priority-decisions p{font-size:14px;line-height:1.8;margin:6px 0 0;color:var(--muted,#62626c)}
+.wb-priority-decisions{margin-top:22px;border-top:1px solid var(--line,#e1e1e7);padding-top:18px}
+.workbench-shell .wb-priority-decisions h4{font-size:13px;font-weight:500;margin:0 0 12px;color:var(--muted,#62626c)}
+.wb-priority-decisions ol{margin:0;padding-left:22px;display:grid;gap:16px}
+.wb-priority-decisions li{padding-left:4px}
+.wb-priority-decisions li::marker{font-size:13px;color:var(--blue,#5546d9);font-weight:600}
+.workbench-shell .wb-priority-decisions h5{font-size:16px;line-height:1.6;margin:0;font-weight:600}
+.wb-priority-decisions a{display:inline-flex;align-items:center;min-height:44px;font-size:13px;color:var(--blue,#5546d9)}
+.wb-diagnosis-overview a:focus-visible,.wb-inline-report>summary:focus-visible{outline:2px solid var(--blue,#5546d9);outline-offset:3px;border-radius:4px}
+@media(max-width:700px){.workbench-shell .wb-diagnosis-overview h3{font-size:19px}.wb-priority-decisions{margin-top:18px;padding-top:16px}.wb-priority-decisions ol{gap:14px}}

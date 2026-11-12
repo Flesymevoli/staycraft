@@ -1,6 +1,6 @@
 const fs=require('fs'),path=require('path'),Module=require('module'),ts=require('typescript'),assert=require('assert/strict');
 function load(file){const mod=new Module(file);mod.require=name=>name.startsWith('.')?load(path.resolve(path.dirname(file),name)+'.ts'):require(name);mod._compile(ts.transpileModule(fs.readFileSync(file,'utf8'),{compilerOptions:{module:ts.ModuleKind.CommonJS,target:ts.ScriptTarget.ES2022}}).outputText,file);return mod.exports;}
-const {composePromotionPlan,validPromotionPlan,promotionFinding}=load(path.resolve('src/lib/promotion-plan.ts'));
+const {composePromotionPlan,validPromotionPlan,promotionFinding,promotionTarget,validPromotionDiagnosis}=load(path.resolve('src/lib/promotion-plan.ts'));
 const {validPromotion}=load(path.resolve('src/lib/promotion.ts'));
 Object.assign(process.env,{MODEL_BASE_URL:'https://test.invalid',MODEL_API_KEY:'mock-only',MODEL_NAME:'mock'});
 const period={start:'2026-11-10',end:'2026-11-11'},facts=[{id:'property',text:'测试小院'},{id:'location',text:'沙溪古镇'}];
@@ -14,8 +14,23 @@ const run={period,findings:[finding],evidence:[{id:'e1'}],dailyMetrics:[{date:pe
  for(const bad of [{...json,factIds:['invented']},{...json,extra:'bad'},{...json,title:'每晚99元'}])await assert.rejects(()=>composePromotionPlan(facts,period,'zh',{model:true,fetcher:respond(bad)}));
  const fullBrief={...period,language:'zh',channel:'wechat',goal:'rooms',sourceIds:[]};
  const summary=await composePromotionPlan(facts,fullBrief,'zh',{model:false});assert.equal(summary.engine,'rules_v1');assert(validPromotionPlan(summary));
+ const room={id:'room_0',text:'房型：庭院双床房，最多入住 2 人。'};
+ const audience=await composePromotionPlan([...facts,room],fullBrief,'zh',{model:false});
+ assert.equal(audience.audience,'计划双人短途出游的客人');
+ assert.match(audience.angle,/庭院双床房/);
+ assert(audience.factIds.includes(room.id));assert(validPromotionPlan(audience));
+ const sourceFact={id:'source_0',text:'测试摄影展\n测试展馆'};
+ const sourcePlan=await composePromotionPlan([...facts,room,sourceFact],fullBrief,'zh',{model:false,diagnosis});
+ assert(sourcePlan.angle.includes('测试摄影展'));assert(sourcePlan.factIds.includes('source_0'));assert.deepEqual(sourcePlan.diagnosis,diagnosis);assert(validPromotionPlan(sourcePlan));
  assert(validPromotionPlan(await composePromotionPlan(facts,fullBrief,'zh',{model:true,fetcher:respond(json)})));
  assert.equal(promotionFinding(run,'finding-1','2026-11-05'),finding);
+ const selected={id:'opp:selected',claim:'第二个机会的说明',window:period,actions:[{target:'promotion'}]};
+ const opportunityRun={...run,opportunities:[{...selected,id:'opp:first',claim:'第一个机会的说明'},selected]};
+ const opportunityRef={runId:diagnosis.runId,opportunityId:selected.id};
+ assert(validPromotionDiagnosis(opportunityRef));
+ assert(validPromotionPlan({...plan,diagnosis:opportunityRef}));
+ assert.deepEqual(promotionTarget(opportunityRun,opportunityRef,'2026-11-05'),{period,reason:selected.claim});
+ assert.throws(()=>promotionTarget(opportunityRun,{...opportunityRef,opportunityId:'opp:missing'},'2026-11-05'));
  for(const invalid of [null,{...run,dailyMetrics:[{date:period.start,available:2}]},{...run,dailyMetrics:[{date:period.start,available:2},{date:period.end,available:0}]},{...run,findings:[{...finding,nextAction:undefined}]},{...run,evidence:[]}])assert.throws(()=>promotionFinding(invalid,'finding-1','2026-11-05'));
  assert.throws(()=>promotionFinding(run,'finding-1','2026-11-12'));
  const draft={id:diagnosis.runId,brief:{language:'zh',channel:'wechat',goal:'rooms',...period,sourceIds:[]},content:'古镇小住计划',engine:'model_v1',createdAt:new Date().toISOString(),basis:[]};

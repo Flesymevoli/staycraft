@@ -1,0 +1,660 @@
+/* Homepage rules extracted from the approved Gemini source, with its final refinement cascade below. */
+/* Page Header Toolbar (Shopeers Dashboard Title + Right Action Bar) */
+.gemini-workbench-home.gemini-workbench-home .section-header {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+.gemini-workbench-home.gemini-workbench-home .section-header h1 {
+      font-size: 28px;
+      font-weight: 600;
+      letter-spacing: -0.025em;
+      line-height: 1.2;
+      color: var(--ink);
+    }
+.gemini-workbench-home.gemini-workbench-home .section-header p {
+      font-size: 13px;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+.gemini-workbench-home.gemini-workbench-home .header-controls {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+.gemini-workbench-home.gemini-workbench-home .date-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      height: 38px;
+      padding: 0 14px;
+      border-radius: 999px;
+      background: #fff;
+      border: 1px solid var(--line);
+      font-size: 12px;
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+      box-shadow: var(--shadow-card);
+    }
+.gemini-workbench-home.gemini-workbench-home .btn-action-violet {
+      height: 38px;
+      padding: 0 16px;
+      border-radius: 999px;
+      background: var(--violet);
+      color: #fff;
+      font-size: 12px;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 4px 12px rgba(85, 70, 217, 0.22);
+      transition: background 0.15s, transform 0.15s;
+    }
+.gemini-workbench-home.gemini-workbench-home .btn-action-violet:hover {
+      background: var(--violet-hover);
+      transform: translateY(-1px);
+    }
+.gemini-workbench-home.gemini-workbench-home .btn-action-dark {
+      height: 38px;
+      padding: 0 16px;
+      border-radius: 999px;
+      background: var(--ink);
+      color: #fff;
+      font-size: 12px;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+.gemini-workbench-home.gemini-workbench-home .btn-action-dark:hover { background: #2e2e34; }
+.gemini-workbench-home.gemini-workbench-home .btn-action-outline {
+      height: 38px;
+      padding: 0 14px;
+      border-radius: 999px;
+      background: #fff;
+      border: 1px solid var(--line);
+      color: var(--ink);
+      font-size: 12px;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+.gemini-workbench-home.gemini-workbench-home .btn-action-outline:hover {
+      border-color: #cbc6ea;
+      background: var(--surface-subtle);
+    }/* Semantic Pills */
+.gemini-workbench-home.gemini-workbench-home .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 9px;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 650;
+      line-height: 1.35;
+      white-space: nowrap;
+      font-variant-numeric: tabular-nums;
+    }
+.gemini-workbench-home.gemini-workbench-home .pill-emerald { background: #ecf8f1; color: #1b6e44; }
+.gemini-workbench-home.gemini-workbench-home .pill-amber { background: #f9f5eb; color: #785522; }
+.gemini-workbench-home.gemini-workbench-home .pill-coral { background: #fbf0f0; color: #9c3a3a; }
+.gemini-workbench-home.gemini-workbench-home .pill-violet { background: #f3f4f6; color: #3f404a; }
+.gemini-workbench-home.gemini-workbench-home .pill-slate { background: #f3f4f6; color: #686a75; }/* Row 1: 4 Independent KPI Cards (Shopeers + Revora style) */
+.gemini-workbench-home.gemini-workbench-home .kpi-row {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 16px;
+      margin-bottom: 18px;
+    }
+.gemini-workbench-home.gemini-workbench-home .kpi-card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-card);
+      padding: 18px 20px;
+      box-shadow: var(--shadow-card);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      transition: transform 0.16s ease, border-color 0.16s ease;
+    }
+.gemini-workbench-home.gemini-workbench-home .kpi-card:hover {
+      border-color: #d6d1f5;
+    }
+.gemini-workbench-home.gemini-workbench-home .kpi-card.is-selectable { cursor: pointer; }
+.gemini-workbench-home.gemini-workbench-home .kpi-card.is-selected {
+      border-color: var(--violet);
+      background: linear-gradient(180deg, #ffffff 0%, #f9f8ff 100%);
+      box-shadow: 0 4px 18px rgba(85, 70, 217, 0.09);
+    }
+.gemini-workbench-home.gemini-workbench-home .kpi-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+.gemini-workbench-home.gemini-workbench-home .kpi-label {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--muted);
+    }
+.gemini-workbench-home.gemini-workbench-home .kpi-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      display: grid;
+      place-items: center;
+      flex-shrink: 0;
+      background: #ffffff;
+      border: 1px solid #e8eaef;
+      box-shadow: 0 1px 2px rgba(24, 24, 28, 0.03);
+      color: #2f3037;
+    }
+.gemini-workbench-home.gemini-workbench-home .kpi-icon svg { width: 17px; height: 17px; stroke-width: 1.75; }
+.gemini-workbench-home.gemini-workbench-home .kpi-icon.violet,
+.gemini-workbench-home.gemini-workbench-home .kpi-icon.amber,
+.gemini-workbench-home.gemini-workbench-home .kpi-icon.emerald,
+.gemini-workbench-home.gemini-workbench-home .kpi-icon.indigo {
+      color: #2f3037;
+      background: #ffffff;
+      border-color: #e8eaef;
+    }
+.gemini-workbench-home.gemini-workbench-home .kpi-main {
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 2px;
+    }
+.gemini-workbench-home.gemini-workbench-home .kpi-value {
+      font-size: 28px;
+      font-weight: 600;
+      letter-spacing: -0.022em;
+      font-variant-numeric: tabular-nums;
+      line-height: 1.15;
+      color: var(--ink);
+    }
+.gemini-workbench-home.gemini-workbench-home .delta-pos { color: #15803d; font-weight: 600; }
+.gemini-workbench-home.gemini-workbench-home .delta-amber { color: #b45309; font-weight: 600; }
+.gemini-workbench-home.gemini-workbench-home .kpi-sub {
+      font-size: 12px;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+.gemini-workbench-home.gemini-workbench-home .kpi-sub a {
+      color: var(--violet);
+      font-weight: 600;
+    }/* Bento 12-Col Grid (8 Left + 4 Right) */
+.gemini-workbench-home.gemini-workbench-home .bento-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.85fr) minmax(320px, 1fr);
+      gap: 18px;
+      align-items: start;
+    }
+.gemini-workbench-home.gemini-workbench-home .bento-col {
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      min-width: 0;
+    }
+.gemini-workbench-home.gemini-workbench-home .bento-card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-card);
+      padding: 22px 24px;
+      box-shadow: var(--shadow-card);
+    }
+.gemini-workbench-home.gemini-workbench-home .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+.gemini-workbench-home.gemini-workbench-home .card-title {
+      font-size: 16.5px;
+      font-weight: 600;
+      letter-spacing: -0.018em;
+      color: var(--ink);
+    }
+.gemini-workbench-home.gemini-workbench-home .card-subtitle {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 2px;
+    }/* Hero Composite Card (Shopeers Total Profit + Customers segmented bar) */
+.gemini-workbench-home.gemini-workbench-home .hero-composite-top {
+      display: grid;
+      grid-template-columns: minmax(220px, 0.95fr) minmax(0, 1.35fr);
+      gap: 22px;
+      align-items: center;
+      padding-bottom: 20px;
+      border-bottom: 1px solid var(--line);
+    }
+.gemini-workbench-home.gemini-workbench-home .hero-judgment-title {
+      font-size: 20px;
+      font-weight: 600;
+      line-height: 1.42;
+      margin: 10px 0 8px;
+      letter-spacing: -0.02em;
+      color: var(--ink);
+    }
+.gemini-workbench-home.gemini-workbench-home .hero-judgment-desc {
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.65;
+    }/* Segmented Progress Bar (Shopeers Customers / Room Type Breakdown) */
+.gemini-workbench-home.gemini-workbench-home .segmented-breakdown {
+      padding-top: 18px;
+    }
+.gemini-workbench-home.gemini-workbench-home .segmented-breakdown-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+      font-size: 13px;
+      font-weight: 650;
+    }
+.gemini-workbench-home.gemini-workbench-home .segmented-cols {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+    }
+.gemini-workbench-home.gemini-workbench-home .seg-col {
+      padding-left: 12px;
+      border-left: 2px solid var(--line);
+    }
+.gemini-workbench-home.gemini-workbench-home .seg-col.c-violet { border-left-color: var(--chart-violet); }
+.gemini-workbench-home.gemini-workbench-home .seg-col.c-lavender { border-left-color: #a599f9; }
+.gemini-workbench-home.gemini-workbench-home .seg-col.c-yellow { border-left-color: var(--yellow); }
+.gemini-workbench-home.gemini-workbench-home .seg-col strong {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 17px;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+    }
+.gemini-workbench-home.gemini-workbench-home .seg-col span {
+      display: block;
+      font-size: 12px;
+      color: var(--muted);
+      margin: 2px 0 8px;
+    }
+.gemini-workbench-home.gemini-workbench-home .seg-track {
+      height: 7px;
+      border-radius: 999px;
+      background: #f0eff7;
+      overflow: hidden;
+    }
+.gemini-workbench-home.gemini-workbench-home .seg-fill {
+      height: 100%;
+      border-radius: 999px;
+    }/* 2-Col Priority Opportunity Cards */
+.gemini-workbench-home.gemini-workbench-home .opp-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+    }
+.gemini-workbench-home.gemini-workbench-home .opp-card {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-card);
+      padding: 20px;
+      box-shadow: var(--shadow-card);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+.gemini-workbench-home.gemini-workbench-home .opp-card h3 {
+      font-size: 16px;
+      font-weight: 700;
+      line-height: 1.4;
+    }
+.gemini-workbench-home.gemini-workbench-home .opp-card p {
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.65;
+      flex: 1;
+    }
+.gemini-workbench-home.gemini-workbench-home .opp-card-foot {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-top: 10px;
+      border-top: 1px solid var(--line);
+    }/* Revora-style Clean List rows (Signals / Invoices / Quotes) */
+.gemini-workbench-home.gemini-workbench-home .clean-list {
+      display: flex;
+      flex-direction: column;
+    }
+.gemini-workbench-home.gemini-workbench-home .clean-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 13px 0;
+      border-bottom: 1px solid #f1f0f7;
+    }
+.gemini-workbench-home.gemini-workbench-home .clean-row:last-child { border-bottom: none; padding-bottom: 0; }
+.gemini-workbench-home.gemini-workbench-home .clean-row:first-child { padding-top: 0; }
+.gemini-workbench-home.gemini-workbench-home .row-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 0;
+    }
+.gemini-workbench-home.gemini-workbench-home .row-badge-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      background: #f7f8fa;
+      border: 1px solid var(--line);
+      display: grid;
+      place-items: center;
+      color: #3f404a;
+      flex-shrink: 0;
+      font-weight: 600;
+      font-size: 11px;
+    }
+.gemini-workbench-home.gemini-workbench-home .row-meta strong {
+      display: block;
+      font-size: 14px;
+      font-weight: 600;
+    }
+.gemini-workbench-home.gemini-workbench-home .row-meta small {
+      display: block;
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+.gemini-workbench-home.gemini-workbench-home .row-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-align: right;
+      flex-shrink: 0;
+    }
+.gemini-workbench-home.gemini-workbench-home .row-right strong {
+      font-size: 15px;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+    }/* Right Column Widget 1: Segmented Arc Gauge (Shopeers Repeat Customer Rate / Revora Stability) */
+.gemini-workbench-home.gemini-workbench-home .gauge-wrap {
+      position: relative;
+      width: 220px;
+      margin: 4px auto 8px;
+    }
+.gemini-workbench-home.gemini-workbench-home .gauge-wrap svg {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+.gemini-workbench-home.gemini-workbench-home .gauge-center {
+      position: absolute;
+      inset: auto 0 6px;
+      text-align: center;
+    }
+.gemini-workbench-home.gemini-workbench-home .gauge-center strong {
+      display: block;
+      font-size: 32px;
+      font-weight: 600;
+      letter-spacing: -0.03em;
+      line-height: 1;
+      color: var(--ink);
+    }
+.gemini-workbench-home.gemini-workbench-home .gauge-center span {
+      display: block;
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+.gemini-workbench-home.gemini-workbench-home .gauge-scale {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+      color: var(--muted);
+      padding: 4px 10px 0;
+    }/* Right Column Widget 2: Docked AI Assistant Card (Shopeers bottom-right AI Assistant) */
+.gemini-workbench-home.gemini-workbench-home .docked-ai-card {
+      background: linear-gradient(180deg, #ffffff 0%, #faf9ff 100%);
+      border: 1px solid var(--line);
+      border-radius: var(--radius-card);
+      padding: 20px 22px;
+      box-shadow: var(--shadow-card);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+.gemini-workbench-home.gemini-workbench-home .ai-orb-stage {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      padding: 12px 0 6px;
+      gap: 10px;
+    }
+.gemini-workbench-home.gemini-workbench-home .ai-orb {
+      width: 58px;
+      height: 58px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 30% 28%, #b8afff 0%, #6554e8 48%, #3424a6 88%, #ffdc32 100%);
+      box-shadow: 0 12px 28px rgba(101, 84, 232, 0.35), inset 0 2px 6px rgba(255, 255, 255, 0.65);
+    }
+.gemini-workbench-home.gemini-workbench-home .ai-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+.gemini-workbench-home.gemini-workbench-home .ai-chip {
+      font-size: 11px;
+      padding: 5px 11px;
+      border-radius: 999px;
+      background: #fff;
+      border: 1px solid var(--line);
+      color: var(--ink-secondary);
+      transition: all 0.14s;
+    }
+.gemini-workbench-home.gemini-workbench-home .ai-chip:hover {
+      background: var(--violet-soft);
+      border-color: #d0c9fa;
+      color: var(--violet);
+    }
+.gemini-workbench-home.gemini-workbench-home .ai-chat-log {
+      max-height: 170px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      font-size: 12px;
+    }
+.gemini-workbench-home.gemini-workbench-home .ai-bubble-q {
+      align-self: flex-end;
+      background: var(--violet-soft);
+      color: var(--violet);
+      font-weight: 600;
+      padding: 7px 12px;
+      border-radius: 14px 14px 4px 14px;
+    }
+.gemini-workbench-home.gemini-workbench-home .ai-bubble-a {
+      background: #fff;
+      border: 1px solid var(--line);
+      padding: 10px 12px;
+      border-radius: 14px 14px 14px 4px;
+      color: var(--ink-secondary);
+      line-height: 1.6;
+    }
+.gemini-workbench-home.gemini-workbench-home .ai-input-pill {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: #fff;
+      border: 1px solid var(--line-strong);
+      border-radius: 999px;
+      padding: 5px 6px 5px 14px;
+      box-shadow: 0 2px 6px rgba(24, 24, 27, 0.03);
+    }
+.gemini-workbench-home.gemini-workbench-home .ai-input-pill input {
+      border: none;
+      outline: none;
+      background: transparent;
+      flex: 1;
+      font-size: 12px;
+      min-width: 0;
+    }
+.gemini-workbench-home.gemini-workbench-home .ai-send-btn {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      background: var(--violet);
+      color: #fff;
+      display: grid;
+      place-items: center;
+      flex-shrink: 0;
+    }
+.gemini-workbench-home.gemini-workbench-home .ai-send-btn:hover { background: var(--violet-hover); }
+
+
+/* The approved later palette/typographic refinement takes precedence. */
+.gemini-workbench-home {
+  color: var(--ink);
+  font-family: "Outfit", "Noto Sans SC", "Microsoft YaHei UI", sans-serif;
+  line-height: 1.6;
+}
+.gemini-workbench-home :is(h1, h2, h3, p, figure) { margin: 0; }
+.gemini-workbench-home button { cursor: pointer; font-family: inherit; }
+.gemini-workbench-home button:disabled { cursor: default; opacity: .5; }
+.gemini-workbench-home a { text-decoration: none; }
+.gemini-workbench-home :is(button, a, circle):focus-visible { outline: 2px solid #9c8bd7; outline-offset: 3px; }
+.gemini-workbench-home.gemini-workbench-home .section-header { margin-bottom: 24px; }
+.gemini-workbench-home.gemini-workbench-home .section-header h1 { font-size: 27px; font-weight: 500; letter-spacing: 0; line-height: 1.4; }
+.gemini-workbench-home.gemini-workbench-home .section-header p { line-height: 1.7; font-size: 13px; margin-top: 6px; }
+.gemini-workbench-home.gemini-workbench-home .card-title { font-size: 16px; font-weight: 500; letter-spacing: 0; }
+.gemini-workbench-home.gemini-workbench-home .card-subtitle { line-height: 1.65; font-size: 12px; }
+.gemini-workbench-home.gemini-workbench-home :is(.bento-grid, .bento-col) { gap: 20px; }
+.gemini-workbench-home.gemini-workbench-home .bento-card { padding: 24px; }
+.gemini-workbench-home.gemini-workbench-home .hero-composite-top { gap: 28px; padding-bottom: 24px; }
+.gemini-workbench-home.gemini-workbench-home .hero-judgment-title { font-size: 20px; font-weight: 500; line-height: 1.6; letter-spacing: 0; margin: 12px 0; }
+.gemini-workbench-home.gemini-workbench-home :is(.hero-judgment-desc, .opp-card p) { font-size: 14px; line-height: 1.8; }
+.gemini-workbench-home.gemini-workbench-home .segmented-breakdown { padding-top: 20px; }
+.gemini-workbench-home.gemini-workbench-home :is(.segmented-breakdown-head, .seg-col strong) { font-weight: 500; }
+.gemini-workbench-home.gemini-workbench-home .seg-track { height: 5px; background: #f3f0f8; }
+.gemini-workbench-home.gemini-workbench-home .seg-col { border-left-width: 1px; min-width: 0; overflow-wrap: anywhere; }
+.gemini-workbench-home .seg-col.c-0 { border-left-color: #7866d6; }
+.gemini-workbench-home .seg-col.c-1 { border-left-color: #a599f9; }
+.gemini-workbench-home .seg-col.c-2 { border-left-color: #c8bdde; }
+.gemini-workbench-home .c-0 .seg-fill { background: #6554e8; }
+.gemini-workbench-home .c-1 .seg-fill { background: #a599f9; }
+.gemini-workbench-home .c-2 .seg-fill { background: #c8bdde; }
+.gemini-workbench-home.gemini-workbench-home .seg-col strong { flex-wrap: wrap; }
+.gemini-workbench-home.gemini-workbench-home .seg-col .pill { display: inline-flex; margin: 0; }
+.gemini-workbench-home.gemini-workbench-home .opp-card { padding: 22px; gap: 12px; }
+.gemini-workbench-home.gemini-workbench-home .opp-card h3 { font-size: 16px; font-weight: 500; line-height: 1.65; }
+.gemini-workbench-home.gemini-workbench-home .opp-card-foot { border-top-color: #f3f1f6; padding-top: 14px; gap: 8px; flex-wrap: wrap; }
+.gemini-workbench-home .opp-card-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+.gemini-workbench-home .opp-card-head small { font-size: 11px; color: var(--muted); }
+.gemini-workbench-home.gemini-workbench-home .clean-row { padding: 16px 0; border-bottom-color: #f3f1f6; }
+.gemini-workbench-home.gemini-workbench-home .row-meta strong { font-weight: 500; line-height: 1.65; }
+.gemini-workbench-home.gemini-workbench-home .row-meta small { line-height: 1.6; }
+.gemini-workbench-home.gemini-workbench-home .row-right strong { font-weight: 500; }
+.gemini-workbench-home.gemini-workbench-home .row-badge-icon { background: #faf9fc; border-color: transparent; font-weight: 400; }
+.gemini-workbench-home.gemini-workbench-home .pill { font-size: 11px; font-weight: 400; padding: 3px 7px; }
+.gemini-workbench-home.gemini-workbench-home :is(.pill-slate, .pill-violet) { background: transparent; color: #73707e; }
+.gemini-workbench-home.gemini-workbench-home .date-pill { font-weight: 400; background: transparent; border-color: transparent; box-shadow: none; font-size: 13px; }
+.gemini-workbench-home.gemini-workbench-home :is(.btn-action-violet, .btn-action-dark, .btn-action-outline) { font-weight: 500; font-size: 13px; box-shadow: none; transition: background 160ms ease, color 160ms ease, border-color 160ms ease; white-space: normal; text-align: center; }
+.gemini-workbench-home.gemini-workbench-home .btn-action-violet:hover { transform: none; }
+.gemini-workbench-home.gemini-workbench-home .opp-card .btn-action-violet { background: #f1eef8; color: #57468f; }
+.gemini-workbench-home.gemini-workbench-home .opp-card .btn-action-violet:hover { background: #e8e2f4; }
+.gemini-workbench-home.gemini-workbench-home .gauge-center strong { font-weight: 500; }
+.gemini-workbench-home.gemini-workbench-home .gauge-wrap { margin: 14px auto; max-width: 100%; }
+.gemini-workbench-home.gemini-workbench-home .gauge-scale { font-size: 12px; }
+.gemini-workbench-home.gemini-workbench-home .docked-ai-card { background: linear-gradient(180deg, #fff, #fcfbff); padding: 24px; }
+.gemini-workbench-home .full-width { width: 100%; margin-top: 14px; justify-content: center; }
+.gemini-workbench-home.gemini-workbench-home .desktop-assistant-mark {
+  width:48px; height:48px; margin:24px auto; border-radius:50%;
+  background:radial-gradient(circle at 30% 28%,#c9bff4,#8a77d7 48%,#615094);
+  box-shadow:0 8px 22px #6554e824,inset 0 2px 6px #ffffff70;
+}
+.gemini-workbench-home .desktop-assistant-mark svg { display:none; }
+.gemini-workbench-home.gemini-workbench-home .native-suggestions {
+  display:flex; flex-wrap:wrap; align-items:flex-start; justify-content:flex-start; gap:8px;
+  padding:0; border:0;
+}
+.gemini-workbench-home.gemini-workbench-home .native-suggestions button {
+  border:1px solid #f0edf5; border-radius:999px; background:#fff; padding:7px 10px;
+  font-size:12px; line-height:1.5; color:var(--ink-secondary); text-align:left;
+}
+.gemini-workbench-home.gemini-workbench-home .workspace-assistant-composer form {
+  display:flex; align-items:center; gap:8px; padding:6px 8px 6px 14px;
+  border:1px solid var(--line); border-radius:24px; background:#fff;
+}
+.gemini-workbench-home.gemini-workbench-home .workspace-assistant-composer form label { flex:1; min-width:0; font-size:0; }
+.gemini-workbench-home.gemini-workbench-home .workspace-assistant-composer form input {
+  font-size:12px; width:100%; margin:0; padding:6px 0; border:0; background:transparent;
+}
+.gemini-workbench-home.gemini-workbench-home .workspace-assistant-composer form button {
+  font-size:12px; flex-shrink:0; border:0; border-radius:999px; padding:7px 10px; color:white; background:var(--violet);
+}
+.gemini-workbench-home .hero-chart { position: relative; min-width: 0; padding-top: 46px; }
+.gemini-workbench-home .hero-chart svg { display: block; width: 100%; overflow: visible; }
+.gemini-workbench-home .hero-chart circle { cursor: pointer; }
+.gemini-workbench-home .hero-chart figcaption { position: absolute; right: 6px; top: 0; display: grid; border-radius: 8px; padding: 6px 10px; font-size: 10px; background: #18181b; color: white; }
+.gemini-workbench-home .hero-chart figcaption span { color: #ffdc32; }
+.gemini-workbench-home :is(.chart-empty, .empty-copy) { color: var(--muted); font-size: 13px; line-height: 1.8; }
+.gemini-workbench-home .chart-empty { padding: 36px 18px; background: #faf9fc; border-radius: 12px; }
+.gemini-workbench-home .empty-copy { margin-top: 8px; }
+.gemini-workbench-home .inline-link { color: var(--violet); font-size: 12px; background: none; border: 0; padding: 8px 0; display: inline-block; }
+.gemini-workbench-home .home-status { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; padding: 14px 18px; border-radius: 14px; background: #fbf6e8; font-size: 13px; }
+.gemini-workbench-home :is(.more-opportunities, .source-details) summary { color: var(--violet); font-size: 12px; cursor: pointer; padding: 12px 0; }
+.gemini-workbench-home .signal-summary { display: flex; flex-wrap: wrap; gap: 12px 20px; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--line); }
+.gemini-workbench-home .signal-summary > div { display: grid; gap: 4px; font-size: 12px; color: var(--muted); }
+.gemini-workbench-home .signal-summary strong { color: var(--ink); font-weight: 500; }
+.gemini-workbench-home .source-details .ep-panel { padding: 0; border: 0; background: transparent; box-shadow: none; }
+.gemini-workbench-home .internal-evidence { margin-top: 16px; border-top: 1px solid var(--line); }
+.gemini-workbench-home .internal-evidence-detail { padding: 12px 0; font-size: 12px; color: var(--muted); }
+.gemini-workbench-home .internal-evidence-detail h4 { margin: 0 0 4px; color: var(--ink); font-weight: 500; }
+.gemini-workbench-home .internal-evidence-detail time { font-variant-numeric: tabular-nums; }
+.gemini-workbench-home .internal-evidence-detail ul { margin: 8px 0; padding-left: 18px; }
+.gemini-workbench-home .revenue-details { margin-top: 20px; font-size: 12px; color: var(--muted); }
+.gemini-workbench-home .revenue-table-scroll { max-width: 100%; overflow-x: auto; margin-top: 12px; }
+.gemini-workbench-home .revenue-table-scroll table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+.gemini-workbench-home .revenue-table-scroll caption { text-align: left; padding: 6px 0 10px; color: var(--ink); font-weight: 500; }
+.gemini-workbench-home .revenue-table-scroll :is(th, td) { padding: 10px 8px; text-align: right; border-bottom: 1px solid var(--line); white-space: nowrap; }
+.gemini-workbench-home .revenue-table-scroll th { font-weight: 500; }
+.gemini-workbench-home .revenue-table-scroll th:first-child { text-align: left; }
+.gemini-workbench-home .revenue-table-scroll tbody { color: var(--ink-secondary); }
+.gemini-workbench-home .gemini-action-plan .ap-panel { padding: 24px; margin: 0; }
+.gemini-workbench-home .gemini-action-plan .ap-head h3 { font-size: 16px; font-weight: 500; }
+.gemini-workbench-home .gemini-action-plan .wb-plan-progress { padding: 8px 16px; }
+.gemini-workbench-home .docked-ai-card .workspace-assistant { padding: 0; margin: 0; border: 0; background: transparent; box-shadow: none; }
+.gemini-workbench-home .docked-ai-card .native-assistant-heading h2 { font-size: 16px; font-weight: 500; }
+.gemini-workbench-home.gemini-workbench-home .wb-income-overview { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; margin: 0 0 18px; padding: 0; border: 0; background: transparent; }
+.gemini-workbench-home.gemini-workbench-home .wb-income-overview > div { padding: 22px; border: 1px solid var(--line); border-radius: 18px; background: white; min-width: 0; }
+.gemini-workbench-home.gemini-workbench-home .wb-income-overview strong { font-size: 30px; font-weight: 500; letter-spacing: -.02em; white-space: nowrap; }
+@media (max-width: 1200px) {
+  .gemini-workbench-home.gemini-workbench-home .section-header { flex-wrap: wrap; }
+}
+@media (max-width: 1040px) {
+  .gemini-workbench-home.gemini-workbench-home :is(.bento-grid, .hero-composite-top) { grid-template-columns: 1fr; }
+  .gemini-workbench-home.gemini-workbench-home .wb-income-overview { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 760px) {
+  .gemini-workbench-home.gemini-workbench-home :is(.opp-grid, .segmented-cols) { grid-template-columns: 1fr; }
+  .gemini-workbench-home.gemini-workbench-home .header-controls { flex-wrap: wrap; }
+  .gemini-workbench-home.gemini-workbench-home .section-header h1 { font-size: 24px; }
+  .gemini-workbench-home.gemini-workbench-home .bento-card { padding: 20px; }
+  .gemini-workbench-home.gemini-workbench-home .segmented-breakdown-head { flex-wrap: wrap; gap: 10px; }
+  .gemini-workbench-home .row-meta { min-width: 0; overflow-wrap: anywhere; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .gemini-workbench-home *, .gemini-workbench-home *::before, .gemini-workbench-home *::after { animation: none !important; transition: none !important; }
+}
+@media (max-width: 480px) {
+  .gemini-workbench-home.gemini-workbench-home .wb-income-overview { grid-template-columns: 1fr; }
+}

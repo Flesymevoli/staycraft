@@ -1,0 +1,44 @@
+/* Extracted from the user-approved staycraft_fonts.html.
+ * Source SHA-256: 914a7094bc34eb5949b68f67fa7dc8e9cbee642c254af2c088d4e819113ed140
+ * Original :root cascade preserved; state pills retain their original rules.
+ * Scoped to Electron; shared web/demo colors are unchanged.
+ */
+.workbench-shell[data-desktop-theme="soft"] {
+  --bg-outer: #efedf8;
+  --bg-canvas: #fdfdfe;
+  --surface: #ffffff;
+  --surface-subtle: #f9fafb;
+  --ink: #303039;
+  --ink-secondary: #51515d;
+  --muted: #73737f;
+  --line: #efedf3;
+  --line-strong: #dedbe8;
+  --violet: #6554c7;
+  --violet-hover: #5545b4;
+  --chart-violet: #7866d6;
+  --violet-soft: #f3f2fc;
+  --violet-pill: #e5e0f5;
+  --yellow: #e7d598;
+  --amber-bg: #fbf6e8;
+  --amber-text: #85581A;
+  --emerald-bg: #eaf7ef;
+  --emerald-text: #1e7045;
+  --coral-bg: #fdf0f0;
+  --coral-text: #a63636;
+  --radius-xl: 26px;
+  --radius-card: 18px;
+  --radius-md: 14px;
+  --shadow-card: 0 2px 8px rgba(43,34,73,.018);
+  --shadow-float: 0 12px 32px rgba(24, 24, 28, 0.09);
+  /* Inline SVG paints in the approved file intentionally differ from :root. */
+  --reference-chart-line: #6554e8;
+  --reference-chart-weekend: #ffdc32;
+  --reference-chart-grid: #eceaf5;
+  --reference-gauge-track: #eae8f4;
+  --pill-emerald-bg: #ecf8f1;
+  --pill-emerald-text: #1b6e44;
+  --pill-amber-bg: #f9f5eb;
+  --pill-amber-text: #785522;
+  --pill-coral-bg: #fbf0f0;
+  --pill-coral-text: #9c3a3a;
+}

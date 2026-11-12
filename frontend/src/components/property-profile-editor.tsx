@@ -7,7 +7,7 @@ import { blankProfile, profileFields, validateProfile, type ImportCandidate, typ
 import "./property-profile.css";
 
 type Preview = { filename: string; candidates: ImportCandidate[]; conflicts: string[]; excerpt: string };
-export function PropertyProfileEditor({ zh }: { zh: boolean }) {
+export function PropertyProfileEditor({ zh, readOnly = false, onDirtyChange }: { zh: boolean; readOnly?: boolean; onDirtyChange?: (dirty: boolean) => void }) {
   const t = (en: string, cn: string) => zh ? cn : en;
   const router = useRouter();
   const [profile, setProfile] = useState<PropertyProfile>({ ...blankProfile });
@@ -49,13 +49,13 @@ export function PropertyProfileEditor({ zh }: { zh: boolean }) {
   const beginEdit = () => { setEditing(true); setSaved(false); setError(""); };
   const cancelEdit = () => {
     if (busy || !snapshot) return;
-    setProfile({...snapshot}); dirty.current = false; setEditing(false); setConfirmed(false);
+    setProfile({...snapshot}); dirty.current = false; onDirtyChange?.(false); setEditing(false); setConfirmed(false);
     setError(""); setPreview(null); setSelected([]); setSaved(false);
     requestAnimationFrame(() => summaryRef.current?.focus());
   };
   const retry = () => { setState("loading"); setError(""); setReload(value => value + 1); };
   const edit = (key: keyof PropertyProfile, value: string) => {
-    dirty.current = true; setProfile(current => ({ ...current, [key]: value })); setConfirmed(false); setSaved(false); setError("");
+    dirty.current = true; onDirtyChange?.(true); setProfile(current => ({ ...current, [key]: value })); setConfirmed(false); setSaved(false); setError("");
   };
   const importFile = async (file?: File) => {
     if (!file) return;
@@ -75,7 +75,7 @@ export function PropertyProfileEditor({ zh }: { zh: boolean }) {
     if (!preview) return;
     const next = { ...profile };
     for (const candidate of preview.candidates) if (selected.includes(candidate.key)) next[candidate.key] = candidate.value;
-    dirty.current = true; setProfile(next); setPreview(null); setConfirmed(false); setSaved(false);
+    dirty.current = true; onDirtyChange?.(true); setProfile(next); setPreview(null); setConfirmed(false); setSaved(false);
   };
   const save = async (event: React.FormEvent) => {
     event.preventDefault(); if (busy || state !== "ready" || !confirmed) return;
@@ -86,7 +86,7 @@ export function PropertyProfileEditor({ zh }: { zh: boolean }) {
       const body = await response.json();
       if (!response.ok) { setError(body.error ?? "save_failed"); return; }
       const value = validateProfile(body.profile); if (!value || typeof body.revision !== "string") throw new Error();
-      setProfile(value); setRevision(body.revision); dirty.current = false; setSnapshot(value); setEditing(false); setPreview(null); setSelected([]); setSaved(true); setConfirmed(false); window.dispatchEvent(new Event('staycraft-profile-changed')); router.refresh();
+      setProfile(value); setRevision(body.revision); dirty.current = false; onDirtyChange?.(false); setSnapshot(value); setEditing(false); setPreview(null); setSelected([]); setSaved(true); setConfirmed(false); window.dispatchEvent(new Event('staycraft-profile-changed')); router.refresh();
     } catch { setError("save_failed"); }
     finally { setBusy(null); }
   };
@@ -100,11 +100,11 @@ export function PropertyProfileEditor({ zh }: { zh: boolean }) {
     t("Could not read the file. Your existing input has not changed.", "暂时无法解析文件，已有输入没有改变。请重试。");
 
   return <section className="workspace-profile" aria-label={t("Property details and upload", "民宿资料与上传")}>
-    {state === "ready" && snapshot && !editing ? <div className="profile-summary">
-      <div className="profile-summary-head"><h2 ref={summaryRef} tabIndex={-1}>{t("Property information", "民宿资料")}</h2><button type="button" className="profile-text-button" onClick={beginEdit}>{t("Edit details", "编辑资料")}</button></div>
-      <dl>{profileFields.filter(field=>field.key!=="roomCount").map(field=><div className={(field.key==="notes"||field.key==="guestNotes")?"profile-summary-notes":""} key={field.key}><dt>{field[zh?"zh":"en"]}</dt><dd>{snapshot[field.key] || t("Not set", "未设置")}</dd></div>)}</dl>
+    {!editing && (state === "loading" || state === "ready" && snapshot) ? <div className="profile-summary" aria-busy={state==="loading"}>
+      <div className="profile-summary-head"><h2 ref={summaryRef} tabIndex={-1}>{t("Property information", "民宿资料")}</h2>{!readOnly&&<button type="button" className="profile-text-button" disabled={state==="loading"} onClick={beginEdit}>{t("Edit details", "编辑资料")}</button>}</div>
+      <dl>{profileFields.filter(field=>field.key!=="roomCount").map(field=><div className={(field.key==="notes"||field.key==="guestNotes")?"profile-summary-notes":""} key={field.key}><dt>{field[zh?"zh":"en"]}</dt><dd>{state==="loading"?<span className="workspace-placeholder-bar" aria-label={t("Loading","正在读取")}/>:snapshot?.[field.key] || t("Not set", "未设置")}</dd></div>)}</dl>
       {saved && <p role="status" className="profile-saved"><Check size={16} aria-hidden="true"/>{t("Confirmed details saved.", "已保存确认后的资料。")}</p>}
-    </div> : state === "loading" && !editing ? <div className="profile-summary"><h2>{t("Property information", "民宿资料")}</h2><p role="status" className="profile-connection">{t("Loading saved information…", "正在读取已保存资料…")}</p></div> : <>
+    </div> : <>
     <form ref={formRef} onSubmit={save} className="profile-form">
       <h2>{t("Property information", "民宿资料")}</h2>
       {state === "loading" && <p role="status">{t("Loading saved information…", "正在读取已保存资料…")}</p>}

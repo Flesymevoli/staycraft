@@ -1,10 +1,10 @@
 import { randomUUID } from "node:crypto";
-import { boundedBody, requireSameOrigin, verifiedProperty, WorkspaceError, workspaceFailure } from "@/lib/workspace-access";
+import { boundedBody, requireSameOrigin, writableProperty, WorkspaceError, workspaceFailure } from "@/lib/workspace-access";
 export const dynamic="force-dynamic";
 const bucket="room-photos";
 export async function POST(request:Request){
   try{
-    requireSameOrigin(request);const {supabase,propertyId}=await verifiedProperty();
+    requireSameOrigin(request);const {supabase,propertyId}=await writableProperty();
     const bytes=await boundedBody(request,262144);
     if(request.headers.get("content-type")!=="image/webp" || bytes.length<30 || new TextDecoder().decode(bytes.slice(0,4))!=="RIFF" || new TextDecoder().decode(bytes.slice(8,12))!=="WEBP")throw new WorkspaceError("invalid_image",400);
     const path=`${propertyId}/${randomUUID()}.webp`;
@@ -15,7 +15,7 @@ export async function POST(request:Request){
 }
 export async function GET(request:Request){
   try{
-    const {supabase,propertyId}=await verifiedProperty();const path=new URL(request.url).searchParams.get("path") || "";
+    const {supabase,propertyId}=await writableProperty();const path=new URL(request.url).searchParams.get("path") || "";
     if(!path.startsWith(propertyId+"/") || !/^[a-f0-9-]{36}\/[a-f0-9-]{36}\.webp$/i.test(path))throw new WorkspaceError("photo_not_found",404);
     const {data,error}=await supabase.storage.from(bucket).download(path);
     if(error || !data)throw new WorkspaceError("photo_unavailable",404);

@@ -1,0 +1,26 @@
+const {PGlite}=require('@electric-sql/pglite');
+const fs=require('node:fs');const path=require('node:path');const assert=require('node:assert/strict');
+(async()=>{const db=new PGlite();try{
+ await db.exec(`create role anon; create role authenticated; create schema auth;
+ create function auth.uid() returns uuid language sql stable as $$select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid$$;
+ grant usage on schema public,auth to authenticated;
+ create table public.properties(id uuid primary key,owner_user_id uuid);
+ insert into public.properties values ('11111111-1111-4111-8111-111111111111','aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'),('22222222-2222-4222-8222-222222222222','bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb');
+ grant select on public.properties to authenticated;`);
+ await db.exec(fs.readFileSync(path.resolve(__dirname,'../../supabase/migrations/20261110000200_market_quote_batches.sql'),'utf8'));
+ await db.exec(`set role authenticated; set request.jwt.claim.sub='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'`);
+ const insert=`insert into public.market_quote_batches(property_id,source,captured_at,window_start,window_end,quotes,quote_count) values ($1,'ctrip','2026-11-11T00:00:00Z','2026-11-12','2026-11-18','[{}]',1)`;
+ await db.query(insert,['11111111-1111-4111-8111-111111111111']);
+ assert.equal((await db.query('select * from public.market_quote_batches')).rows.length,1);
+ await assert.rejects(db.query(insert,['22222222-2222-4222-8222-222222222222']),/row-level security/);
+ await assert.rejects(db.query(insert,['11111111-1111-4111-8111-111111111111']),/duplicate key/);
+ await assert.rejects(db.exec('update public.market_quote_batches set note=\'changed\''),/permission denied/);
+ await assert.rejects(db.exec('delete from public.market_quote_batches'),/permission denied/);
+ await db.exec(`set request.jwt.claim.sub='bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb'`);
+ assert.equal((await db.query('select * from public.market_quote_batches')).rows.length,0);
+ await db.exec('reset role; set role anon');
+ await assert.rejects(db.exec('select * from public.market_quote_batches'),/permission denied/);
+ await db.exec('reset role');
+ await assert.rejects(db.exec(`insert into public.market_quote_batches(property_id,source,captured_at,window_start,window_end,quotes,quote_count) values ('11111111-1111-4111-8111-111111111111','ctrip',now(),'2026-11-12','2026-11-11','[]',0)`),/check constraint/);
+ console.log('PASS 8 market storage checks: owner read/insert, isolation, immutable rows, duplicate prevention, anonymous denial, invalid window.');
+ }finally{await db.close();}})().catch(e=>{console.error(e);process.exitCode=1});

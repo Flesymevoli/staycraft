@@ -1,9 +1,46 @@
 /* Feedback is local; charts, values and page navigation stay immediate. */
 .workbench-shell{--ease-out:cubic-bezier(.23,1,.32,1)}
+html:has(.workbench-shell){scrollbar-gutter:stable}
 .workbench-shell :is(.native-primary,.inventory-soft,.wb-primary-action,.wb-refresh,.wb-finding-actions button){transition:transform 120ms var(--ease-out),opacity 120ms var(--ease-out)}
 .workbench-shell :is(.native-primary,.inventory-soft,.wb-primary-action,.wb-refresh,.wb-finding-actions button):active:not(:disabled):not(:focus-visible){transform:scale(.985);opacity:.88}
 .workbench-shell :is(.wb-segmented,.promotion-versions) button{transition:opacity 120ms var(--ease-out)}
 .workbench-shell :is(.wb-segmented,.promotion-versions) button:active:not(:focus-visible){opacity:.65}
+.workbench-shell .segmented-control {
+  --segment-inset: 4px;
+  --segment-gap: 4px;
+  --segment-background: #fff;
+  --segment-width: calc((100% - 2 * var(--segment-inset) - (var(--segment-count) - 1) * var(--segment-gap)) / var(--segment-count));
+  position: relative;
+  isolation: isolate;
+  display: grid;
+  grid-template-columns: repeat(var(--segment-count), minmax(0, 1fr));
+  gap: var(--segment-gap);
+  padding: var(--segment-inset);
+}
+.workbench-shell .wb-segmented.segmented-control {
+  --segment-inset: 3px;
+  --segment-background: #18181b;
+}
+.segmented-indicator {
+  position: absolute;
+  z-index: -1;
+  inset-block: var(--segment-inset);
+  left: var(--segment-inset);
+  width: var(--segment-width);
+  border-radius: 999px;
+  background: var(--segment-background);
+  pointer-events: none;
+  transform: translateX(calc(var(--segment-index) * (100% + var(--segment-gap))));
+}
+.workbench-shell .segmented-control button[aria-pressed=true] {
+  background: transparent;
+  box-shadow: none;
+}
+@media (prefers-reduced-motion: no-preference) {
+  .segmented-control[data-pointer-motion=true] .segmented-indicator {
+    transition: transform 180ms var(--ease-out);
+  }
+}
 .wb-detail-dialog[data-motion=true]{opacity:0;transform:translateY(8px) scale(.985);transition:opacity 200ms var(--ease-out),transform 200ms var(--ease-out),display 200ms allow-discrete,overlay 200ms allow-discrete}
 .wb-detail-dialog[data-motion=true][open]{opacity:1;transform:none}
 .wb-detail-dialog[data-motion=true]::backdrop{transition:opacity 200ms var(--ease-out),display 200ms allow-discrete,overlay 200ms allow-discrete;opacity:0}
@@ -15,4 +52,72 @@
 @media(prefers-reduced-motion:no-preference){
  .workbench-shell :is(.workbench-primary-nav,.workbench-mobile-nav) a svg{transition:transform 120ms var(--ease-out),opacity 120ms var(--ease-out)}
  .workbench-shell :is(.workbench-primary-nav,.workbench-mobile-nav) a:active:not(:focus-visible) svg{transform:scale(.94);opacity:.7}
+}
+.workbench-shell [data-workbench-nav] {
+  isolation: isolate;
+}
+.workbench-shell [data-workbench-nav] > a {
+  position: relative;
+}
+.workbench-shell [data-workbench-nav] > a.is-active {
+  background: transparent;
+  border-color: transparent;
+  color: var(--blue);
+  font-weight: 600;
+}
+.workbench-nav-indicator {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background: #eeecfc;
+  pointer-events: none;
+}
+.workbench-shell [data-workbench-nav] > a:focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: -2px;
+}
+.workspace-placeholder-bar {
+  display: inline-block;
+  width: min(12rem, 100%);
+  height: .72em;
+  border-radius: 999px;
+  background: #e9e8ef;
+}
+.booking-analysis-status {
+  display: flow-root;
+}
+.booking-analysis-status > p {
+  margin-block: 0 .3rem;
+}
+.booking-analysis-placeholder {
+  min-block-size: 26rem;
+}
+.workspace-placeholder-chart {
+  display: block;
+  height: 13rem;
+  margin-block: 4rem 1rem;
+  border-radius: 12px;
+  background: #f4f3f7;
+}
+.nearby-event-placeholder {
+  min-block-size: 112px;
+}
+.nearby-event-placeholder .workspace-placeholder-bar {
+  display: block;
+  margin-block: .65rem;
+}
+.nearby-event-placeholder .workspace-placeholder-bar:first-child {
+  width: min(20rem, 70vw);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .workspace-promotion .nearby-event:not(.nearby-event-placeholder),
+  .workspace-promotion .promotion-sources,
+  .workspace-promotion .promotion-library .promotion-list-row {
+    animation: workbench-content-appear 320ms var(--ease-out);
+  }
+}
+@keyframes workbench-content-appear {
+  from {opacity: .25}
+  to {opacity: 1}
 }

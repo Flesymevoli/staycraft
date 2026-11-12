@@ -37,9 +37,9 @@
 .workspace-explore-content legend{font-size:13px;margin-bottom:10px;color:#626c7c}
 .workspace-explore-content label{display:grid;gap:8px;font-size:14px;min-width:0}
 .workspace-explore-content .inventory-text{display:inline-flex;align-items:center;gap:7px;color:#0878ee;border:0;background:none;padding:0;min-height:44px;font:inherit;font-size:13px;cursor:pointer}
-.workspace-explore-content input:not([type=checkbox]),.workspace-explore-content select,.workspace-explore-content textarea{width:100%;min-width:0;box-sizing:border-box;border:1px solid #dce3ec;background:#fff;border-radius:12px;padding:12px;font:inherit;color:inherit;min-height:44px}
+.workspace-explore-content input:not([type=checkbox]):not([type=radio]),.workspace-explore-content select,.workspace-explore-content textarea{width:100%;min-width:0;box-sizing:border-box;border:1px solid #dce3ec;background:#fff;border-radius:12px;padding:12px;font:inherit;color:inherit;min-height:44px}
 .workspace-explore-content textarea{resize:vertical;line-height:1.65}
-.workspace-explore-content input[type=checkbox]{width:18px;height:18px;accent-color:#1677ff;flex-shrink:0}
+.workspace-explore-content :is(input[type=checkbox],input[type=radio]){width:18px;height:18px;accent-color:#1677ff;flex-shrink:0}
 .promotion-fields,.promotion-goals{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:16px 0}
 .promotion-goals button{border:1px solid #e0e7ef;background:#f6f7f9;border-radius:14px;min-height:48px;padding:10px;font:inherit;font-size:14px;color:inherit}
 .promotion-goals button[aria-pressed=true]{border-color:#9ec5ff;background:#edf5ff;color:#1265c9}
@@ -170,7 +170,7 @@
 .workspace-explore-content .explore-atmosphere{position:relative;flex:0 0 80px;width:80px;margin:0}
 .workspace-explore-content .explore-atmosphere img{display:block;width:80px;height:80px;object-fit:cover;border-radius:18px}
 .workspace-explore-content .explore-atmosphere figcaption{margin-top:4px;text-align:center;color:#626c7c;font-size:10px;line-height:1.4}
-.workspace-explore-content :is(input:not([type=checkbox]),select,textarea){font-size:16px}
+.workspace-explore-content :is(input:not([type=checkbox]):not([type=radio]),select,textarea){font-size:16px}
 .workspace-explore-content :is(button,summary){min-height:44px}
 .workspace-explore-content button{min-width:44px;white-space:normal;overflow-wrap:anywhere}
 .workspace-explore-content .inventory-text{padding-inline:4px}
@@ -205,3 +205,7 @@
 .workspace-explore-content input[type=date]::-webkit-datetime-edit{min-width:0;padding:0}
 .workspace-explore-content input[type=date]::-webkit-calendar-picker-indicator{width:16px;margin:0;padding:0;flex-shrink:0}
 @media(max-width:359px){.workspace-explore-content :is(.market-dates,.promotion-fields){grid-template-columns:minmax(0,1fr)}}
+
+.desktop-collection { display:grid; gap:12px; }
+.desktop-collection textarea { min-width:0; width:100%; box-sizing:border-box; border:1px solid #e1e1e7; border-radius:12px; background:#fafafb; color:inherit; font:inherit; padding:12px; }
+.desktop-collection .promotion-actions { display:flex; flex-wrap:wrap; gap:10px; }

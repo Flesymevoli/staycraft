@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120" fill="none">
+  <!-- StayCraft Monochrome Charcoal Mark (#27272E, Transparent Vector SVG) -->
+  <path d="M18 54 L60 20 L102 54" stroke="#27272E" stroke-width="8.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M27.5 46.5 V94" stroke="#27272E" stroke-width="8.5" stroke-linecap="round"/>
+  <path d="M92.5 46.5 V94" stroke="#27272E" stroke-width="8.5" stroke-linecap="round"/>
+  <rect x="38" y="74" width="12" height="24" rx="3" fill="#27272E"/>
+  <rect x="54" y="61" width="12" height="37" rx="3" fill="#27272E"/>
+  <rect x="70" y="46" width="12" height="52" rx="3" fill="#27272E"/>
+</svg>

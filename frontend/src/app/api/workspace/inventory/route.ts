@@ -1,5 +1,5 @@
 import {validateInventory} from "@/lib/property-inventory";
-import {boundedBody,requireSameOrigin,verifiedProperty,WorkspaceError,workspaceFailure} from "@/lib/workspace-access";
+import {boundedBody,requireSameOrigin,verifiedProperty,writableProperty,WorkspaceError,workspaceFailure} from "@/lib/workspace-access";
 export const dynamic="force-dynamic";
 const headers={"Cache-Control":"no-store"};
 export async function GET(){try{
@@ -9,7 +9,7 @@ export async function GET(){try{
  return Response.json(data,{headers});
 }catch(error){return workspaceFailure(error);}}
 export async function PUT(request:Request){try{
- requireSameOrigin(request);const {supabase,propertyId}=await verifiedProperty();let body;
+ requireSameOrigin(request);const {supabase,propertyId}=await writableProperty();let body;
  try{body=JSON.parse(new TextDecoder().decode(await boundedBody(request,160000)));}catch(error){if(error instanceof WorkspaceError)throw error;throw new WorkspaceError("invalid_inventory",400);}
  const inventory=validateInventory(body?.inventory,propertyId);
  if(!inventory||!(body.revision===null||/^[a-f0-9-]{36}$/i.test(body.revision??"")))throw new WorkspaceError("invalid_inventory",400);

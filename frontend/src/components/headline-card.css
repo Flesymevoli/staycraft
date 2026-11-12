@@ -1,0 +1,11 @@
+.hl-card{border-radius:16px;border:1px solid #e1e1e7;background:#fff;padding:16px;box-shadow:none;margin-bottom:16px}
+.hl-head{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.hl-chip{font-size:11px;border-radius:999px;padding:2px 9px;color:#5546d9;background:#eeebff;border:1px solid #ddd8fb}
+.hl-window{font-size:11px;color:#62626c;font-variant-numeric:tabular-nums}
+.hl-conclusion{margin:10px 0 0;font-size:19px;line-height:1.5;font-weight:680;color:#18181b;overflow-wrap:anywhere}
+.hl-reason{margin:8px 0 0;font-size:13px;line-height:1.7;color:#3a3a42;overflow-wrap:anywhere}
+.hl-kpis{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:8px;margin:12px 0 0}
+.hl-kpi{background:#fafafb;border:1px solid #e1e1e7;border-radius:12px;padding:9px 10px;overflow-wrap:anywhere}
+.hl-kpi b{display:block;font-size:16px;color:#18181b;font-variant-numeric:tabular-nums}
+.hl-kpi span{display:block;margin-top:2px;font-size:11px;color:#62626c}
+@media(max-width:480px){.hl-card{padding:14px}.hl-kpis{gap:6px}.hl-kpi{padding-inline:7px}.hl-conclusion{font-size:17px}}

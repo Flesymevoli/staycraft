@@ -1,5 +1,5 @@
 import {automaticDeliveryAvailable} from "@/lib/reply-automation";
-import {boundedBody,requireSameOrigin,verifiedProperty,WorkspaceError,workspaceFailure} from "@/lib/workspace-access";
+import {boundedBody,requireSameOrigin,verifiedProperty,writableProperty,WorkspaceError,workspaceFailure} from "@/lib/workspace-access";
 export const dynamic="force-dynamic";
 export async function GET(){try{
  const {supabase,propertyId}=await verifiedProperty();const {data,error}=await supabase.from("reply_automation_settings").select("enabled,revision").eq("property_id",propertyId).maybeSingle();if(error)throw error;
@@ -9,7 +9,7 @@ export async function GET(){try{
  return Response.json({enabled:data?.enabled||false,revision:data?.revision||null,available:automaticDeliveryAvailable(),events},{headers:{"Cache-Control":"no-store"}});
 }catch(error){return workspaceFailure(error)}}
 export async function POST(request:Request){try{
- requireSameOrigin(request);const {supabase,propertyId}=await verifiedProperty();let body;
+ requireSameOrigin(request);const {supabase,propertyId}=await writableProperty();let body;
  try{body=JSON.parse(new TextDecoder().decode(await boundedBody(request,1024)))}catch{throw new WorkspaceError("invalid_request",400)}
  const uuid=(v:unknown)=>typeof v==="string"&&/^[a-f0-9]{8}(-[a-f0-9]{4}){3}-[a-f0-9]{12}$/i.test(v);
  if(body.thread){if(!uuid(body.thread)||typeof body.manual!=="boolean"||Object.keys(body).some(k=>!["thread","manual"].includes(k)))throw new WorkspaceError("invalid_request",400)}

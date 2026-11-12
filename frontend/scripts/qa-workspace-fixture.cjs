@@ -2,12 +2,14 @@
 if (process.env.STAYCRAFT_QA_AUTH_FIXTURES === '1') {
   const sampleMode=process.env.STAYCRAFT_OPERATOR_SAMPLE==='1';
   if(sampleMode&&(process.env.VERCEL==='1'||process.env.STAYCRAFT_HOSTED==='1'||!process.argv.includes('127.0.0.1')))throw new Error('Samples require a separate loopback-only server');
-  const sample=(sampleMode||process.env.STAYCRAFT_QA_FORMAL_STAYS==='1')?require('./operator-sample-data.cjs').createSample(process.env.STAYCRAFT_SAMPLE_DATE||undefined,{rich:process.env.STAYCRAFT_SAMPLE_RICH==='1'}):null;
+  const sample=(sampleMode||process.env.STAYCRAFT_QA_FORMAL_STAYS==='1')?require('./operator-sample-data.cjs').createSample(process.env.STAYCRAFT_SAMPLE_DATE||(sampleMode?'2026-11-11':undefined),{rich:process.env.STAYCRAFT_SAMPLE_RICH==='1',includeCompletedStay:sampleMode&&process.env.STAYCRAFT_QA_DESKTOP_SYNC==='1'}):null;
   const conversations=require('./conversation-fixture.cjs')(sample,propertyId=>profiles.get(propertyId));
   const originalFetch = globalThis.fetch;
   const profiles = new Map();
   const inventories = new Map();
   const promotions = new Map();
+  const desktopBatches=new Map();
+  const desktopSample=sampleMode&&process.env.STAYCRAFT_QA_DESKTOP_SYNC==="1";
   const photos = new Map();const activity=new Map();
   const record=(property,kind,resource,room,automatic=false,completed=true)=>{const items=activity.get(property)||[];items.unshift({id:require('node:crypto').randomUUID(),kind,resource_id:resource,room_number:room,automatic,completed,created_at:new Date().toISOString()});activity.set(property,items)};
   const properties=new Map([['bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',{id:'dddddddd-dddd-4ddd-8ddd-dddddddddddd',name:'Account B private property'}]]);
@@ -29,13 +31,16 @@ if (process.env.STAYCRAFT_QA_AUTH_FIXTURES === '1') {
     const url = new URL(typeof input === 'string' ? input : input instanceof URL ? input.href : input.url);
     const headers = new Headers(init?.headers || (input instanceof Request ? input.headers : undefined));
     const identity = tokens.get((headers.get('authorization') || '').replace(/^Bearer /, ''));
-    if (url.hostname !== 'husrpqalpjjswpvrkxet.supabase.co') {
+    if (url.hostname !== 'husrpqalpjjswpvrkxet.supabase.co' && !(importDb && url.hostname === 'staycraft-qa.invalid')) {
       const amapRead=process.env.STAYCRAFT_SAMPLE_LIVE_AMAP==='1'&&url.protocol==='https:'&&url.hostname==='mcp.amap.com'&&url.pathname==='/mcp'&&init?.method==='POST'&&['maps_geo','maps_around_search','maps_regeocode'].includes(JSON.parse(init.body||'{}').params?.name);
       const marketRead=process.env.STAYCRAFT_SAMPLE_LIVE_AMAP==='1'&&url.protocol==='https:'&&url.hostname==='mcp.rollinggo.cn'&&url.pathname==='/mcp'&&init?.method==='POST'&&JSON.parse(init.body||'{}').params?.name==='searchHotels';
       const amapAddressRead=process.env.STAYCRAFT_SAMPLE_LIVE_AMAP==='1'&&url.protocol==='https:'&&url.hostname==='restapi.amap.com'&&url.pathname==='/v3/geocode/regeo'&&(!init?.method||init.method==='GET');
       const modelEndpoints=['https://api.deepseek.com/chat/completions',...(process.env.MODEL_BASE_URL?[process.env.MODEL_BASE_URL.replace(/\/$/,'')+'/chat/completions']:[])];
       const modelRead=process.env.STAYCRAFT_SAMPLE_LIVE_MODEL==='1'&&url.protocol==='https:'&&init?.method==='POST'&&modelEndpoints.includes(url.href);
-      if(sampleMode&&!modelRead&&!amapRead&&!amapAddressRead&&!marketRead&&!['127.0.0.1','localhost','[::1]'].includes(url.hostname))throw new Error('External network disabled in sample');
+      const demoWeatherRead=url.origin==='https://api.open-meteo.com'&&url.pathname==='/v1/forecast'
+        &&(!init?.method||init.method==='GET')&&url.searchParams.get('latitude')==='31.43'&&url.searchParams.get('longitude')==='121.11';
+      if(importDb&&url.hostname!=='127.0.0.1')throw new Error('External network disabled in import QA');
+      if(sampleMode&&!modelRead&&!amapRead&&!amapAddressRead&&!marketRead&&!demoWeatherRead&&!['127.0.0.1','localhost','[::1]'].includes(url.hostname))throw new Error('External network disabled in sample');
       if(sampleMode&&/\/v1\/properties\/[^/]+\/conversations\/[^/]+\/draft$/.test(url.pathname))return conversations(url,JSON.parse(init?.body||'{}'),identity,identity?propertyFor(identity.index):null);
       return originalFetch(input, init);
     }
@@ -44,13 +49,18 @@ if (process.env.STAYCRAFT_QA_AUTH_FIXTURES === '1') {
     if(conversation)return conversation;
     if(sample&&url.pathname==='/auth/v1/token'){
       const body=JSON.parse(init.body||'{}');
-      if(body.email!=='demo@example.invalid'||body.password!=='staycraft-demo')return json({message:'Invalid demo credentials',code:'invalid_credentials'},400);
-      const token=[...tokens].find(([,value])=>value.id===sample.ownerId)[0];
-      return json({access_token:token,refresh_token:'sample-only',token_type:'bearer',expires_in:3600,expires_at:4102444800,user:{id:sample.ownerId,email:'demo@example.invalid',aud:'authenticated',role:'authenticated',app_metadata:{},user_metadata:{},identities:[],created_at:'2026-01-01T00:00:00Z'}});
+      const account=body.email==='demo@example.invalid'?sample.ownerId:desktopSample&&body.email==='desktop-b@example.invalid'?ids[0]:null;
+      if(!account||body.password!=='staycraft-demo')return json({message:'Invalid demo credentials',code:'invalid_credentials'},400);
+      const token=[...tokens].find(([,value])=>value.id===account)[0];
+      return json({access_token:token,refresh_token:'sample-only',token_type:'bearer',expires_in:3600,expires_at:4102444800,user:{id:account,email:body.email,aud:'authenticated',role:'authenticated',app_metadata:{},user_metadata:{},identities:[],created_at:'2026-01-01T00:00:00Z'}});
     }
     if (!identity) return json({ message: 'Invalid session' }, 401);
     if(sampleMode&&url.pathname==='/rest/v1/decision_agent_runs'){if(identity.index===2)return json({code:'42501'},403);return require('./agent-store-fixture.cjs')(url,init,propertyFor(identity.index));}
     if(importDb){const imported=await importDb.handle(url,init,identity);if(imported)return imported;}
+    if(sampleMode&&url.pathname==='/rest/v1/booking_import_tasks'&&(!init?.method||init.method==='GET')){
+      const ownProperty=propertyFor(identity.index);
+      return identity.index===2||url.searchParams.get('property_id')!=='eq.'+ownProperty?json({message:'Forbidden'},403):json([]);
+    }
     if(url.pathname==='/rest/v1/operation_activity'){const p=propertyFor(identity.index);return identity.index===2||url.searchParams.get('property_id')!=='eq.'+p?json({message:'Forbidden'},403):json(activity.get(p)||[])}
     if (url.pathname === '/auth/v1/user') return json({ id: identity.id, email: `account-${identity.index}@example.invalid`, aud: 'authenticated', role: 'authenticated', app_metadata: {}, user_metadata: {}, identities: [], created_at: '2026-01-01T00:00:00Z' });
     if (url.pathname === '/auth/v1/logout') return json({});
@@ -114,7 +124,7 @@ if (process.env.STAYCRAFT_QA_AUTH_FIXTURES === '1') {
 
       if(identity.index===2)return json({code:'42501'},403);
       if(sample){
-        if(identity.id!==sample.ownerId)return json([]);
+        if(identity.id!==sample.ownerId)return new Response('[]',{headers:{'Content-Type':'application/json','Content-Range':'*/0'}});
         let rows=sample.bookings.map(item=>({...item,stay_state:stays.get(item.id)||item.stay_state||'pending',rooms:{number:inventories.get(sample.propertyId).inventory.rooms.find(room=>room.id===item.room_id)?.number||item.room_number}}));
         const or=url.searchParams.get('or'),room=url.searchParams.get('room_id'),status=url.searchParams.get('status'),arrival=url.searchParams.get('arrival'),departure=url.searchParams.get('departure');
         if(or){const date=or.match(/\d{4}-\d{2}-\d{2}/)?.[0];rows=rows.filter(item=>item.arrival===date||item.departure===date)}
@@ -122,12 +132,32 @@ if (process.env.STAYCRAFT_QA_AUTH_FIXTURES === '1') {
         if(status)rows=rows.filter(item=>'eq.'+item.status===status);
         if(arrival?.startsWith('lt.'))rows=rows.filter(item=>item.arrival<arrival.slice(3));
         if(arrival?.startsWith('lte.'))rows=rows.filter(item=>item.arrival<=arrival.slice(4));
+        for(const bound of url.searchParams.getAll('arrival')){
+          if(bound.startsWith('gte.'))rows=rows.filter(item=>item.arrival>=bound.slice(4));
+          if(bound.startsWith('lte.'))rows=rows.filter(item=>item.arrival<=bound.slice(4));
+        }
         if(departure?.startsWith('gt.'))rows=rows.filter(item=>item.departure>departure.slice(3));
         const total=rows.length,offset=Number(url.searchParams.get('offset')||0),limit=Number(url.searchParams.get('limit')||500);rows=rows.sort((a,b)=>b.arrival.localeCompare(a.arrival)).slice(offset,offset+limit);return new Response(JSON.stringify(rows),{headers:{'Content-Type':'application/json','Content-Range':rows.length?`${offset}-${offset+rows.length-1}/${total}`:`*/${total}`}});
       }
       if(process.env.STAYCRAFT_QA_BOOKINGS!=='1'||identity.index!==1)return json([]);
       const item={id:'11111111-1111-4111-8111-111111111111',room_id:'22222222-2222-4222-8222-222222222222',room_number:'OLD301',rooms:{number:'QA301'},type_name:'QA 房型',arrival:'2026-11-10',departure:'2026-11-12',guest_name:'QA 日程客人',expected_arrival:'18:00 前',total:760,status:'confirmed'};
       const filter=url.searchParams.get('or');return json(filter&&!filter.includes('2026-11-10')&&!filter.includes('2026-11-12')?[]:[item]);
+    }
+    if(desktopSample&&url.pathname==='/rest/v1/market_quote_batches'){
+      const property=properties.get(identity.id)?.id;
+      if(!property||identity.index===2)return json({code:'42501'},403);
+      const rows=desktopBatches.get(property)||[];
+      const keys=['source','captured_at','window_start','window_end'];
+      if(init?.method==='POST'){
+        const body=JSON.parse(init.body);
+        if(body.property_id!==property)return json({code:'42501'},403);
+        if(rows.some(row=>keys.every(key=>row[key]===body[key])))return json({code:'23505'},409);
+        const row={...body,id:require('node:crypto').randomUUID()};
+        desktopBatches.set(property,[row,...rows]);
+        return json(row,201);
+      }
+      if(url.searchParams.get('property_id')!=='eq.'+property)return json({code:'42501'},403);
+      return json(rows.filter(row=>keys.every(key=>!url.searchParams.has(key)||url.searchParams.get(key)==='eq.'+row[key])).sort((a,b)=>b.captured_at.localeCompare(a.captured_at)).slice(0,1));
     }
     if(url.pathname==='/rest/v1/promotion_workspaces'){
       const propertyId=propertyFor(identity.index),method=init?.method||'GET';
