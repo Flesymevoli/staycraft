@@ -1,11 +1,20 @@
-// Deterministic aggregation of competitor quotes. Median and quartiles, never a minimum or average
-// of unmatched room types. Thin samples are displayed but never turned into a range conclusion.
+// Deterministic reference statistics; unmatched quotes do not imply equivalent room types.
 import type {MarketSample, OwnPosition, Quote} from './types';
-import {countableQuote, hotelKey, marketDay} from './quote-identity';
+import {countableQuote, hotelKey, marketDay, isDatedListQuote} from './quote-identity';
 
 const DAY = 86400000;
 const isDay = marketDay;
 const isPrice = (value: unknown): value is number => typeof value === 'number' && Number.isFinite(value) && value > 0 && value <= 1000000;
+
+export function listedRateSummary(values: (number | null)[]) {
+  const rates = values.filter(isPrice);
+  return rates.length ? {min: Math.min(...rates), max: Math.max(...rates), average: rates.reduce((sum, price) => sum + price, 0) / rates.length} : null;
+}
+
+export function marketAverage(sample: MarketSample): number | null {
+  const quotes = sample.quotes.filter(quote => quote.stayDate >= sample.window.start && quote.stayDate <= sample.window.end && countableQuote(quote));
+  return quotes.length ? quotes.reduce((sum, quote) => sum + quote.priceCny!, 0) / quotes.length : null;
+}
 
 export function percentile(sorted: number[], ratio: number): number | null {
   if (sorted.length === 0) return null;
@@ -28,7 +37,8 @@ export function buildMarketSample(input: { quotes: Quote[]; window: { start: str
   const counted = usable.filter(countableQuote);
   const hotels = new Set(counted.map(hotelKey)).size;
   const delayed = usable.filter(quote => quote.status === 'stale').length;
-  const displayOnly = inWindow.filter(quote => quote.status === 'available' && quote.priceType === 'display').length;
+  const displayOnly = inWindow.filter(quote => quote.status === 'available' && quote.priceType === 'display' && !isDatedListQuote(quote)).length;
+  const datedList = counted.filter(isDatedListQuote);
   const noSaleable = inWindow.filter(quote => quote.status === 'no_saleable').length;
   const failed = inWindow.filter(quote => quote.status === 'source_error' || quote.status === 'missing' || quote.status === 'unknown').length;
 
@@ -38,13 +48,16 @@ export function buildMarketSample(input: { quotes: Quote[]; window: { start: str
 
   const classes = new Set(counted.map(quote => (quote.roomClass || '').trim()).filter(Boolean));
   const hasCalendar = counted.some(quote => quote.priceType === 'calendar');
-  const comparability: MarketSample['comparability'] = hotels < 3 ? 'none' : !hasCalendar && classes.size === 1 && counted.every(quote => (quote.roomClass || '').trim()) ? 'strict' : 'loose';
+  const conditions = new Set(counted.map(quote => `${quote.adults}:${quote.nights}`));
+  const comparability: MarketSample['comparability'] = hotels < 3 ? 'none' : !hasCalendar && !datedList.length && conditions.size === 1 && classes.size === 1 && counted.every(quote => (quote.roomClass || '').trim()) ? 'strict' : 'loose';
 
   if (n === 0) unknowns.push('窗口内没有可计入统计的起价');
   if (n > 0 && n < 3) unknowns.push(`可计入统计的起价只有 ${n} 条，样本不足，不形成区间结论`);
   if (n >= 3 && hotels < 3) unknowns.push(`有效报价只覆盖 ${hotels} 家独立住宿，样本不足，不形成区间结论`);
   if (n >= 3 && comparability === 'loose') unknowns.push('房型/档位未完全匹配，只能描述价差，不能断言同档定位');
   if (hasCalendar) unknowns.push('含日历参考价，房型/早餐/退改未匹配，只描述价差');
+  if (datedList.length) unknowns.push(`${datedList.length} 条为指定入住日的列表起价（${[...new Set(datedList.map(quote => quote.adults))].join('/')} 位成人），计入参考统计；房型、早餐和退改条件未核对，不代表成交价`);
+  if (conditions.size > 1) unknowns.push('入住人数或晚数不完全一致，仅作宽泛价格参考');
   if (delayed) unknowns.push(`${delayed} 条样本延迟，已展示但不计入统计`);
   if (displayOnly) unknowns.push(`${displayOnly} 条为展示价，未计入统计`);
   if (noSaleable) unknowns.push(`${noSaleable} 家当日无可售房型`);

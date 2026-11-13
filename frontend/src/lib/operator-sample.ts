@@ -5,7 +5,7 @@ export function operatorSample(){
 export function sampleCookieOptions(){return operatorSample()?{name:"staycraft-operator-sample-auth"}:undefined;}
 
 export function desktopTrial(){
- return process.env.NODE_ENV==='development'
+ return process.env.STAYCRAFT_DESKTOP_DEMO==='1'||process.env.NODE_ENV==='development'
   && process.env.STAYCRAFT_DESKTOP_DEV==='1'
   && process.env.STAYCRAFT_QA_DESKTOP_JOURNEY==='1'
   && process.env.STAYCRAFT_QA_AUTH_FIXTURES==='1'

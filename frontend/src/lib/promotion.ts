@@ -46,7 +46,7 @@ export function promotionCopy(brief:PromotionBrief,name:string,facts:{id:string;
  return promotionEvidenceCopy(brief,name,undefined,undefined,undefined,preferred);
 }
 
-export type PromotionComposition={content:string;engine:"model_v1"|"rules_v1";fallback:boolean};
+export type PromotionComposition={content:string;engine:"model_v1"|"rules_v1";fallback:boolean;failure?:string};
 type CompositionOptions={model:boolean;modelTransport?:ModelTransport;fetcher?:typeof fetch;signal?:AbortSignal;plan?:PromotionPlan;evidence?:{source?:PromotionSource};diagnosisReason?:string};
 
 async function modelPromotionCopy(facts:{id:string;text:string}[],brief:PromotionBrief,name:string,options:CompositionOptions):Promise<string>{
@@ -92,10 +92,12 @@ export async function composePromotion(facts:{id:string;text:string}[],brief:Pro
  const template=promotionEvidenceCopy(brief,name,options.evidence?.source,undefined,undefined,facts,{plan:options.plan,diagnosisReason:options.diagnosisReason});
  if(!options.model)return {content:template,engine:'rules_v1',fallback:false};
  try{return {content:await modelPromotionCopy(facts,brief,name,options),engine:'model_v1',fallback:false}}
- catch{
+ catch(error){
   // Do not log provider output, facts, or owner data on a rejected completion.
   console.warn('Promotion copy unavailable; using property-based copy');
-  return {content:template,engine:'rules_v1',fallback:true};
+  const code=error instanceof Error?error.message:'';
+  const failure=code==='model_rate_limited'?'promotion_rate_limited':options.signal?.aborted?'promotion_timeout':code.startsWith('invalid_copy')||code.startsWith('unsupported_')||code.startsWith('missing_')||code==='incomplete_response'||code==='guaranteed_experience'||code==='weather_not_qualified'?'promotion_invalid_copy':'promotion_model_unavailable';
+  return {content:template,engine:'rules_v1',fallback:true,failure};
  }
 }
 import {modelChat,type ModelTransport} from './model-provider';

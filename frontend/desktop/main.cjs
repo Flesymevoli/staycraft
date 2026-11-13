@@ -19,7 +19,28 @@ const applicationId='online.staycraft.desktop'+(app.isPackaged||hosted?'':standa
 const applicationIcon=process.platform==='win32'
  ?path.join(__dirname,'assets','staycraft.ico'):path.join(__dirname,'assets','staycraft.png');
 const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-let window,active,child,runtime,quitting=false;
+let window,active,activeFile,child,runtime,launching,quitting=false,stopRequested=false;
+let demoWindow,demoRuntime,demoStarting;
+async function openDemo(){
+ if(demoWindow&&!demoWindow.isDestroyed()){demoWindow.show();demoWindow.focus();return {ok:true}}
+ if(demoStarting)return demoStarting;
+ demoStarting=(async()=>{try{
+  const resources=app.isPackaged?process.resourcesPath:await developmentResources(project);
+  demoRuntime=await startRuntime({resources,fork:utilityProcess.fork,demo:true,timeoutMs:60000,onFailure:()=>{demoWindow?.destroy();demoRuntime=undefined}});
+  const demoOrigin=demoRuntime.origin;
+  demoWindow=new BrowserWindow({width:1320,height:900,minWidth:390,minHeight:640,title:'StayCraft · 本地演示',autoHideMenuBar:true,icon:applicationIcon,webPreferences:{preload:path.join(__dirname,'demo-preload.cjs'),contextIsolation:true,nodeIntegration:false,sandbox:true,partition:'staycraft-demo-'+randomUUID()}});
+  const local=url=>{try{return new URL(url).origin===demoOrigin}catch{return false}};
+  demoWindow.webContents.session.webRequest.onBeforeRequest((details,callback)=>callback({cancel:!local(details.url)&&!details.url.startsWith('data:')&& !details.url.startsWith('blob:')}));
+  demoWindow.webContents.on('will-navigate',event=>{if(!local(event.url))event.preventDefault()});
+  demoWindow.webContents.on('will-redirect',event=>{if(!local(event.url))event.preventDefault()});
+  demoWindow.webContents.setWindowOpenHandler(()=>({action:'deny'}));
+  demoWindow.on('closed',()=>{demoWindow=undefined;demoRuntime?.stop();demoRuntime=undefined});
+  await demoWindow.loadURL(demoOrigin+'/login');return {ok:true};
+ }catch{demoRuntime?.stop();demoRuntime=undefined;return {ok:false,error:'demo_start_failed'}}finally{demoStarting=undefined}})();
+ return demoStarting;
+}
+async function progress(file,change){const previous=await readJson(file+'.operation.json')||{};const next={...previous,...change,updatedAt:new Date().toISOString()};await saveJson(file+'.operation.json',next);return next;}
+async function collectionStatus(base,file){const result=summary(await readJson(file)),operation=await readJson(file+'.operation.json');if(!operation)return result;let detail=null;if(uuid.test(operation.runId||''))detail=await readJson(path.join(base,'runs',operation.runId,'progress.json'));const running=activeFile===file;return {...result,operation:{...operation,...(running&&detail&&['starting','running'].includes(operation.phase)?detail:{}),...(!running&&['starting','running','waiting','saving'].includes(operation.phase)?{phase:'uncertain'}:{})},active:running};}
 
 function sameOrigin(value){try{return new URL(value).origin===origin}catch{return false}}
 async function scope(){
@@ -41,6 +62,7 @@ async function saveJson(file,value){
  await rename(temporary,file);
 }
 function runScript(script,args,root,profile){
+ if(stopRequested)return Promise.resolve(1);
  return new Promise((resolve,reject)=>{
   // Keep only the system variables needed by Node and the browser process.
   const env=systemEnvironment();
@@ -56,27 +78,32 @@ function runScript(script,args,root,profile){
  });
 }
 async function sync(file,pending){
+ await progress(file,{phase:'saving',stage:'check-sync',observed:pending.observed});
  const current=await scope().catch(()=>null);
  if(!current)return {...summary(pending),error:'sync_failed'};
  if(current.userId!==pending.body.userId||current.propertyId!==pending.body.propertyId)throw Error('account_changed');
  if(pending.body.collectionLocation!==undefined&&normalizedLocation(current.location)!==normalizedLocation(pending.body.collectionLocation))throw Error('location_changed');
- const response=await window.webContents.session.fetch(endpoint,{
-  method:'POST',credentials:'include',redirect:'error',headers:{Origin:origin,'Content-Type':'application/json'},
-  body:JSON.stringify(pending.body),signal:AbortSignal.timeout(20000)
- }).catch(()=>null);
+ const send=checkOnly=>window.webContents.session.fetch(endpoint,{method:'POST',credentials:'include',redirect:'error',headers:{Origin:origin,'Content-Type':'application/json'},body:JSON.stringify({...pending.body,...(checkOnly?{checkOnly:true}:{})}),signal:AbortSignal.timeout(20000)}).catch(()=>null);
+ const checked=await send(true);const receipt=await checked?.json().catch(()=>null);
+ if(!checked?.ok||!['not_saved','already_saved'].includes(receipt?.status)){await progress(file,{phase:'uncertain',stage:'check-sync',error:'sync_failed'});return {...summary(pending),error:'sync_failed'};}
+ if(receipt.status==='already_saved'){const complete={...pending,state:'saved',batchId:receipt.batch.id,completedAt:new Date().toISOString(),syncStatus:'already_saved'};await saveJson(file,complete);await progress(file,{phase:'refreshing',stage:'saved',completedAt:complete.completedAt,observed:pending.observed});return summary(complete);}
+ await progress(file,{phase:'saving',stage:'sync',observed:pending.observed});
+ const response=await send(false);
  if(!response?.ok){
   const problem=await response?.json().catch(()=>null);
+  await progress(file,{phase:'uncertain',stage:'sync',error:'sync_failed'});
   return {...summary(pending),error:problem?.error==='market_sync_location_changed'?'location_changed':response?.status===409?'sync_conflict':'sync_failed'};
  }
  const result=await response.json();
  if(!['saved','already_saved'].includes(result.status)||typeof result.batch?.id!=='string')throw Error('sync_failed');
- const complete={...pending,state:'saved',batchId:result.batch.id};
+ const complete={...pending,state:'saved',batchId:result.batch.id,completedAt:new Date().toISOString(),syncStatus:result.status};
  await saveJson(file,complete);
+ await progress(file,{phase:'refreshing',stage:'saved',completedAt:complete.completedAt,observed:pending.observed});
  return summary(complete);
 }
 function summary(run){
  if(!run)return {state:'idle',sample};
- return {state:run.state,observed:run.observed,missing:run.missing,failedHotels:run.failedHotels,error:run.error,batchId:run.batchId,sample};
+ return {state:run.state,observed:run.observed,missing:run.missing,failedHotels:run.failedHotels,error:run.error,batchId:run.batchId,startedAt:run.startedAt,completedAt:run.completedAt,syncStatus:run.syncStatus,start:run.body?.start,end:run.body?.end,sample};
 }
 async function collect(input,identity,base,file){
  let selection;
@@ -99,11 +126,12 @@ async function collect(input,identity,base,file){
   }catch{throw Error('invalid_hotels');}
  }else hotels=parseHotels(input);
  if(hotels.length&&selection)await saveTargets(base,identity,selection);
- const run=path.join(base,'runs',randomUUID());
+ const runId=randomUUID(),run=path.join(base,'runs',runId);
  await mkdir(run,{recursive:true});
  const profile=path.join(base,'browser-profile');
  const startedAt=new Date().toISOString();
  await saveJson(file,{state:'idle',startedAt});
+ await progress(file,{id:randomUUID(),runId,phase:'starting',stage:'launch-browser',startedAt,observed:0,error:null});
  let observations,job;
  if(sample){
   const {monitorDates}=await import('../scripts/price-monitor-dates.mjs');
@@ -129,7 +157,7 @@ async function collect(input,identity,base,file){
   const code=await runScript('collect-ctrip-list-prices.mjs',args,run,profile);
   const report=await readJson(reportFile);
   job={dates:report?.dates,error:report?.status==='complete'?undefined:report?.error||(code===0?'no_quotes':'browser_unavailable')};
-  observations=job.error?[]:report.days.flatMap(day=>{
+  observations=(report?.days||[]).flatMap(day=>{
    const occupancy=/^1间, ([1-9]|10)成人, 0儿童$/.exec(day.occupancy);
    if(!occupancy)return [];
    return day.rows.filter(row=>row.priceCny!==null).map(row=>({
@@ -143,8 +171,9 @@ async function collect(input,identity,base,file){
  const failedHotels=hotels.length?hotels.length-(job?.results?.filter(row=>['succeeded','partial'].includes(row.status)).length||0):undefined;
  const barrier=job?.results?.find(row=>['login_required','verification_required','access_restricted'].includes(row.error))?.error;
  if(!observed||barrier){
-  const failed={state:'failed',startedAt,observed,missing,failedHotels,error:barrier||job?.error||'no_quotes'};
+  const failed={state:'failed',startedAt,observed,missing,failedHotels,error:stopRequested?'collection_cancelled':barrier||job?.error||'no_quotes'};
   await saveJson(file,failed);
+  await progress(file,{phase:stopRequested?'cancelled':['login_required','verification_required'].includes(failed.error)?'waiting':'failed',stage:'collect',error:failed.error,observed});
   return summary(failed);
  }
  const keys=['hotelId','hotelName','sourceUrl','capturedAt','stayDate','amount','currency','kind','status','rooms','adults','children','nights'];
@@ -153,29 +182,36 @@ async function collect(input,identity,base,file){
   observations:observations.map(row=>Object.fromEntries(keys.map(key=>[key,row[key]])))
  }};
  await saveJson(file,pending);
+ if(stopRequested||job?.error){await progress(file,{phase:stopRequested?'cancelled':'failed',stage:'collect',error:stopRequested?'collection_cancelled':job.error,observed});return {...summary(pending),error:stopRequested?'collection_cancelled':job.error};}
  return sync(file,pending);
 }
 
 function handle(name,handler){
  ipcMain.handle('staycraft:'+name,async(event,arg)=>{
   if(event.sender!==window?.webContents||event.senderFrame!==window.webContents.mainFrame||!sameOrigin(event.senderFrame.url))return {state:'failed',error:'invalid_window'};
+  const stopped=()=>({state:'idle',operation:{phase:'cancelled',stage:'stopping'},active:false});
+  if(name==='cancel'&&launching&&!active){launching.cancelled=true;return stopped();}
+  const starts=name==='collect'||name==='login';
+  if(starts&&(active||launching))return {state:'failed',error:'busy'};
+  const launch=starts?{cancelled:false}:null;if(launch)launching=launch;
   try{
    const identity=await scope();
    const base=folder(identity);
    await mkdir(base,{recursive:true});
    const file=normalizedLocation(identity.location)?collectionFile(base,identity):path.join(base,'latest.json');
    await mkdir(path.dirname(file),{recursive:true});
+   if(launch?.cancelled)return stopped();
    return await handler(identity,base,file,arg);
   }catch(error){
    const known=['sign_in','demo_only','invalid_hotels','account_changed','sync_conflict','sync_failed','busy','login_failed','browser_unavailable','cooldown','property_location_required','collection_context_changed','location_changed'];
    return {state:'failed',error:known.includes(error.message)?error.message:'desktop_unavailable'};
-  }
+  }finally{if(launching===launch)launching=undefined;}
  });
 }
-async function exclusive(task){
+async function exclusive(task,file){
  if(active)throw Error('busy');
- active=true;
- try{return await task()}finally{active=false}
+ active=true;activeFile=file;stopRequested=false;
+ try{return await task()}finally{active=false;activeFile=undefined}
 }
 app.setName(hosted||app.isPackaged?'StayCraft Desktop':standalone?'StayCraft Desktop Test':sample?'StayCraft Desktop Sample':'StayCraft Desktop Dev');
 if(process.platform==='win32')app.setAppUserModelId(applicationId);
@@ -208,25 +244,32 @@ app.whenReady().then(async()=>{
   if(!sameOrigin(url)&&/^https:\/\//.test(url))void shell.openExternal(url);
   return {action:'deny'};
  });
- handle('status',async(_identity,_base,file)=>summary(await readJson(file)));
+ handle('status',async(_identity,base,file)=>collectionStatus(base,file));
+ handle('retry-sync',(_identity,_base,file)=>exclusive(async()=>{const pending=await readJson(file);if(pending?.state==='saved')return summary(pending);if(pending?.state!=='pending')throw Error('no_quotes');return sync(file,pending)},file));
+ handle('cancel',async(_identity,base,file)=>{if(activeFile!==file)return collectionStatus(base,file);const op=await readJson(file+'.operation.json');if(op?.phase==='saving')return {...await collectionStatus(base,file),error:'sync_in_progress'};stopRequested=true;if(uuid.test(op?.runId||''))await writeFile(path.join(base,op.stage==='login'?'login':'runs',op.runId,'cancel.request'),'stop');else child?.kill();await progress(file,{phase:'waiting',stage:'stopping'});return collectionStatus(base,file)});
  handle('targets',(identity,base)=>readTargets(base,identity));
  handle('save-targets',(identity,base,_file,input)=>exclusive(()=>saveTargets(base,identity,input)));
- handle('collect',(identity,base,file,input)=>exclusive(()=>collect(input,identity,base,file)));
+ handle('collect',(identity,base,file,input)=>exclusive(()=>collect(input,identity,base,file),file));
  handle('login',(_identity,base,file)=>exclusive(async()=>{
   if(sample)return {state:'idle',sample:true};
-  const login=path.join(base,'login',randomUUID());
+  const runId=randomUUID(),login=path.join(base,'login',runId);
   await mkdir(login,{recursive:true});
+  await progress(file,{id:randomUUID(),runId,phase:'waiting',stage:'login',startedAt:new Date().toISOString()});
   const code=await runScript('login-price-monitor.mjs','--open-login',login,path.join(base,'browser-profile'));
   const session=await readJson(path.join(login,'session.json'));
   if(code!==0||!session){
    const state=await readJson(path.join(login,'login-state.json'));
+   await progress(file,{phase:stopRequested?'cancelled':'failed',stage:'login',error:stopRequested?'collection_cancelled':state?.error||'login_failed'});
+   if(stopRequested)return {...summary(await readJson(file)),operation:{phase:'cancelled',stage:'stopping'}};
    throw Error(state?.error==='browser_unavailable'?'browser_unavailable':'login_failed');
   }
   await saveJson(path.join(base,'session.json'),session);
+  await progress(file,{phase:'complete',stage:'login-complete'});
   return summary(await readJson(file));
- }));
+ },file));
  await window.loadURL(origin+'/login');
 }).catch(startupFailure);
 app.on('second-instance',()=>{if(window?.isMinimized())window.restore();window?.focus()});
 app.on('window-all-closed',()=>app.quit());
-app.on('before-quit',()=>{quitting=true;child?.kill();runtime?.stop()});
+ipcMain.handle('staycraft:open-demo',event=>event.sender===window?.webContents&&event.senderFrame===window.webContents.mainFrame&&sameOrigin(event.senderFrame.url)?openDemo():{ok:false,error:'invalid_window'});
+app.on('before-quit',()=>{quitting=true;child?.kill();runtime?.stop();demoRuntime?.stop()});

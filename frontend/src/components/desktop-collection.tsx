@@ -1,8 +1,12 @@
 "use client";
 
 import {useContext,useEffect,useId,useRef,useState,useSyncExternalStore} from "react";
+import Link from "next/link";
+import {OperationStatus,useOperation} from "./operation-status";
+import {startOperation,updateOperation,readOperation,operationActive} from "@/lib/operation-state";
 import type {ReactNode} from "react";
-import {DesktopTrialContext} from "./desktop-surface";
+import {DemoCollection} from "./demo-journey";
+import {DesktopTrialContext,GuidedDemoContext} from "./desktop-surface";
 
 type CollectionResult={
  state:'idle'|'saved'|'pending'|'failed';
@@ -11,12 +15,17 @@ type CollectionResult={
  failedHotels?:number;
  error?:string;
  sample?:boolean;
+ active?:boolean;batchId?:string;start?:string;end?:string;completedAt?:string;syncStatus?:string;
+ operation?:{id?:string;phase:'starting'|'waiting'|'running'|'saving'|'refreshing'|'complete'|'failed'|'uncertain'|'cancelled';stage:string;currentDate?:string;completedDates?:number;totalDates?:number;observed?:number;error?:string};
 };
 
 type DesktopBridge={
+ openDemo?():Promise<{ok:boolean;error?:string}>;
  status():Promise<CollectionResult>;
  openLogin():Promise<CollectionResult>;
  collectAndSync(hotels:string|{hotels:string;contextKey:string;star?:string}):Promise<CollectionResult>;
+ retrySync?():Promise<CollectionResult>;
+ cancel?():Promise<CollectionResult>;
  readTargets?():Promise<CollectionTargets>;
  saveTargets?(input:{hotels:string;contextKey:string}):Promise<CollectionTargets>;
 };
@@ -28,7 +37,8 @@ const desktopBridge=()=>window.staycraftDesktop;
 const webBridge=()=>undefined;
 export function DesktopCollection({zh,onSync,demo=false,fallback,expanded=false}:{zh:boolean;onSync:()=>void;demo?:boolean;fallback?:ReactNode;expanded?:boolean}){
  const bridge=useSyncExternalStore(subscribe,desktopBridge,webBridge);
- const localTrial=useContext(DesktopTrialContext);
+ const {scope:operationScope,state:operation}=useOperation("collection");
+ const localTrial=useContext(DesktopTrialContext);const guidedDemo=useContext(GuidedDemoContext);
  const inputId=useId();
  const [hotels,setHotels]=useState('');
  const today=new Intl.DateTimeFormat('sv-SE',{timeZone:'Asia/Shanghai'}).format(new Date());
@@ -42,6 +52,27 @@ export function DesktopCollection({zh,onSync,demo=false,fallback,expanded=false}
  const generation=useRef(0);
  const lastContext=useRef<string|undefined>(undefined);
  const t=(cn:string,en:string)=>zh?cn:en;
+ const refreshing=useRef(false);
+ function recordNative(value:CollectionResult){
+  const native=value.operation;if(!native)return;
+  const labels:Record<string,[string,string]>={'launch-browser':['正在打开采集窗口','Opening the collection window'],'open-results':['正在打开搜索结果','Opening search results'],'select-city':['正在确认采集地点','Confirming the collection location'],'select-homestay':['正在筛选民宿','Selecting homestays'],'select-star':['正在筛选星级','Selecting star rating'],'collect-date':['正在采集报价','Collecting prices'],'collect':['采集已停止','Collection stopped'],'login':['请在携程窗口完成登录，再关闭窗口','Sign in in the Ctrip window, then close it'],'login-complete':['登录窗口已关闭','Sign-in window closed'],'check-sync':['正在核对账号是否已收到本批数据','Checking whether this batch is already saved'],'sync':['采集完成，正在同步','Collection complete; syncing'],'saved':['同步完成，正在更新统计','Saved; refreshing statistics'],'stopping':['正在停止采集，保留已读取结果','Stopping; keeping collected results']};
+  const title=labels[native.stage]||['采集结果待核对','Check collection result'];
+  const current=readOperation(operationScope,'collection');
+  if(current&&['complete','failed','refreshing'].includes(current.phase)&&native.stage==='saved'&&value.state==='saved'&&current.reference===value.batchId)return;
+  const detail=native.currentDate?`${native.currentDate} · 已完成 ${native.completedDates??0}/${native.totalDates??7} 个日期，${native.observed??0} 条报价。`:value.state==='pending'?'已采集报价保留在本机；核对同步结果后，仅补交未保存的这一批。':native.stage==='login'?'请在打开的窗口操作；此处会持续显示状态。':'当前阶段尚未完成，可关闭抽屉，稍后重新查看。';
+  const detailEn=native.currentDate?`${native.currentDate} · ${native.completedDates??0}/${native.totalDates??7} dates, ${native.observed??0} quotes.`:value.state==='pending'?'Quotes remain on this device. Check the receipt before retrying this batch only.':'This stage is not finished. You may close and reopen the drawer.';
+  const id=current?.id||startOperation(operationScope,'collection',{stage:title[0],stageEn:title[1],detail,detailEn});
+  updateOperation(operationScope,'collection',id,{phase:native.phase,stage:title[0],stageEn:title[1],detail,detailEn,count:value.observed??native.observed,reference:value.batchId||native.id});
+ }
+ async function reloadStatistics(value:CollectionResult){
+  if(refreshing.current)return;refreshing.current=true;
+  const current=readOperation(operationScope,'collection');const id=current?.id||startOperation(operationScope,'collection',{stage:'同步完成，正在更新统计',stageEn:'Saved; refreshing statistics',detail:'数据已经保存，本步骤只读取结果。',detailEn:'Data is saved. This step only reads the result.'});
+  updateOperation(operationScope,'collection',id,{phase:'refreshing',stage:'同步完成，正在更新统计',stageEn:'Saved; refreshing statistics',detail:'数据已保存，正在重新加载统计和建议。',detailEn:'Data is saved. Reloading statistics and advice.',reference:value.batchId,count:value.observed});
+  try{const response=await fetch('/api/workspace/market/sample',{method:'POST',headers:{'Content-Type':'application/json'},signal:AbortSignal.timeout(25000),body:JSON.stringify({start:value.start||today,end:value.end||new Date(Date.parse(today)+6*86400000).toISOString().slice(0,10)})});if(!response.ok)throw Error();await response.json();onSync();window.dispatchEvent(new Event('staycraft-market-synced'));updateOperation(operationScope,'collection',id,{phase:'complete',stage:'报价与统计已就绪',stageEn:'Quotes and statistics ready',detail:value.syncStatus==='already_saved'?'本批数据此前已保存，本次未重复提交；统计已重新读取。':`本次保存 ${value.observed??0} 条报价，统计和建议已重新读取。`,detailEn:value.syncStatus==='already_saved'?'This batch was already saved. No duplicate submission; statistics reloaded.':`Saved ${value.observed??0} quotes; statistics and advice reloaded.`});}
+  catch{updateOperation(operationScope,'collection',id,{phase:'failed',stage:'数据已保存，统计刷新失败',stageEn:'Data saved; refresh failed',detail:'已采集数据已保存在账号，只需重新加载，无需重新采集或提交。',detailEn:'The batch is saved. Reload only; do not recollect or resubmit.'});}
+  finally{refreshing.current=false;}
+ }
+
 
  useEffect(()=>{
   let mounted=true;
@@ -60,18 +91,21 @@ export function DesktopCollection({zh,onSync,demo=false,fallback,expanded=false}
      if(value.contextKey!==lastContext.current){setHotels(value.hotels||'');}
      lastContext.current=value.contextKey;setTargets(value);
     }
-    setResult(status.status==='fulfilled'?status.value:{state:'failed',error:'desktop_unavailable'});
+    const current=status.status==='fulfilled'?status.value:{state:'failed' as const,error:'desktop_unavailable'};setResult(current);recordNative(current);if(current.state==='saved'&&readOperation(operationScope,'collection')?.phase==='refreshing')void reloadStatistics(current);
    });
   };
-  refresh();window.addEventListener('staycraft-profile-changed',refresh);
-  return()=>{mounted=false;nextRequest();window.removeEventListener('staycraft-profile-changed',refresh)};
- },[bridge]);
+  refresh();const poll=setInterval(()=>{if(!bridge)return;void bridge.status().then(value=>{if(!mounted)return;setResult(value);recordNative(value);if(!value.active)setBusy(null)}).catch(()=>{});},1800);window.addEventListener('staycraft-profile-changed',refresh);
+  return()=>{mounted=false;clearInterval(poll);nextRequest();window.removeEventListener('staycraft-profile-changed',refresh)};
+ // Native status survives drawer unmounts and is scoped by the desktop bridge.
+ // eslint-disable-next-line react-hooks/exhaustive-deps
+ },[bridge,operationScope]);
 
  useEffect(()=>{
   const reveal=(event?:Event)=>{if(event?.type==="staycraft-open-collector"||window.location.hash==="#desktop-collection"){const panel=document.getElementById("desktop-collection") as HTMLDetailsElement|null;if(panel){panel.open=true;panel.scrollIntoView({block:"nearest"});panel.querySelector<HTMLElement>("summary")?.focus()}}};
   reveal();window.addEventListener("hashchange",reveal);window.addEventListener("staycraft-open-collector",reveal);return()=>{window.removeEventListener("hashchange",reveal);window.removeEventListener("staycraft-open-collector",reveal)};
  },[bridge]);
 
+ if(guidedDemo)return <DemoCollection zh={zh} onSync={onSync}/>;
  if(!bridge){
   if(expanded)return <section className="native-card desktop-collection">
    <p role="status">{t('请在 StayCraft 桌面窗口选择城市、入住日期和星级并开始采集。','Choose the city, check-in date and star rating in the StayCraft desktop window.')}</p>
@@ -84,6 +118,8 @@ export function DesktopCollection({zh,onSync,demo=false,fallback,expanded=false}
  const calendarMode=sample;
  const exampleHotels=[1,2,3].map(number=>`https://hotels.ctrip.com/hotels/${910000+number}.html ${t('试用住宿','Example Hotel')} ${number}`).join('\n');
  const errors:Record<string,string>={
+  collection_cancelled:t('采集已停止。已读取的报价保留在本机。','Collection stopped. Collected quotes remain on this device.'),
+  sync_in_progress:t('数据正在同步，请先核对结果，不重复提交。','Sync is in progress. Check its result before resubmitting.'),
   invalid_search:t('请选择城市和有效的入住日期。','Select a city and a valid check-in date.'),
   city_not_found:t('未能确认携程城市，请填写完整城市名后重试。','The city could not be confirmed on Ctrip. Enter its full name and retry.'),
   invalid_hotels:calendarMode?t('每行填写携程酒店详情页链接和页面显示的完整名称，最多 5 家。','Enter up to five hotel detail URLs and their full displayed names, one per line.'):t('请重新选择采集条件后再试。','Choose the collection filters again and retry.'),
@@ -94,7 +130,7 @@ export function DesktopCollection({zh,onSync,demo=false,fallback,expanded=false}
   verification_required:t('携程要求安全验证，采集已暂停。','Ctrip requested verification. Collection stopped.'),
   access_restricted:t('携程限制访问，采集已暂停。','Ctrip restricted access. Collection stopped.'),
   browser_unavailable:t('采集窗口未能启动，请重新打开桌面端后再试。','The collection window could not start. Restart the desktop app and try again.'),
-  no_quotes:t('这次没有采到有效报价。检查链接、名称和登录状态。','No valid quotes. Check the URLs, names and sign-in status.'),
+  no_quotes:calendarMode?t('这次没有采到有效报价。检查链接、名称和登录状态。','No valid quotes. Check the URLs, names and sign-in status.'):t('当前城市、日期和星级下没有可读取的报价。请核对筛选条件和携程登录状态后重试。','No readable prices for this city, date and star rating. Check the filters and Ctrip sign-in status, then retry.'),
   sync_failed:t('同步暂未完成，已采集报价仍保留在本机。','Sync did not finish. The collected batch is still on this device.'),
   sync_conflict:t('同一批次已有不同内容，请检查同步记录。','A batch with the same identity has different content.'),
   account_changed:t('账号已切换。请切回采集时的账号再同步。','The account changed. Switch back to the collecting account to sync.'),
@@ -138,10 +174,11 @@ export function DesktopCollection({zh,onSync,demo=false,fallback,expanded=false}
    });
   }
   if(useExamples)setHotels(exampleHotels);
+  const operationId=startOperation(operationScope,'collection',{phase:'starting',stage:action==='login'?'正在打开登录窗口':'正在启动采集',stageEn:action==='login'?'Opening sign-in':'Starting collection',detail:'正在打开采集窗口，可以取消；关闭抽屉后操作仍继续。',detailEn:'Opening the collection window. You can cancel; closing the drawer does not stop it.'});
   setBusy(action);setSettingsNotice('');
   setResult(previous=>previous?{...previous,error:undefined}:null);
   try{
-   const value=action==='login'?await desktop.openLogin():await desktop.collectAndSync(targets?.contextKey?{hotels:input,contextKey:targets.contextKey,...(sample?{}:{star})}:input);
+   const value=action==='login'?await desktop.openLogin():await (result?.state==='pending'&&desktop.retrySync?desktop.retrySync():desktop.collectAndSync(targets?.contextKey?{hotels:input,contextKey:targets.contextKey,...(sample?{}:{star})}:input));
    if(requested!==generation.current)return;
    if(value.state!=='pending'&&(value.error==='sync_failed'||value.error==='sync_conflict')){
     const pending=await desktop.status();
@@ -151,11 +188,10 @@ export function DesktopCollection({zh,onSync,demo=false,fallback,expanded=false}
    if(action==='login'&&!value.error){
     setSettingsNotice(t('携程窗口已关闭。选好采集条件后，点击「采集并同步」。','The Ctrip window is closed. Choose your filters and select Collect and sync.'));
    }
-   if(action==='collect'&&value.state==='saved'){
-    onSync();
-    window.dispatchEvent(new Event("staycraft-market-synced"));
-   }
-  }catch{if(requested===generation.current)setResult(previous=>({...previous,state:'failed',error:'desktop_unavailable'}))}
+   recordNative(value);
+   if(value.error)updateOperation(operationScope,'collection',operationId,{phase:value.state==='pending'?'uncertain':'failed',stage:'采集或同步未完成',stageEn:'Collection or sync incomplete',detail:errors[value.error]||'结果尚未确认，请先核对。',detailEn:'Result not confirmed. Check the last stage before retrying.',count:value.observed});
+   if(action==='collect'&&value.state==='saved')await reloadStatistics(value);
+  }catch{if(requested===generation.current){setResult(previous=>({...previous,state:'failed',error:'desktop_unavailable'}));updateOperation(operationScope,'collection',operationId,{phase:'uncertain',stage:'采集结果待确认',stageEn:'Collection result unconfirmed',detail:'连接中断，先核对本机采集状态，勿重复采集。',detailEn:'Connection interrupted. Check local collection status before starting again.'});}}
   finally{setBusy(null)}
  }
 
@@ -178,10 +214,16 @@ export function DesktopCollection({zh,onSync,demo=false,fallback,expanded=false}
   }}>{t('填入 3 家示例住宿','Fill in three example hotels')}</button></div>}
   {sample&&<textarea id={inputId} rows={3} maxLength={4000} value={hotels} disabled={Boolean(busy)||Boolean(desktop.readTargets&&!targets?.contextKey)||result?.state==='pending'} onChange={event=>{setHotels(event.target.value);setSettingsNotice('');if(result?.error==='invalid_hotels')setResult({...result,error:undefined})}}/>}
   {calendarMode&&desktop.saveTargets&&targets?.contextKey&&<div className="promotion-actions"><button className="inventory-text" type="button" disabled={Boolean(busy)||result?.state==='pending'} onClick={()=>void saveSelection()}>{busy==='save'?t('保存中…','Saving…'):t('保存对标住宿','Save comparable stays')}</button><small>{t('按民宿地址保存在这台电脑，采集时也会自动保存。','Saved on this computer for this property address, also when you collect.')}</small></div>}
+  <OperationStatus state={operation} zh={zh}>
+   {operationActive(operation)&&desktop.cancel&&!['saving','refreshing'].includes(operation?.phase||'')&&<button type="button" onClick={()=>void desktop.cancel!().then(value=>{setResult(value);recordNative(value)})}>{t('停止本次操作','Stop this operation')}</button>}
+   {result?.state==='pending'&&!result.active&&<button type="button" disabled={Boolean(busy)} onClick={()=>void perform('collect')}>{t('核对结果并重试同步','Check result and retry sync')}</button>}
+   {result?.state==='saved'&&!result.active&&<><button type="button" disabled={operation?.phase==='refreshing'} onClick={()=>void reloadStatistics(result)}>{t('只重新加载统计','Reload statistics only')}</button><Link href="/app/explore">{t('查看结果','View results')}</Link></>}
+   {operation?.phase==='uncertain'&&result?.state!=='pending'&&result?.state!=='saved'&&<button type="button" onClick={()=>void desktop.status().then(value=>{setResult(value);recordNative(value)})}>{t('核对采集结果','Check collection result')}</button>}
+  </OperationStatus>
   {settingsNotice&&<p role="status">{settingsNotice}</p>}
   <div className="promotion-actions">
-   <button type="button" className="native-primary" disabled={Boolean(busy)||Boolean(desktop.readTargets&&!targets?.contextKey)} onClick={()=>void perform('collect')}>
-    {busy==='collect'?t('采集与同步中…','Collecting and syncing…'):result?.state==='pending'?t('重试同步','Retry sync'):sample?t('采集示例报价','Collect example prices'):t('采集并同步','Collect and sync')}
+   <button type="button" className="native-primary" disabled={Boolean(busy)||Boolean(result?.active)||operationActive(operation)&&operation?.phase!=='waiting'||Boolean(desktop.readTargets&&!targets?.contextKey)} onClick={()=>void perform('collect')}>
+    {busy==='collect'?t('采集与同步中…','Collecting and syncing…'):result?.state==='pending'?t('核对并同步已采集数据','Check and sync collected data'):sample?t('采集示例报价','Collect example prices'):t('采集并同步','Collect and sync')}
    </button>
    {!sample&&result&&<button type="button" className="inventory-text" disabled={Boolean(busy)} onClick={()=>void perform('login')}>{busy==='login'?t('携程登录进行中…','Ctrip sign-in in progress…'):t('打开携程登录','Open Ctrip sign-in')}</button>}
   </div>

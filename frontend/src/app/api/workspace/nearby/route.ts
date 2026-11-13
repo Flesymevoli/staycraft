@@ -13,6 +13,7 @@ export async function GET(request:Request){try{
  const account=await verifiedProperty();
  const {supabase,propertyId,user}=account;
  const demo=isDemoWorkspace(user.email);
+ const guidedDemo=process.env.STAYCRAFT_DESKTOP_DEMO==='1'&&process.env.STAYCRAFT_DESKTOP_GUIDED_DEMO==='1';
  const url=new URL(request.url),today=workspaceDay(demo);
  const requested=url.searchParams.get('start')||today;
  const days=Number(url.searchParams.get('days')||7);
@@ -25,11 +26,13 @@ export async function GET(request:Request){try{
  const context={center:'property',centerLabel:location};
  const headers={'Cache-Control':'private, no-store'};
  const unavailable=(note:string)=>Response.json({...context,weather:{status:'unavailable',days:[],note}},{headers});
- if(demo){
-  const source:SourceRef={id:'weather',authority:'internal',observedAt:'2026-11-11T00:00:00Z',coverage:{from:DEMO_PERIOD.start,to:DEMO_PERIOD.end,kind:'complete'},confidence:'low'};
+ if(demo||guidedDemo){
+  const first=guidedDemo?today:DEMO_PERIOD.start;
+  const last=new Date(Date.parse(first)+6*86400000).toISOString().slice(0,10);
+  const source:SourceRef={id:'weather',authority:'internal',observedAt:guidedDemo?first+'T00:00:00Z':'2026-11-11T00:00:00Z',coverage:{from:first,to:last,kind:'complete'},confidence:'low'};
   const rows=[[3,12,21,10],[61,11,21,53],[61,14,20,58],[80,16,20,90],[3,13,21,22],[3,12,19,2],[80,10,17,75]];
   const selected=rows.map(([code,tempMin,tempMax,precipProb],index)=>({
-   date:new Date(Date.parse(DEMO_PERIOD.start)+index*86400000).toISOString().slice(0,10),
+   date:new Date(Date.parse(first)+index*86400000).toISOString().slice(0,10),
    code,tempMin,tempMax,precipProb,source,
   })).filter(day=>day.date>=start).slice(0,days);
   return Response.json({...context,weather:{status:selected.length?'available':'unavailable',days:selected,source}},{headers});

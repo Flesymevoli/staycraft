@@ -1,5 +1,5 @@
 import {launchPriceBrowser} from './price-monitor-browser.mjs';
-import {mkdir,open,unlink,writeFile} from 'node:fs/promises';
+import {mkdir,open,unlink,writeFile,readFile,rename} from 'node:fs/promises';
 import path from 'node:path';
 import {captureBarrier} from '../src/lib/competitor-observations.ts';
 import {monitorDates} from './price-monitor-dates.mjs';
@@ -27,7 +27,16 @@ await mkdir(path.dirname(file),{recursive:true});
 await mkdir(root,{recursive:true});
 const lockPath=path.join(root,'collector.lock');
 const lock=await open(lockPath,'wx');
-let context;
+let context,page,cancelled=false;
+const cancellation=setInterval(async()=>{try{await readFile(path.join(root,'cancel.request'));cancelled=true;await context?.close().catch(()=>{});}catch{}},500);
+const deadline=setTimeout(()=>{cancelled=true;void context?.close().catch(()=>{});},8*60000);
+async function publishProgress(stage,date){
+ if(cancelled)throw Error('collection_cancelled');
+ report.stage=stage;
+ const value={stage,phase:stage==='launch-browser'?'starting':'running',currentDate:date,completedDates:report.days.length,totalDates:dates.length,observed:report.days.reduce((n,d)=>n+d.rows.filter(r=>r.priceCny!==null).length,0)};
+ const target=path.join(root,'progress.json'),temporary=target+'.tmp';await writeFile(temporary,JSON.stringify(value));await rename(temporary,target);
+}
+
 
 async function checkAccess(page,status){
  if([401,403,429].includes(status))throw Error('access_restricted');
@@ -42,7 +51,10 @@ async function selectCity(page,city){
  if(normalize(await destination.inputValue())===normalize(city))return;
  await destination.fill(city);
  const escaped=normalize(city).replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
- const choice=page.getByText(new RegExp('^'+escaped+'市?$')).filter({visible:true});
+ const cityLabel=new RegExp('^'+escaped+'市?$');
+ // Suggestions highlight the city substring inside hotel and landmark names.
+ // Match the complete label container so those highlights aren't city options.
+ const choice=page.getByText(cityLabel).filter({visible:true}).locator('..').filter({hasText:cityLabel});
  try{await choice.first().waitFor({timeout:10000});}catch{await checkAccess(page);throw Error('city_not_found');}
  if(await choice.count()!==1)throw Error('city_not_found');
  await choice.click();
@@ -145,25 +157,37 @@ async function selectFilter(page,name){
  const previous=page.url();
  await control.click({timeout:7000});
  await page.waitForURL(current=>current.href!==previous,{timeout:12000});
- await page.locator('.hotelName').first().waitFor({timeout:12000});
+ const empty=page.getByText(/^[没沒]有找到匹配的酒店$/);
+ await page.locator('.hotelName').or(empty).first().waitFor({timeout:12000});
+ if(await empty.isVisible())throw Error('no_quotes');
  if(await control.getAttribute('aria-checked')!=='true')throw Error('filters_changed');
 }
 
 try{
+ await publishProgress('launch-browser');
  context=await launchPriceBrowser(process.env.STAYCRAFT_PRICE_PROFILE||path.join(root,'browser-profile'),{
   headless:false,locale:'zh-CN',viewport:{width:1366,height:940},
  });
- const page=context.pages()[0]||await context.newPage();
+ page=context.pages()[0]||await context.newPage();
+ await publishProgress('open-results');
  const response=await page.goto(url.href,{waitUntil:'domcontentloaded',timeout:30000});
  await checkAccess(page,response?.status());
  await page.locator('.hotelName').first().waitFor({timeout:12000}).catch(()=>{});
  await checkAccess(page);
  // The search controls can render before the page has attached their handlers.
  await page.waitForTimeout(1200);
- if(requestedCity)await selectCity(page,requestedCity);
+ if(requestedCity){
+  await publishProgress('select-city');
+  await selectCity(page,requestedCity);
+  const selectedCityId=new URL(page.url()).searchParams.get('cityId');
+  if(!selectedCityId||!/^\d+$/.test(selectedCityId))throw Error('city_not_found');
+  url.searchParams.set('cityId',selectedCityId);
+ }
  const starName=star?new RegExp(`^(?:${star}钻/星|${star} out of 5 diamonds)`, 'i'):null;
  if(starName){
+  await publishProgress('select-homestay');
   await selectFilter(page,/^民宿$/);
+  await publishProgress('select-star');
   await selectFilter(page,starName);
   const filters=new URL(page.url()).searchParams.get('listFilters');
   if(filters)url.searchParams.set('listFilters',filters);
@@ -171,6 +195,7 @@ try{
  const selected=await selectedFilters(page);
  if(starName&&(!selected.includes('民宿')||!selected.some(label=>starName.test(label))))throw Error('filters_changed');
  for(const date of dates){
+  await publishProgress('collect-date',date);
   await searchDate(page,date);
   await page.locator('.hotelName').first().waitFor({timeout:12000}).catch(()=>{});
   await checkAccess(page);
@@ -182,18 +207,24 @@ try{
   const rows=[...new Map((await readCards(page)).slice(0,5).map(row=>[row.name,row])).values()];
   report.days.push({date,checkout:checkout(date),capturedAt:new Date().toISOString(),sourceUrl:page.url(),occupancy,
    advertisedCount:Number(text.match(/找到\s*(\d+)\s*家/)?.[1])||null,rows});
+  await publishProgress('collect-date',date);
   if(date!==dates.at(-1))await page.waitForTimeout(4000);
  }
  report.status=report.days.some(entry=>entry.rows.some(row=>row.priceCny!==null))?'complete':'no_prices';
+ delete report.stage;
 }catch(error){
+ // Redirects to login may happen while a selector is waiting. Report the
+ // actionable barrier instead of exposing a locator timeout to the operator.
+ if(page)try{await checkAccess(page);}catch(barrier){error=barrier;}
  report.status='stopped';
- report.error=error instanceof Error?error.message.split('\n')[0]:'collection_failed';
+ report.error=cancelled?'collection_cancelled':error instanceof Error?error.message.split('\n')[0]:'collection_failed';
  process.exitCode=1;
 }finally{
+ clearInterval(cancellation);clearTimeout(deadline);
  await context?.close().catch(()=>{});
  try{await writeFile(file,JSON.stringify(report,null,2),{flag:'wx'});}
  finally{await lock.close();await unlink(lockPath);}
- console.log(JSON.stringify({status:report.status,error:report.error,dateFailure:report.dateFailure,days:report.days.map(entry=>({
+ console.log(JSON.stringify({status:report.status,error:report.error,stage:report.stage,dateFailure:report.dateFailure,days:report.days.map(entry=>({
   date:entry.date,occupancy:entry.occupancy,advertised:entry.advertisedCount,cards:entry.rows.length,
   priced:entry.rows.filter(row=>row.priceCny!==null).length,
  }))}));

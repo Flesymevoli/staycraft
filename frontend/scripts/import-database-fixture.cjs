@@ -11,7 +11,8 @@ module.exports=function createImportDb(sample,getInventory){
  grant usage on schema auth to authenticated;grant execute on function auth.uid() to authenticated;
  create table properties(id uuid primary key,owner_user_id uuid,inventory_revision uuid);
  create table room_types(property_id uuid,id uuid,name text,price numeric,primary key(property_id,id));
- create table rooms(property_id uuid,id uuid,type_id uuid,number text,active boolean,housekeeping text,primary key(property_id,id));
+ create table rooms(property_id uuid,id uuid,type_id uuid,number text,active boolean,housekeeping text,floor text default '待补充',primary key(property_id,id));
+ create unique index rooms_unique_number on rooms(property_id,lower(normalize(trim(number),NFKC)));
  create table operation_activity(property_id uuid,kind text,resource_id uuid,room_number text not null,automatic boolean default false,completed boolean default true);`);
  const base=fs.readFileSync(path.join(__dirname,'../../supabase/migrations/20261022002812_direct_bookings.sql'),'utf8');
  await db.exec(base.slice(base.indexOf('create table public.direct_bookings'),base.indexOf('create index direct_bookings_room_dates')));
@@ -26,7 +27,9 @@ module.exports=function createImportDb(sample,getInventory){
  create policy own_booking on direct_bookings for select to authenticated using(exists(select 1 from properties p where p.id=property_id and p.owner_user_id=auth.uid()));`);
  for(const file of ['20261103000200_booking_import.sql','20261103000300_import_metrics.sql','20261103000400_import_stay_guard.sql'])await db.exec(fs.readFileSync(path.join(__dirname,'../../supabase/migrations',file),'utf8'));
  await db.exec("alter table room_types add column beds text default '待补充',add column capacity smallint,add column photo_path text default '';");
- await db.exec(fs.readFileSync(path.join(__dirname,'../../supabase/migrations/20261113040439_auto_import_room_types.sql'),'utf8'));
+ await db.exec(fs.readFileSync(path.join(__dirname,'../../supabase/migrations/20261113041422_auto_import_room_types.sql'),'utf8'));
+ await db.exec(fs.readFileSync(path.join(__dirname,'../../supabase/migrations/20261113053402_auto_import_numbered_rooms.sql'),'utf8'));
+ await db.exec(fs.readFileSync(path.join(__dirname,'../../supabase/migrations/20261113073343_clear_imported_booking_data.sql'),'utf8'));
  await db.query('insert into properties(id,owner_user_id) values($1,$2)',[sample.propertyId,sample.ownerId]);
  await syncInventory();
  for(const b of sample.bookings)await db.query(`insert into direct_bookings(id,property_id,guest_hash,request_id,room_id,type_id,room_number,type_name,arrival,departure,guest_name,phone,expected_arrival,nightly_rate,total,status,refund_result) values($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,'00000000',$12,$13,$14,$15,$16)`,[b.id,sample.propertyId,'0'.repeat(64),b.id,b.room_id,b.type_id,b.room_number,b.type_name,b.arrival,b.departure,b.guest_name,b.expected_arrival,b.nightly_rate,b.total,b.status,b.refund_result]);
@@ -36,25 +39,29 @@ module.exports=function createImportDb(sample,getInventory){
  async function syncInventory(){
   const inv=getInventory();
   for(const t of inv.types)await db.query('insert into room_types(property_id,id,name,price,beds,capacity,photo_path) values($1,$2,$3,$4,$5,$6,$7) on conflict(property_id,id) do update set name=excluded.name,price=excluded.price,beds=excluded.beds,capacity=excluded.capacity',[sample.propertyId,t.id,t.name,t.price,t.beds,t.capacity,t.photo||'']);
-  for(const r of inv.rooms)await db.query('insert into rooms values($1,$2,$3,$4,$5,$6) on conflict(property_id,id) do update set number=excluded.number,active=excluded.active,housekeeping=excluded.housekeeping',[sample.propertyId,r.id,r.typeId,r.number,r.active,r.housekeeping]);
+  for(const r of inv.rooms)await db.query('insert into rooms(property_id,id,type_id,number,active,housekeeping) values($1,$2,$3,$4,$5,$6) on conflict(property_id,id) do update set number=excluded.number,active=excluded.active,housekeeping=excluded.housekeeping',[sample.propertyId,r.id,r.typeId,r.number,r.active,r.housekeeping]);
  }
  let chain=Promise.resolve();
  const handle=async(url,init,identity)=>{
   const rpc=url.pathname.split('/rpc/')[1],table=url.pathname.split('/').at(-1);
-  if(!['process_booking_import','complete_import_task','get_booking_metrics','get_booking_metrics_range'].includes(rpc)&&!['booking_import_batches','booking_import_tasks'].includes(table))return;
+  if(!['booking_import_receipt','clear_imported_booking_data','process_booking_import','complete_import_task','get_booking_metrics','get_booking_metrics_range'].includes(rpc)&&!['booking_import_batches','booking_import_tasks'].includes(table))return;
   const run=async()=>{try{
    await ready;await db.exec('reset role');await syncInventory();await db.query("select set_config('request.jwt.claim.sub',$1,false)",[identity.id]);await db.exec('set role authenticated');
    if(rpc){
     const b=JSON.parse(init.body||'{}');let q,args;
-    if(rpc==='process_booking_import'){q='select process_booking_import($1,$2,$3,$4,$5) result';args=[b.p_property,JSON.stringify(b.p_rows),b.p_commit,b.p_revision,b.p_confirm_unversioned]}
+    if(rpc==='booking_import_receipt'){q='select booking_import_receipt($1,$2) result';args=[b.p_property,b.p_revision]}
+    else if(rpc==='clear_imported_booking_data'){q='select clear_imported_booking_data($1,$2,$3) result';args=[b.p_property,b.p_commit,b.p_revision]}
+    else if(rpc==='process_booking_import'){q='select process_booking_import($1,$2,$3,$4,$5) result';args=[b.p_property,JSON.stringify(b.p_rows),b.p_commit,b.p_revision,b.p_confirm_unversioned]}
     else if(rpc==='complete_import_task'){q='select complete_import_task($1,$2) result';args=[b.p_property,b.p_task]}
     else if(rpc==='get_booking_metrics_range'){q='select get_booking_metrics_range($1,$2,$3) result';args=[b.p_property,b.p_start,b.p_end]}
     else{q='select get_booking_metrics($1,$2) result';args=[b.p_property,b.p_days]}
     const result=(await db.query(q,args)).rows[0].result;
-    if(rpc==='process_booking_import'&&b.p_commit){
+    if(['process_booking_import','clear_imported_booking_data'].includes(rpc)&&b.p_commit){
      const created=(await db.query('select * from room_types where property_id=$1',[sample.propertyId])).rows;
      const inventory=getInventory();
      for(const type of created)if(!inventory.types.some(t=>t.id===type.id))inventory.types.push({id:type.id,name:type.name,beds:type.beds,capacity:type.capacity,price:type.price,photo:type.photo_path});
+     const createdRooms=(await db.query('select * from rooms where property_id=$1',[sample.propertyId])).rows;
+     for(const room of createdRooms)if(!inventory.rooms.some(r=>r.id===room.id))inventory.rooms.push({id:room.id,typeId:room.type_id,number:room.number,floor:room.floor,active:room.active});
      const imported=(await db.query('select * from direct_bookings where external_id is not null')).rows;
      sample.bookings.splice(0,sample.bookings.length,...sample.bookings.filter(x=>!x.external_id),...imported.map(x=>({...x,arrival:x.arrival instanceof Date?x.arrival.toISOString().slice(0,10):String(x.arrival).slice(0,10),departure:x.departure instanceof Date?x.departure.toISOString().slice(0,10):String(x.departure).slice(0,10)})));
     }
@@ -69,5 +76,15 @@ module.exports=function createImportDb(sample,getInventory){
   }catch(error){return json({message:error.message},409)}};
   const pending=chain.then(run,run);chain=pending.catch(()=>{});return pending;
  };
- return {handle,close:async()=>{await ready;await chain;await db.close()}};
+ return {handle,
+  // Isolated database only: replay a future demo snapshot without changing the
+  // host clock or weakening the deployed import guard.
+  setImportDay:async(day)=>{
+   if(!/^20\d{2}-\d{2}-\d{2}$/.test(day)||new Date(day).toISOString().slice(0,10)!==day)throw Error('invalid_fixture_day');
+   await ready;await chain;await db.exec('reset role');
+   const definition=(await db.query("select pg_get_functiondef('public.process_booking_import(uuid,jsonb,boolean,uuid,boolean)'::regprocedure) as definition")).rows[0].definition;
+   const patched=definition.replace(/today date\s*:=\s*[^;]+;/,`today date:='${day}'::date;`);
+   if(patched===definition)throw Error('fixture_day_not_replaced');
+   await db.exec(patched);
+  },close:async()=>{await ready;await chain;await db.close()}};
 };

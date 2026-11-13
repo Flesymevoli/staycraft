@@ -138,4 +138,7 @@ headline = buildHeadline({ signals: [gap], zh: false });
 check(headline.conclusion.includes('Rooms remain open for 4 consecutive nights'), 'english conclusion is generated');
 check(headline.kpis[0].label === 'Sellable nights', 'english kpi label');
 
+const saturday={date:'2026-11-14',booked:5,capacity:5,available:0};
+headline=buildHeadline({dailyMetrics:[saturday],zh:true});check(headline.conclusion.includes('周六已满房'),'full Saturday gives a direct action');check(headline.reason.includes('5/5')&&headline.reason.includes('已订订单不改价'),'action retains exact capacity and existing prices');
+for(const invalid of [{...saturday,booked:4,available:1},{...saturday,capacity:0,booked:0},{...saturday,booked:6}])eq(buildHeadline({dailyMetrics:[invalid],zh:true}),null,'only genuinely full valid inventory supports the full-Saturday advice');
 console.log(JSON.stringify({ passed: checks, cases: ['priority order', 'gap window', 'booking pace', 'cancellation', 'channel mix', 'null metrics', 'source gaps', 'bounded unknowns', 'english'] }, null, 2));

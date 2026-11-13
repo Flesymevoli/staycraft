@@ -27,8 +27,12 @@ if (process.env.STAYCRAFT_QA_AUTH_FIXTURES === '1') {
     profiles.set(sample.propertyId,{property_id:sample.propertyId,profile:sample.profile,revision:'20000000-0000-4000-8000-000000000001'});
     inventories.set(sample.propertyId,{inventory:sample.inventory,revision:'20000000-0000-4000-8000-000000000002'});
   }
+  const guided=process.env.STAYCRAFT_DESKTOP_GUIDED_DEMO==='1'&&process.env.STAYCRAFT_DESKTOP_DEMO==='1';
+  const seed=guided?structuredClone(sample):null;
+  if(guided){sample.bookings.length=0;sample.inventory={types:[],rooms:[]};profiles.delete(sample.propertyId);inventories.set(sample.propertyId,{inventory:sample.inventory,revision:null});properties.set(sample.ownerId,{id:sample.propertyId,name:'我的民宿'});}
   const stays=new Map(sample?sample.bookings.filter(b=>b.stay_state&&b.stay_state!=='pending'||b.arrival<sample.anchor&&b.departure===sample.anchor&&b.status==='confirmed').map(b=>[b.id,b.stay_state||'checked_in']):[]);
-  const importDb=process.env.STAYCRAFT_QA_IMPORT_DB==='1'?require('./import-database-fixture.cjs')(sample,()=>inventories.get(sample.propertyId).inventory):null;
+  let importDb=process.env.STAYCRAFT_QA_IMPORT_DB==='1'?require('./import-database-fixture.cjs')(sample,()=>inventories.get(sample.propertyId).inventory):null;
+  const demoJourney=guided?require('./demo-journey-fixture.cjs')({sample,seed,profiles,inventories,properties,stays,batches:desktopBatches,reloadDatabase:async()=>{await importDb.close();importDb=require('./import-database-fixture.cjs')(sample,()=>inventories.get(sample.propertyId).inventory);}}):null;
   globalThis.fetch = async (input, init) => {
     const url = new URL(typeof input === 'string' ? input : input instanceof URL ? input.href : input.url);
     const headers = new Headers(init?.headers || (input instanceof Request ? input.headers : undefined));
@@ -58,6 +62,7 @@ if (process.env.STAYCRAFT_QA_AUTH_FIXTURES === '1') {
     }
     if (!identity) return json({ message: 'Invalid session' }, 401);
     if((sampleMode||journeyMode)&&url.pathname==='/rest/v1/decision_agent_runs'){if(identity.index===2)return json({code:'42501'},403);return require(journeyMode?'./desktop-journey-store.cjs':'./agent-store-fixture.cjs')(url,init,propertyFor(identity.index));}
+    if(url.pathname==='/rest/v1/rpc/desktop_demo_journey'){if(!demoJourney||identity.id!==sample.ownerId)return json({message:'not_found'},404);try{return json(await demoJourney(JSON.parse(init.body||'{}')))}catch(error){return json({message:error.message},409)}}
     if(importDb){const imported=await importDb.handle(url,init,identity);if(imported)return imported;}
     if(sampleMode&&url.pathname==='/rest/v1/booking_import_tasks'&&(!init?.method||init.method==='GET')){
       const ownProperty=propertyFor(identity.index);

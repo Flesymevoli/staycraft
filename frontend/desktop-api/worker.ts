@@ -131,7 +131,7 @@ export async function handleSignalsRequest(request:Request,env:SignalsEnv,depend
    const searchFetch=checkedFetch(fetcher,signal,(target,method,forwarded)=>target.href==='https://api.deepseek.com/v1/tools/search'&&method==='POST'&&!!searchKey&&forwarded.get('authorization')==='Bearer '+searchKey&&!forwarded.has('cookie'));
    const events=await fetchEvents({window:context.window,scope:{center:point},location:searchLocation,now,fetcher:externalFetch,signal,searchKey:searchKey??'',searchFetcher:searchFetch,
     resolveVenue:async(address,venueSignal)=>amapPoint(await amapGeocode(address,venueSignal,{key:env.AMAP_MAPS_API_KEY,fetcher:externalFetch}))});
-   result={...context,events:events.events,source:events.source};
+   result={...context,events:events.events,source:events.source,review:events.review};
   }else{
    const weather=await fetchWeather({...point,days:Math.min(16,offset+input.days),fetcher:externalFetch,signal,now});
    const selected=weather.days.filter(row=>row.date>=input.start&&row.date<=input.end);

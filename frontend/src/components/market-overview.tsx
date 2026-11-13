@@ -1,9 +1,10 @@
 "use client";
+import {isDatedListQuote} from "@/lib/market/quote-identity";
 import {DesktopPageToolbar} from './desktop-page-toolbar';
-import {useDesktopSurface} from './desktop-surface';
+import {useDesktopSurface,DesktopTrialContext} from './desktop-surface';
 import {workspaceDay} from '@/lib/demo-period';
 
-import {useEffect, useId, useState} from 'react';
+import {useEffect, useId, useState, useContext} from 'react';
 import type {MarketSample, Quote} from '@/lib/market/types';
 import {countableQuote, dailyMedian, hotelKey, marketDates, marketRows} from '@/lib/market/presentation';
 import {buildMarketSample} from '@/lib/market/sample';
@@ -13,7 +14,10 @@ import './market-overview.css';
 
 type Payload = {
  sample: MarketSample;
- ownRates: {min: number; max: number} | null;
+ ownRates: {min: number; max: number; average?: number} | null;
+ ownRateSource?: 'orders' | 'settings' | 'settings_order_unavailable';
+ ownRateDate?: string;
+ orderRateCount?: number;
  dataMode: 'fictional_demo' | 'collected_ctrip_snapshot' | 'live';
  snapshot?: {locationStatus?: 'matched'|'changed'|'unknown';status: string; capturedAt: string | null; hotels: number; nights: number; batchWindow?: Range};
  listDisplayPrices?: {capturedAt: string; advertisedCount?: number; rows: {name: string; priceCny: number}[]} | null;
@@ -110,7 +114,7 @@ function QuoteDetail({quote, zh, onClose, id}: {quote: Quote; zh: boolean; onClo
  return <section className="mo-detail" id={id} aria-label={t('报价详情', 'Quote details')}>
   <div className="mo-detail-head"><div><h4>{quote.sourceName}</h4><p>{quote.stayDate} · {t('入住', 'check-in')} · {money(quote.priceCny)}{t(' / 晚', ' / night')}</p></div><button type="button" className="mo-text-button" onClick={onClose}>{t('收起详情', 'Close details')}</button></div>
   <dl className="mo-detail-grid">
-   <div><dt>{t('报价类型', 'Price type')}</dt><dd>{quote.priceType === 'calendar' ? t('日历参考价', 'Calendar reference') : quote.priceType === 'display' ? t('展示价 · 不计统计', 'Display price · excluded') : quote.priceType === 'plan' ? t('房价方案', 'Rate plan') : t('起价', 'Starting price')}</dd></div>
+   <div><dt>{t('报价类型', 'Price type')}</dt><dd>{quote.priceType === 'calendar' ? t('日历参考价', 'Calendar reference') : quote.priceType === 'display' ? isDatedListQuote(quote) ? t('指定日期列表起价 · 参考统计', 'Dated list price · reference') : t('展示价 · 不计统计', 'Display price · excluded') : quote.priceType === 'plan' ? t('房价方案', 'Rate plan') : t('起价', 'Starting price')}</dd></div>
    <div><dt>{t('入住条件', 'Stay conditions')}</dt><dd>{t(`${quote.nights} 晚 · ${quote.adults} 位成人`, `${quote.nights} night(s) · ${quote.adults} adult(s)`)}</dd></div>
    <div><dt>{t('房型 / 档位', 'Room / class')}</dt><dd>{[quote.roomType, quote.roomClass].filter(Boolean).join(' / ') || unknown}</dd></div>
    <div><dt>{t('早餐 / 可退款 / 含税', 'Breakfast / refundable / tax included')}</dt><dd>{condition(quote.breakfast)} / {condition(quote.refundable)} / {condition(quote.taxesIncluded)}</dd></div>
@@ -124,14 +128,14 @@ function QuoteDetail({quote, zh, onClose, id}: {quote: Quote; zh: boolean; onClo
 }
 
 export function MarketOverview({zh, start,demo=false}: {zh: boolean; start?: string; end?: string; demo?:boolean}) {
- const desktop=useDesktopSurface();
+ const desktop=useDesktopSurface();const trial=useContext(DesktopTrialContext);const historical=demo||trial;
  const t = (cn: string, en: string) => zh ? cn : en;
  const [today] = useState(() => workspaceDay(demo));
  const [requested, setRange] = useState<Range>(() => {
   const first = start && validDay(start) && start >= today ? start : shift(today, 1);
   return {start: first, end: shift(first, 6)};
  });
- const [latestSnapshot,setLatestSnapshot]=useState(demo&&!start);
+ const [latestSnapshot,setLatestSnapshot]=useState(historical&&!start);
  const [revision, setRevision] = useState(0);
  const [state, setState] = useState<{key: string; payload?: Payload; error?: string}>({key: ''});
  const [selection, setSelection] = useState<{key: string; quote: Quote} | null>(null);
@@ -147,7 +151,9 @@ export function MarketOverview({zh, start,demo=false}: {zh: boolean; start?: str
  useEffect(() => {
   const refresh = () => setRevision(value => value + 1);
   window.addEventListener('staycraft-market-synced', refresh);
-  return () => window.removeEventListener('staycraft-market-synced', refresh);
+  window.addEventListener('staycraft-inventory-changed', refresh);
+  window.addEventListener('staycraft-import-completed', refresh);
+  return () => {window.removeEventListener('staycraft-market-synced', refresh);window.removeEventListener('staycraft-inventory-changed', refresh);window.removeEventListener('staycraft-import-completed', refresh);};
  }, []);
 
  useEffect(() => {
@@ -186,9 +192,9 @@ export function MarketOverview({zh, start,demo=false}: {zh: boolean; start?: str
  const selected = !loading && selection?.key === requestKey ? selection.quote : null;
  const captured = payload?.snapshot?.capturedAt || quotes.map(quote => quote.capturedAt).sort().at(-1);
  const unavailable = payload?.snapshot?.status === 'unavailable';
- const earliest=demo?(payload?.snapshot?.batchWindow?.start??(range.start<today?range.start:today)):today;
+ const earliest=historical?(payload?.snapshot?.batchWindow?.start??(range.start<today?range.start:today)):today;
  const updateStart = (next: string) => {
-  if (!validDay(next) || (!demo&&next<today)) return;
+  if (!validDay(next) || (!historical&&next<today)) return;
   setSelection(null);
   setLatestSnapshot(false);
   setRange({start: next, end: shift(next, 6)});
@@ -196,6 +202,7 @@ export function MarketOverview({zh, start,demo=false}: {zh: boolean; start?: str
 
  if (desktop) return <GeminiMarketOverview zh={zh} demo={demo} range={range} earliest={earliest}
   loading={loading} error={Boolean(error || unavailable)} sample={sample} ownRates={payload?.ownRates}
+  ownRateSource={payload?.ownRateSource} orderRateCount={payload?.orderRateCount}
   locationStatus={payload?.snapshot?.locationStatus} captured={capturedLabel(captured, zh)} hotelCount={hotelCount}
   sufficient={sufficient} rows={[...dailyRows.values()]} weeklyPrices={weeklyPrices} updateStart={updateStart}
   retry={() => setRevision(value => value + 1)} detail={(quote, id, close) => <QuoteDetail quote={quote} id={id} zh={zh} onClose={close}/>}/>;

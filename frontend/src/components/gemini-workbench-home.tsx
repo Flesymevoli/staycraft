@@ -1,4 +1,7 @@
 "use client";
+import {useContext} from "react";
+import {GuidedDemoContext} from "./desktop-surface";
+import {DemoCollectButton} from "./demo-journey";
 
 import Link from "next/link";
 import {useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode} from "react";
@@ -24,6 +27,7 @@ type Props = {
   error: string;
   onRetry: () => void;
   planPanel: ReactNode;
+  reportStatus?: ReactNode;
   onSavePlan: (id: string) => void;
   onCollect: () => void;
   onReport: () => void;
@@ -143,7 +147,8 @@ function OpportunityTile({opportunity, runId, zh, onSavePlan, onReport}: {
   </article>;
 }
 
-export function GeminiWorkbenchHome({scope, run, metrics, zh, busy, error, onRetry, planPanel, onSavePlan, onCollect, onReport}: Props) {
+export function GeminiWorkbenchHome({scope, run, metrics, zh, busy, error, onRetry, planPanel, reportStatus, onSavePlan, onCollect, onReport}: Props) {
+  const guidedDemo=useContext(GuidedDemoContext);
   const overview = useRevenueOverview(scope);
   const [showRevenueDetails, setShowRevenueDetails] = useState(false);
   const revenueDetailsId = useId();
@@ -170,13 +175,15 @@ export function GeminiWorkbenchHome({scope, run, metrics, zh, busy, error, onRet
     : (zh ? "本店订单与房量记录" : "Property bookings and inventory");
   const count = bookedPct === null ? 0 : Math.ceil(Math.max(0, Math.min(100, bookedPct)) * 18 / 100);
   const primaryFinding = run?.findings[0];
+  const noOperatingData=capacity===0&&booked===0;
+  const diagnosisMetricsChanged=!!metrics&&!!run&&(metrics.capacity_room_nights!==run.metrics.capacityRoomNights||metrics.booked_room_nights!==run.metrics.bookedRoomNights);
   return <div className="gemini-workbench-home">
     <header className="section-header"><div>
       <h1>{zh ? "经营决策工作台" : "Decision Workbench"}</h1>
       <p>{zh ? "收入概况、AI 经营诊断、优先决策机会与实时依据一览" : "Revenue overview, AI diagnosis, priority opportunities & evidence"}</p>
     </div><div className="header-controls">
       {period && <span className="date-pill"><CalendarDays size={14}/>{period.start} — {period.end}</span>}
-      <button type="button" className="btn-action-outline" onClick={onCollect}><Zap size={14}/>{zh ? "实时采集报价" : "Collect Quotes"}</button>
+      {guidedDemo?<DemoCollectButton zh={zh} className="btn-action-outline"/>:<button type="button" className="btn-action-outline" onClick={onCollect}><Zap size={14}/>{zh ? "实时采集报价" : "Collect Quotes"}</button>}
       <button type="button" className="btn-action-violet" onClick={onReport} disabled={!run}><FileText size={14}/>{zh ? "完整诊断报告" : "Full Report"}</button>
     </div></header>
     <IncomeOverview run={run} metrics={metrics} zh={zh} overview={overview}/>
@@ -185,8 +192,8 @@ export function GeminiWorkbenchHome({scope, run, metrics, zh, busy, error, onRet
       <article className="bento-card">
         <div className="hero-composite-top"><div>
           <span className="pill pill-violet">{zh ? "核心诊断" : "Core Judgment"}{headline?.window && ` · ${compactDate(headline.window.start)} → ${compactDate(headline.window.end)}`}</span>
-          <h2 className="hero-judgment-title">{compactDates(headline?.conclusion ?? primaryFinding?.conclusion ?? (busy ? (zh ? "正在分析经营情况" : "Investigating your business") : (zh ? "从订单与房量开始，看清经营机会" : "Find operating opportunities in your bookings and inventory")))}</h2>
-          <p className="hero-judgment-desc">{headline?.reason ?? primaryFinding?.reason ?? (busy ? (zh ? "读取经营记录、核对库存与市场信号。" : "Reading records, inventory and market signals.") : (zh ? "完善民宿资料并导入订单，经营判断将随数据更新。" : "Complete your property profile and import bookings to build your operating review."))}</p>
+          <h2 className="hero-judgment-title">{compactDates(noOperatingData?(zh?"暂无经营数据":"No operating data yet"):diagnosisMetricsChanged?(zh?`本期已订 ${booked}/${capacity} 间夜，剩余 ${metrics!.available_room_nights} 间夜`:`Booked ${booked}/${capacity} room nights; ${metrics!.available_room_nights} available`):headline?.conclusion ?? primaryFinding?.conclusion ?? (busy ? (zh ? "正在分析经营情况" : "Investigating your business") : (zh ? "从订单与房量开始，看清经营机会" : "Find operating opportunities in your bookings and inventory")))}</h2>
+          <p className="hero-judgment-desc">{noOperatingData?(zh?"导入订单与房量后，这里将显示经营判断。":"Import bookings and inventory to see operating insights."):diagnosisMetricsChanged?(zh?"基于当前订单与房量；完整诊断报告尚待更新。":"Based on current bookings and inventory; the full report has not been updated yet."):headline?.reason ?? primaryFinding?.reason ?? (busy ? (zh ? "读取经营记录、核对库存与市场信号。" : "Reading records, inventory and market signals.") : (zh ? "完善民宿资料并导入订单，经营判断将随数据更新。" : "Complete your property profile and import bookings to build your operating review."))}</p>
           {!busy && !run && <Link href="/app/analysis" className="inline-link">{zh ? "导入并核对订单" : "Import and review bookings"} →</Link>}
         </div><OccupancyChart daily={daily} zh={zh}/></div>
         <div className="segmented-breakdown">
@@ -194,7 +201,7 @@ export function GeminiWorkbenchHome({scope, run, metrics, zh, busy, error, onRet
           {roomTypes.length ? <div className="segmented-cols">{roomTypes.map((type, index) => <div className={`seg-col c-${index % 3}`} key={type.name}>
             <strong>{money(type.completed.amountCny, zh)}<span className="pill pill-violet">{type.completedSharePct ?? 0}%</span></strong>
             <span>{type.name} · {type.completed.roomNights} {zh ? "间夜" : "nights"}</span><div className="seg-track"><div className="seg-fill" style={{width: `${Math.max(0, Math.min(100, type.completedSharePct ?? 0))}%`}}/></div>
-          </div>)}</div> : <p className="empty-copy">{overview.status === "loading" ? (zh ? "正在读取房型收入…" : "Loading room-type revenue…") : overview.status === "error" ? (zh ? "房型收入暂时无法读取。" : "Room-type revenue is unavailable.") : (zh ? "本周期暂无已完成住宿，完成订单后可查看房型贡献。" : "No completed stays in this period. Room-type contributions appear as stays complete.")}</p>}
+          </div>)}</div> : <p className="empty-copy">{overview.status === "loading" ? (zh ? "正在读取房型收入…" : "Loading room-type revenue…") : overview.status === "error" ? (zh ? "房型收入暂时无法读取。" : "Room-type revenue is unavailable.") : (zh ? "过去 7 天暂无已完成住宿，可切换到有历史订单的日期查看房型贡献。" : "No completed stays in the past 7 days. Select dates with historical orders to view room-type contributions.")}</p>}
           {overview.status === "error" && <button type="button" className="inline-link" onClick={overview.retry}>{zh ? "重试读取" : "Retry"}</button>}
           {overview.revenue && <div id={revenueDetailsId} className="revenue-details" hidden={!showRevenueDetails}>
             <p>{overview.revenue.period.start} — {overview.revenue.period.end}</p>
@@ -202,6 +209,7 @@ export function GeminiWorkbenchHome({scope, run, metrics, zh, busy, error, onRet
             <div className="revenue-table-scroll"><table><caption>{zh ? "已完成住宿 · 每日明细" : "Completed Stays · Daily Breakdown"}</caption><thead><tr><th scope="col">{zh ? "住宿日" : "Stay Date"}</th><th scope="col">{zh ? "收入" : "Revenue"}</th><th scope="col">{zh ? "间夜" : "Nights"}</th><th scope="col">ADR</th></tr></thead><tbody>{overview.revenue.breakdowns.dates.map(day => <tr key={day.date}><th scope="row">{day.date}</th><td>{money(day.completed.amountCny, zh)}</td><td>{day.completed.roomNights}</td><td>{day.completed.averageRateCny === null ? "—" : money(day.completed.averageRateCny, zh)}</td></tr>)}</tbody></table></div>
           </div>}
         </div>
+        <div className="home-report-status">{reportStatus}</div>
       </article>
       {opportunities.length > 0 ? <><div className="opp-grid">{featuredOpportunities.map(opportunity => <OpportunityTile key={opportunity.id} opportunity={opportunity} runId={run!.id} zh={zh} onSavePlan={onSavePlan} onReport={onReport}/>)}</div>
         {remainingOpportunities.length > 0 && <details className="more-opportunities"><summary>{zh ? `查看其余 ${remainingOpportunities.length} 项机会与风险` : `View ${remainingOpportunities.length} more opportunities & risks`}</summary><div className="opp-grid">{remainingOpportunities.map(opportunity => <OpportunityTile key={opportunity.id} opportunity={opportunity} runId={run!.id} zh={zh} onSavePlan={onSavePlan} onReport={onReport}/>)}</div></details>}</>

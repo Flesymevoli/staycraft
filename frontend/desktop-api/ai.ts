@@ -12,7 +12,7 @@ type Dependencies={fetcher?:typeof fetch;timeoutMs?:number};
 type RecordValue=Record<string,unknown>;
 const PATH='/desktop-api/v1/ai',INPUT_LIMIT=229376,OUTPUT_LIMIT=262144;
 const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-const caps={analysis:2200,report:2600,review:2000,promotion:1300,plan:2000,priorities:2000};
+const caps={analysis:2200,report:2600,review:2000,promotion:1300,plan:2000,priorities:2000,translation:8000};
 type Purpose=keyof typeof caps;
 const toolNames=new Set(['get_revenue','get_bookings','get_metrics','get_inventory','query_market']);
 const headers={'Cache-Control':'private, no-store','Content-Type':'application/json; charset=utf-8','X-Content-Type-Options':'nosniff'};

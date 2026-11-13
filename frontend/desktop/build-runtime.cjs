@@ -81,6 +81,11 @@ async function build(){
  await cp(path.join(source,'.next','static'),path.join(web,'.next','static'),{recursive:true,dereference:true});
  await cp(path.join(source,'public'),path.join(web,'public'),{recursive:true,dereference:true});
  await copyCollector(resources);
+ const support=path.join(resources,'demo','frontend','scripts');await mkdir(support,{recursive:true});
+ for(const name of ['demo-journey-fixture.cjs','demo-replay-prices.json','qa-workspace-fixture.cjs','operator-sample-data.cjs','conversation-fixture.cjs','import-database-fixture.cjs','booking-metrics-fixture.cjs','desktop-journey-store.cjs','agent-store-fixture.cjs'])await cp(path.join(root,'scripts',name),path.join(support,name));
+ await cp(path.join(root,'node_modules','@electric-sql','pglite'),path.join(resources,'demo','frontend','node_modules','@electric-sql','pglite'),{recursive:true});
+ const migrations=path.join(resources,'demo','supabase','migrations');await mkdir(migrations,{recursive:true});
+ for(const name of ['20261022002812_direct_bookings.sql','20261103000200_booking_import.sql','20261103000300_import_metrics.sql','20261103000400_import_stay_guard.sql','20261113041422_auto_import_room_types.sql','20261113053402_auto_import_numbered_rooms.sql','20261113073343_clear_imported_booking_data.sql'])await cp(path.join(root,'..','supabase','migrations',name),path.join(migrations,name));
  await auditResources(resources);
  await writeFile(path.join(resources,'runtime.json'),JSON.stringify({version:1,webAppPath,publicConfig},null,2));
  const temporary=path.join(base,'current.'+path.basename(workspace)+'.json');

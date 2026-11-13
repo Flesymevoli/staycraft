@@ -70,7 +70,7 @@ async function main(){
  check(result.response.status===200&&result.result.userId===USER&&result.result.propertyId===PROPERTY&&result.result.purpose==='promotion','server verified envelope');
  check(result.result.provider==='course'&&result.result.fallback===false&&result.result.completion.choices[0].message.content===success.choices[0].message.content,'completion returned with actual provider');
  check(result.limits.includes(`desktop-ai:user:${USER}`)&&result.limits.includes('desktop-ai:all'),'verified user and shared burst guards');
- for(const purpose of ['analysis','report','review','plan','priorities']){result=await invoke({...initial,purpose,body:{...initial.body,max_tokens:500,response_format:{type:'json_object'}}});check(result.response.status===200,'each named purpose accepts bounded JSON response')}
+ for(const purpose of ['analysis','report','review','plan','priorities','translation']){result=await invoke({...initial,purpose,body:{...initial.body,max_tokens:500,response_format:{type:'json_object'}}});check(result.response.status===200,'each named purpose accepts bounded JSON response')}
  result=await invoke({...initial,body:{...initial.body,stream:undefined}});check(result.response.status===200&&JSON.parse(result.modelCalls[0].body).stream===false,'omitted stream is normalized');
  result=await invoke({...initial,purpose:'report',body:{...initial.body,max_tokens:2600,messages:[{role:'user',content:'x'.repeat(200000)}]}});check(result.response.status===200,'large immutable report evidence fits bounded request');
  result=await invoke(initial,{env:{AI_PROVIDER:'deepseek_official',DEEPSEEK_API_KEY:KEY,DEEPSEEK_MODEL:'fixture-model'}});

@@ -1,4 +1,5 @@
 import {validateInventory} from "@/lib/property-inventory";
+import {readOrderRates} from "@/lib/read-order-rates";
 import {boundedBody,requireSameOrigin,verifiedProperty,writableProperty,WorkspaceError,workspaceFailure} from "@/lib/workspace-access";
 export const dynamic="force-dynamic";
 const headers={"Cache-Control":"no-store"};
@@ -6,7 +7,9 @@ export async function GET(){try{
  const {supabase,propertyId}=await verifiedProperty();
  const {data,error}=await supabase.rpc("get_room_inventory",{p_property:propertyId});
  if(error||!data||!validateInventory(data.inventory,propertyId))throw new WorkspaceError("inventory_unavailable",503);
- return Response.json(data,{headers});
+ const today=new Intl.DateTimeFormat('sv-SE',{timeZone:'Asia/Shanghai'}).format(new Date());
+ const orderRates=await readOrderRates(supabase,propertyId,today);
+ return Response.json({...data,orderRates},{headers});
 }catch(error){return workspaceFailure(error);}}
 export async function PUT(request:Request){try{
  requireSameOrigin(request);const {supabase,propertyId}=await writableProperty();let body;

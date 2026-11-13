@@ -5,6 +5,13 @@ export const dynamic="force-dynamic";
 // Preview and confirmed writes share an owner-checked PostgreSQL transaction.
 export async function GET(request:Request){try{
  const {supabase,propertyId}=await verifiedProperty();
+ if(new URL(request.url).searchParams.get('view')==='receipt'){
+  const revision=new URL(request.url).searchParams.get('revision');
+  if(!revision||!/^[a-f0-9-]{36}$/i.test(revision))throw new WorkspaceError('invalid_input',400);
+  const {data,error}=await supabase.rpc('booking_import_receipt',{p_property:propertyId,p_revision:revision}).abortSignal(AbortSignal.timeout(25000));
+  if(error)throw new WorkspaceError('import_unavailable',503);
+  return Response.json(data,{headers:{'Cache-Control':'no-store'}});
+ }
  if(new URL(request.url).searchParams.get('view')==='state'){
   const [batches,tasks]=await Promise.all([supabase.from('booking_import_batches').select('*').eq('property_id',propertyId).order('imported_at',{ascending:false}).limit(10),supabase.from('booking_import_tasks').select('id,booking_id,kind,scheduled_on,completed_at,booking:direct_bookings(external_channel,external_id,room_number,type_name)').eq('property_id',propertyId).eq('withdrawn',false).is('completed_at',null).order('scheduled_on').limit(200)]);
   if(batches.error||tasks.error)throw new WorkspaceError('import_setup_required',503);
@@ -24,10 +31,11 @@ export async function POST(request:Request){try{
   text=payload.csv;commit=payload.commit;revision=payload.revision||null;confirm=payload.confirmUnversioned===true;
  }else if(!request.headers.get('content-type')?.startsWith('text/csv'))throw new WorkspaceError('csv_required',415);
  try{
-  const preview=previewBookingCsv(text);
+  const today=new Intl.DateTimeFormat('sv-SE',{timeZone:'Asia/Shanghai'}).format(new Date());
+  const preview=previewBookingCsv(text,today);
   if(!preview.canCommit)return Response.json({...preview,saved:false},{headers:{'Cache-Control':'no-store'}});
   const {data,error}=await supabase.rpc('process_booking_import',{p_property:propertyId,p_rows:preview.valid.map(v=>v.booking),p_commit:commit,p_revision:revision,p_confirm_unversioned:confirm});
-  if(error){const code=['import_changed','room_type_unmatched','room_type_limit','room_unmatched','manual_stay_conflict','stale_source','confirm_unversioned','invalid_row','room_date_conflict'].find(c=>error.message.includes(c));throw new WorkspaceError(code||'import_unavailable',code?409:503)}
+  if(error){const code=['import_changed','room_type_unmatched','room_type_limit','room_limit','room_unmatched','manual_stay_conflict','stale_source','confirm_unversioned','invalid_row','room_date_conflict'].find(c=>error.message.includes(c));throw new WorkspaceError(code||'import_unavailable',code?409:503)}
   return Response.json({...preview,...data},{headers:{"Cache-Control":"no-store"}});
  }catch(error){
   const code=error instanceof Error?error.message:'';

@@ -54,9 +54,10 @@ function testSignalsConfiguration(origin){
  if(typeof origin!=='string'||!/^http:\/\/127\.0\.0\.1:[1-9]\d{0,4}$/.test(origin)||Number(new URL(origin).port)>65535)throw Error('invalid_test_signals_origin');
  return {STAYCRAFT_DESKTOP_SIGNALS_TEST:'1',STAYCRAFT_DESKTOP_SIGNALS_TEST_ORIGIN:origin};
 }
-async function launchRuntime(runtime,{fork,entry,timeoutMs,onFailure,testSignalsOrigin},port){
+async function launchRuntime(runtime,{fork,entry,timeoutMs,onFailure,testSignalsOrigin,demo=false},port){
  const child=fork(entry,[runtime.web],{cwd:runtime.web,env:{...systemEnvironment(),...runtime.publicConfig,
   ...testSignalsConfiguration(testSignalsOrigin),
+  ...(demo?{STAYCRAFT_DESKTOP_DEMO:'1',STAYCRAFT_DEMO_SUPPORT:path.join(runtime.resources,'demo','frontend','scripts'),MODEL_ENABLED:'0',FORMAL_MODEL_ENABLED:'0',DEMO_LOGIN_EMAIL:''}:{}),
   NODE_ENV:'production',HOSTNAME:'127.0.0.1',PORT:String(port),HOMESTAY_LOCAL_DATA:'0',STAYCRAFT_DESKTOP_RUNTIME:'1',NEXT_TELEMETRY_DISABLED:'1'},
   stdio:'pipe',serviceName:'StayCraft local workspace'});
  let stopping=false,ready=false,settled=false;
@@ -74,9 +75,10 @@ async function launchRuntime(runtime,{fork,entry,timeoutMs,onFailure,testSignals
  });
  return {origin,stop,...runtime};
 }
-async function startRuntime({resources,userData,fork,entry=path.join(__dirname,'server.cjs'),timeoutMs=45000,onFailure=()=>{},testSignalsOrigin}){
+async function startRuntime({resources,userData,fork,entry=path.join(__dirname,'server.cjs'),timeoutMs=45000,onFailure=()=>{},testSignalsOrigin,demo=false}){
  const runtime=await readRuntime(resources),port=await preferredPort(userData);
- const options={fork,entry,timeoutMs,onFailure,testSignalsOrigin};
+ runtime.resources=resources;
+ const options={fork,entry,timeoutMs,onFailure,testSignalsOrigin,demo};
  let running;
  try{running=await launchRuntime(runtime,options,port);}
  catch(error){

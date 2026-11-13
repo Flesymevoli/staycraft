@@ -40,7 +40,7 @@ function collectGaps(sources: SourceRef[], signals: DetectorSignal[], zh: boolea
   return [...new Set(gaps)].slice(0, 4);
 }
 
-export function buildHeadline(input: { signals?: DetectorSignal[]; opportunities?: Opportunity[]; sources?: SourceRef[]; dailyMetrics?: Array<{date:string;available:number|null}>; zh: boolean }): Headline | null {
+export function buildHeadline(input: { signals?: DetectorSignal[]; opportunities?: Opportunity[]; sources?: SourceRef[]; dailyMetrics?: Array<{date:string;available:number|null;booked?:number|null;capacity?:number|null}>; zh: boolean }): Headline | null {
   const allSignals = input.signals || [], zh = input.zh;
   const priority = selectPriorityOpportunities(input.opportunities || [], 1)[0];
   const signals = priority?.basis ?? allSignals;
@@ -48,6 +48,16 @@ export function buildHeadline(input: { signals?: DetectorSignal[]; opportunities
     (!metricName || signal.metric.name === metricName) && hasSupportedOpportunityBasis(signals.filter(other =>
       other.kind === kind && other.window.start === signal.window.start && other.window.end === signal.window.end)));
   const gaps = collectGaps(input.sources || [], allSignals, zh);
+
+  const fullSaturday=input.dailyMetrics?.find(day=>new Date(day.date+'T12:00:00Z').getUTCDay()===6&&typeof day.capacity==='number'&&day.capacity>0&&day.booked===day.capacity&&day.available===0);
+  if(fullSaturday){
+    return {
+      conclusion:zh?'周六已满房，建议上调后续可售周六的房价。':'Saturday is fully booked. Test higher rates on later Saturdays with rooms available.',
+      reason:zh?`${fullSaturday.date} 已订 ${fullSaturday.booked}/${fullSaturday.capacity} 间，周六预订表现强。下一步先小幅试涨后续可售周六，观察新增订单；已订订单不改价。`:`${fullSaturday.booked}/${fullSaturday.capacity} rooms are booked for ${fullSaturday.date}. Saturday bookings are strong. Start with a small increase on later available Saturdays and watch new bookings; keep existing reservations unchanged.`,
+      kpis:[{label:zh?'周六预订':'Saturday bookings',value:`${fullSaturday.booked}/${fullSaturday.capacity}`},{label:zh?'占用率':'Occupancy',value:'100%'}],
+      gaps,window:{start:fullSaturday.date,end:fullSaturday.date},source:'none',
+    };
+  }
 
   const gap = first('gap_window');
   if (gap && gap.metric.value !== null) {

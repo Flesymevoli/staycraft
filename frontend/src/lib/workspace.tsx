@@ -41,7 +41,7 @@ export async function renderWorkspaceShell(children:ReactNode){
     if(profile)connection.propertyName=profile.name;
   } catch { /* Missing schema or a service failure is not an empty successful read. */ }
 
-  return <WorkbenchShell userId={userId} displayName={displayName} email={email} connection={connection} sample={operatorSample()} demo={isDemoWorkspace(email)} localTrial={desktopTrial()} signOutAction={signOut}>{children}</WorkbenchShell>;
+  return <WorkbenchShell userId={userId} displayName={displayName} email={email} connection={connection} sample={operatorSample()} demo={isDemoWorkspace(email)} localTrial={desktopTrial()} guidedDemo={process.env.STAYCRAFT_DESKTOP_DEMO==="1"&&process.env.STAYCRAFT_DESKTOP_GUIDED_DEMO==="1"} signOutAction={signOut}>{children}</WorkbenchShell>;
 }
 
 export async function renderWorkspace(section: WorkspaceSection, roomId?: string, detail?: {bookingId?:string;threadId?:string;bookingHistory?:boolean}) {

@@ -96,6 +96,17 @@ function badResponse(mutator){state.reply=request=>{const data=envelope(request)
   badResponse(value=>{for(const day of value.days){day.tempMin=null;day.tempMax=null;day.precipProb=null}});
   const result=await api.readDesktopWeather(weatherOptions());for(const row of result.days){assert.equal(row.tempMin,null);assert.equal(row.tempMax,null);assert.equal(row.precipProb,null)}
  });
+ const review=()=>({raw:1,pages:1,parsed:0,final:0,query:'隔离城市 活动预告',observedAt:new Date().toISOString(),cached:false,rows:[{title:'来源展览报道',url:'https://source.example/article',reason:'date_pending',candidate:true,events:[]}]});
+ await check('unconfirmed leads remain separate from verified events across transport',async()=>{
+  badResponse(value=>{value.review=review()});const value=await api.readDesktopEvents(eventOptions());assert.equal(value.events.length,1);assert.equal(value.review.rows[0].candidate,true);
+ });
+ for(const [name,mutate] of [
+  ['wrong funnel count',r=>{r.final=1}],
+  ['forged confirmed candidate',r=>{r.rows[0].reason='accepted'}],
+  ['unsafe candidate link',r=>{r.rows[0].url='javascript:alert(1)'}],
+  ['missing raw row',r=>{r.raw=2}],
+  ['unbounded nested event list',r=>{r.rows[0].events=Array(101).fill({title:'x',reason:'accepted'})}],
+ ])await check(name,async()=>{badResponse(value=>{value.review=review();mutate(value.review)});await rejected(()=>api.readDesktopEvents(eventOptions()),'remote_signals_invalid')});
  await check('partial and empty forecasts carry truthful coverage',async()=>{
   state.reply=request=>{const data=envelope(request);data.days=data.days.slice(0,2);data.source.coverage.kind='partial';for(const row of data.days)row.source=structuredClone(data.source);return Response.json(data)};
   const partial=await api.readDesktopWeather(weatherOptions());assert.equal(partial.days.length,2);assert.equal(partial.source.coverage.kind,'partial');

@@ -1,7 +1,7 @@
 export const bookingCsvHeader='channel,external_id,room_type,room_number,arrival,departure,status,total,currency,source_updated_at';
 export type ImportedBooking={channel:string;externalId:string;roomType:string;roomNumber:string|null;arrival:string;departure:string;status:'confirmed'|'cancelled'|'completed';totalCents:number;currency:'CNY';sourceUpdatedAt:string|null};
 // Fixed UTF-8 template, one order for one room. Quoted fields support commas/newlines.
-export function previewBookingCsv(text:string){
+export function previewBookingCsv(text:string,today?:string){
  if(text.length>1000000)throw Error('file_too_large');
  const rows:string[][]=[];let row:string[]=[],field='',quoted=false,closed=false;
  const push=()=>{if(row.length>=10)throw Error('invalid_columns');row.push(field);field='';closed=false};
@@ -27,9 +27,10 @@ export function previewBookingCsv(text:string){
   const fail=(reason:string)=>errors.push({row:n,reason});
   if(values.length!==10){fail('column_count');return}
   const [channel,externalId,roomType,roomNumber,arrival,departure,status,total,currency,updated]=values.map(v=>v.trim());
-  if(!channel||channel.length>80||!externalId||externalId.length>120||!roomType||roomType.length>60||roomNumber.length>40){fail('invalid_identity');return}
+  if(!channel||channel.length>80||!externalId||externalId.length>120||!roomType||roomType.length>60||roomNumber.normalize("NFKC").length>24||/[\u0000-\u001f]/.test(roomNumber)){fail('invalid_identity');return}
   if(!date(arrival)||!date(departure)||departure<=arrival||Date.parse(departure)-Date.parse(arrival)>30*86400000){fail('invalid_dates');return}
   if(!['confirmed','cancelled','completed'].includes(status)){fail('invalid_status');return}
+  if(today&&status==='completed'&&departure>today){fail('completed_in_future');return}
   if(currency!=='CNY'||!/^\d{1,9}(\.\d{1,2})?$/.test(total)||Number(total)<=0){fail('invalid_amount_or_currency');return}
   if(updated&&(!date(updated.slice(0,10))||!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{1,3})?(Z|[+-]\d{2}:\d{2})$/.test(updated)||!Number.isFinite(Date.parse(updated)))){fail('invalid_source_time');return}
   const booking:ImportedBooking={channel,externalId,roomType,roomNumber:roomNumber||null,arrival,departure,status:status as ImportedBooking['status'],totalCents:Math.round(Number(total)*100),currency:'CNY',sourceUpdatedAt:updated?new Date(updated).toISOString():null};

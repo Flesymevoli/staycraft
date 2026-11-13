@@ -19,7 +19,7 @@ export async function promotionContext(db:SupabaseClient,propertyId:string,brief
  if(sources.length!==brief.sourceIds.length)throw new WorkspaceError('promotion_source_required',422);
  const zh=brief.language==='zh',facts=[{id:'property',text:zh?`民宿名称：${profile.name}`:`Property name: ${profile.name}`},{id:'location',text:zh?`位置：${profile.location}`:`Location: ${profile.location}`}];
  for(const [key,label,en] of [['notes','民宿说明','Property notes'],['guestNotes','客人须知','Guest information'],['checkin','入住时间','Check-in time'],['breakfast','早餐时间','Breakfast hours']] as const)if(profile[key])facts.push({id:key,text:`${zh?label:en}：${profile[key]}`});
- inventory.types.filter(t=>inventory.rooms.some(r=>r.active&&r.typeId===t.id)).slice(0,3).forEach((t,n)=>facts.push({id:`room_${n}`,text:zh?`房型：${t.name}，最多入住 ${t.capacity} 人。`:`Room type: ${t.name}, for up to ${t.capacity} guests.`}));
+ inventory.types.filter(t=>inventory.rooms.some(r=>r.active&&r.typeId===t.id)).slice(0,3).forEach((t,n)=>facts.push({id:`room_${n}`,text:zh?`房型：${t.name}${t.capacity ? `，最多入住 ${t.capacity} 人` : ''}。`:`Room type: ${t.name}${t.capacity ? `, for up to ${t.capacity} guests` : ''}.`}));
  sources.forEach((source,n)=>facts.push({id:`source_${n}`,text:`${source.title}\n${source.summary}\n${zh?'来源':'Source'}：${source.url}`}));
  let reason:string|undefined;
  if(diagnosis){

@@ -14,8 +14,8 @@ begin
       or jsonb_typeof(t->'id')<>'string' or (t->>'id') !~* '^[a-f0-9]{8}-[a-f0-9]{4}-[1-5][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$'
       or jsonb_typeof(t->'name')<>'string' or length(trim(t->>'name')) not between 1 and 60
       or jsonb_typeof(t->'beds')<>'string' or length(trim(t->>'beds')) not between 1 and 80
-      or jsonb_typeof(t->'capacity')<>'number' or (t->>'capacity')::numeric not between 1 and 12 or (t->>'capacity')::numeric <> trunc((t->>'capacity')::numeric)
-      or jsonb_typeof(t->'price')<>'number' or (t->>'price')::numeric not between 0.01 and 99999 or (t->>'price')::numeric<>round((t->>'price')::numeric,2)
+      or (jsonb_typeof(t->'capacity')<>'null' and (jsonb_typeof(t->'capacity')<>'number' or (t->>'capacity')::numeric not between 1 and 12 or (t->>'capacity')::numeric <> trunc((t->>'capacity')::numeric)))
+      or (jsonb_typeof(t->'price')<>'null' and (jsonb_typeof(t->'price')<>'number' or (t->>'price')::numeric not between 0.01 and 99999 or (t->>'price')::numeric<>round((t->>'price')::numeric,2)))
       or jsonb_typeof(t->'photo')<>'string'
       or ((t->>'photo')<>'' and ((t->>'photo') !~* '^[a-f0-9-]{36}/[a-f0-9-]{36}\.webp$' or split_part(t->>'photo','/',1)<>property::text)) then return false; end if;
   end loop;

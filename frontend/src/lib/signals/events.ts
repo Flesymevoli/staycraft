@@ -8,7 +8,7 @@ export type EventPoint={latitude:number;longitude:number};
 // The event venue points and any supplied center are in GCJ-02.
 export type EventScope={center:EventPoint|null;demoProperty?:boolean};
 export type EventsInput={events?:unknown[];window:EventWindow;now?:Date;observedAt?:string;scope?:EventScope};
-export type EventsResult={events:LocalEvent[];source:SourceRef};
+export type EventsResult={events:LocalEvent[];source:SourceRef;review?:import('./event-review').EventSearchReview};
 export const EVENT_RADIUS_KM=15;
 
 const ISO_DATE=/^\d{4}-\d{2}-\d{2}$/;

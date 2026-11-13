@@ -126,5 +126,5 @@ export async function fetchEvents(input:LiveInput):Promise<EventsResult>{
  const urls=new Set(discovered.events.map(event=>event.sourceUrl));
  const combined=[...discovered.events,...fallback.events.filter(event=>!urls.has(event.sourceUrl))];
  const result=collectEvents({events:combined,window:input.window,now,observedAt:now.toISOString()});
- return {...result,source:{...result.source,authority:'public',note:`${result.source.note}${discovered.note}`}};
+ return {...result,review:discovered.review,source:{...result.source,authority:'public',note:`${result.source.note}${discovered.note}`}};
 }

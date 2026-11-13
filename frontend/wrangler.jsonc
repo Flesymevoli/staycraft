@@ -19,6 +19,7 @@
     }
   ],
   "vars": {
+    "DESKTOP_DOWNLOAD_URL": "https://github.com/Flesymevoli/staycraft/releases/download/v0.1.0/StayCraft-0.1.0-win-x64.zip",
     "STAYCRAFT_HOSTED": "1",
     "HOMESTAY_LOCAL_DATA": "0",
     "MODEL_ENABLED": "1",

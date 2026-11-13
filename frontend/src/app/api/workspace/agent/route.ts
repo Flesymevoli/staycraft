@@ -1,5 +1,6 @@
 import {desktopModelTransport} from '@/lib/desktop-model';
 import {writeAgentReport} from '@/lib/agent-report-writer';
+import {evidenceReport} from '@/lib/evidence-report';
 import {readAgentRevenue} from '@/lib/agent-revenue';
 import {createHash} from 'node:crypto';
 import type {BookingMetrics} from '@/components/booking-metrics';
@@ -37,7 +38,7 @@ export async function POST(request:Request){try{
  const remoteSignals=desktopSignalsEnabled()&&!demo;
  let input:Record<string,unknown>;
  try{input=JSON.parse(new TextDecoder().decode(await boundedBody(request,500)));}catch{throw new WorkspaceError('invalid_input',400);}
- if(!input||typeof input!=='object'||Array.isArray(input)||Object.keys(input).some(key=>!['force','language','runId'].includes(key))||input.force!==undefined&&typeof input.force!=='boolean'||input.language!==undefined&&!['zh','en'].includes(String(input.language)))throw new WorkspaceError('invalid_input',400);
+ if(!input||typeof input!=='object'||Array.isArray(input)||Object.keys(input).some(key=>!['force','language','runId','factualOnly'].includes(key))||input.factualOnly!==undefined&&typeof input.factualOnly!=='boolean'||input.force!==undefined&&typeof input.force!=='boolean'||input.language!==undefined&&!['zh','en'].includes(String(input.language)))throw new WorkspaceError('invalid_input',400);
  const language=input.language==='en'?'en':'zh';
  const modelTransport=desktopModelTransport(account);
  const modelEnabled=operatorModelEnabled()&&Boolean(modelTransport||process.env.DEEPSEEK_API_KEY||process.env.MODEL_BASE_URL&&process.env.MODEL_API_KEY&&process.env.MODEL_NAME);
@@ -46,11 +47,11 @@ export async function POST(request:Request){try{
   const store=agentStore(supabase,propertyId),saved=await store.detail(input.runId);
   if(saved.error||!saved.run)throw new WorkspaceError(saved.error||'analysis_not_found',404);
   if(saved.run.phase==='complete')return Response.json({run:saved.run,cached:true,historyAvailable:true});
-  if(!modelEnabled)return Response.json({
+  if(!modelEnabled&&!input.factualOnly&&process.env.STAYCRAFT_DESKTOP_DEMO!=='1')return Response.json({
    run:{...saved.run,errorCode:'model_unavailable'},cached:true,historyAvailable:true,writingAvailable:false
   },{headers:{'Cache-Control':'private, no-store'}});
   if(!await store.claim(input.runId))throw new WorkspaceError('analysis_busy',409);
-  try{const claimed=await store.detail(input.runId);if(!claimed.run)throw new WorkspaceError('history_unavailable',503);const run=await writeAgentReport(claimed.run,{modelTransport,language,signal:request.signal,onCheckpoint:async r=>{if(!await store.checkpoint(r))throw Error('report_checkpoint_failed')}});if(!await store.finish(run))throw new WorkspaceError('history_unavailable',503);return Response.json({run,cached:false,historyAvailable:true},{headers:{'Cache-Control':'private, no-store'}})}catch(e){await store.fail(input.runId);throw e;}
+  try{const claimed=await store.detail(input.runId);if(!claimed.run)throw new WorkspaceError('history_unavailable',503);const run=input.factualOnly||process.env.STAYCRAFT_DESKTOP_DEMO==='1'?evidenceReport(claimed.run,language):await writeAgentReport(claimed.run,{attempts:1,modelTransport,language,signal:request.signal,onCheckpoint:async r=>{if(!await store.checkpoint(r))throw Error('report_checkpoint_failed')}});if(!await store.finish(run))throw new WorkspaceError('history_unavailable',503);return Response.json({run,cached:false,historyAvailable:true},{headers:{'Cache-Control':'private, no-store'}})}catch(e){await store.fail(input.runId);throw e;}
  }
 
  const today=workspaceDay(demo);
@@ -161,7 +162,9 @@ export async function POST(request:Request){try{
    const bundle=await collectSignals({latitude:point.latitude,longitude:point.longitude,location:profile.data?.profile?.location,anchorEntries:[],window,liveEvents:!demo,signal:extra?AbortSignal.any([request.signal,extra]):request.signal});
    return {...bundle,anchors:marketContext.anchors,sources:[...bundle.sources.filter(source=>source.id!=='competitor'),marketContext.source]};
   }
-  });await updates;run.status='limited';run.phase='investigated';if(state==='started')historyAvailable=await store.finish(run);if(!historyAvailable)throw new WorkspaceError('history_unavailable',503);return run;
+  });await updates;run.language=language;run.status='limited';run.phase='investigated';
+  if(run.steps.some(step=>step.status==='failed'&&step.detail.includes('model_rate_limited'))){run.phase='writing_failed';run.errorCode='model_rate_limited';}
+  if(state==='started')historyAvailable=await store.finish(run);if(!historyAvailable)throw new WorkspaceError('history_unavailable',503);return run;
   }catch(error){await updates;if(state==='started')await store.fail(id);throw error;}
  });
  return Response.json({...result,historyAvailable},{headers:{'Cache-Control':'private, no-store'}});

@@ -1,0 +1,5 @@
+.clear-imported-data{margin-top:24px;padding-top:20px;border-top:1px solid var(--line,#e8e5ef);font-size:14px;line-height:1.65}
+.clear-imported-data h3{margin:0 0 8px;font-size:16px}.clear-imported-data p{margin:8px 0 16px;max-width:65ch;overflow-wrap:anywhere}
+.clear-imported-data dl{display:grid;gap:12px}.clear-imported-data dl>div{display:flex;justify-content:space-between;gap:16px}.clear-imported-data dd{font-weight:650;margin:0}
+.clear-import-button{border:1px solid #b44949;border-radius:10px;background:transparent;color:#9e3030;padding:10px 16px;cursor:pointer;min-height:44px}.clear-import-button:disabled{opacity:.45;cursor:default}
+.clear-import-confirm{display:flex;align-items:flex-start;gap:10px;margin:20px 0}.clear-import-confirm input{margin-top:6px;flex-shrink:0}.clear-imported-data button:focus-visible{outline:3px solid #a99adf;outline-offset:3px}

@@ -1,6 +1,6 @@
 "use client";
 import {SegmentedControl} from "./segmented-control";
-import {useState} from "react";
+import {useEffect,useRef,useState} from "react";
 import {useSearchParams} from "next/navigation";
 import {bookingPeriod} from "@/lib/booking-period";
 import Link from "next/link";
@@ -12,6 +12,13 @@ import {OperationActivity} from "./operation-activity";
 
 export function BusinessDataWorkspace({scope,zh,demo=false,initialTab="overview"}:{scope:string;zh:boolean;demo?:boolean;initialTab?:"overview"|"orders"}){
  const [tab,setTab]=useState<"overview"|"orders"|"rooms">(initialTab);
+ const bookingRecords=useRef<HTMLDetailsElement>(null);
+ useEffect(()=>{
+  const locate=()=>{if(bookingRecords.current&&/^#(?:workspace-bookings|booking-[a-f0-9-]{36})$/i.test(window.location.hash))bookingRecords.current.open=true};
+  const imported=()=>{if(bookingRecords.current)bookingRecords.current.open=false};
+  locate();window.addEventListener('hashchange',locate);window.addEventListener('staycraft-import-completed',imported);
+  return()=>{window.removeEventListener('hashchange',locate);window.removeEventListener('staycraft-import-completed',imported)};
+ },[tab]);
  const params=useSearchParams();
  const period=bookingPeriod({start:params.get('start'),end:params.get('end')});
  const initialRange=period?.start&&period.end?{start:period.start,end:period.end}:undefined;
@@ -28,7 +35,7 @@ export function BusinessDataWorkspace({scope,zh,demo=false,initialTab="overview"
      <Link href={zh?"/download":"/download?lang=en"}>{t("Download desktop app","去下载桌面端")} →</Link>
     </div>
    </section>:<BookingImport zh={zh}/>}
-   <div className="wb-data-list-heading"><h2>{t("Booking records","预订记录")}</h2><Link href="/app/bookings/history">{t("All records","全部记录")} →</Link></div><WorkspaceBookings zh={zh} pendingOnly/><details className="wb-disclosure"><summary>{t("Daily arrangements & activity","日常安排与操作记录")}</summary><OperationActivity zh={zh}/></details></div>}
+   <div className="wb-data-list-heading"><h2>{t("Booking records","预订记录")}</h2><Link href="/app/bookings/history">{t("All records","全部记录")} →</Link></div><details ref={bookingRecords} className="wb-disclosure wb-booking-records"><summary>{t("View reservation orders","查看预订订单")}</summary><WorkspaceBookings zh={zh} pendingOnly/></details><details className="wb-disclosure"><summary>{t("Daily arrangements & activity","日常安排与操作记录")}</summary><OperationActivity zh={zh}/></details></div>}
   {tab==="rooms"&&<div className="wb-data-rooms"><RoomTypesPreview scope={scope} zh={zh}/><details className="wb-disclosure" open><summary>{t("Available inventory & room records","可用房量与客房记录")}</summary><RoomPreviewBoard scope={scope} zh={zh}/></details></div>}
  </div>;
 }

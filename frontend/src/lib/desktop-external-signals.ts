@@ -1,4 +1,5 @@
 import 'server-only';
+import {readEventSearchReview,type EventSearchReview} from './signals/event-review';
 import type {SupabaseClient} from '@supabase/supabase-js';
 import {WorkspaceError} from './workspace-access';
 import {operatorSample,isDemoWorkspace} from './operator-sample';
@@ -126,7 +127,7 @@ export async function readDesktopWeather(input:Input&{days:number}):Promise<{day
  if(ref.coverage.kind!==(days.length===input.days?'complete':days.length?'partial':'none'))throw fail();
  return {days,source:ref};
 }
-export async function readDesktopEvents(input:Input&{end:string}):Promise<{events:LocalEvent[];source:SourceRef}>{
+export async function readDesktopEvents(input:Input&{end:string}):Promise<{events:LocalEvent[];source:SourceRef;review?:EventSearchReview}>{
  if(!marketDay(input.start)||!marketDay(input.end)||input.start>input.end||Date.parse(input.end)-Date.parse(input.start)>=28*DAY)throw fail();
  const window={start:input.start,end:input.end};
  const {value,ref}=await request(input,'events',window,{end:input.end});
@@ -148,5 +149,7 @@ export async function readDesktopEvents(input:Input&{end:string}):Promise<{event
    ...(raw.venue!==undefined?{venue:raw.venue as string}:{}),source:eventSource};
  });
  if(ref.coverage.kind!==(events.length?'partial':'none'))throw fail();
- return {events,source:ref};
+ let review:EventSearchReview|undefined;
+ try{if(value.review!==undefined)review=readEventSearchReview(value.review)}catch{throw fail()}
+ return {events,source:ref,review};
 }

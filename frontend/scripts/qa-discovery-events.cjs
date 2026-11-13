@@ -98,9 +98,9 @@ async function discover(overrides={},origin='http://localhost'){
  process.env.SEARCH_API_KEY='isolated-search-key';address='四川省成都市武侯区人民南路18号';
  reverseAddress='广东省深圳市福田区福华路1号';response=await discover({coordinates:{latitude:22.54,longitude:114.06}});
  assert.equal(response.status,200);assert.equal(response.body.location,reverseAddress);assert.equal(response.body.center,'current');
- assert.equal(searchCalls.length,1);assert.match(searchCalls[0].query,/深圳市福田区/);assert(!searchCalls[0].query.includes('成都'),'GPS query cannot borrow the property city');
+ assert.equal(searchCalls.length,1);assert.match(searchCalls[0].query,/深圳市/);assert(!searchCalls[0].query.includes('福田区')&&!searchCalls[0].query.includes('成都'),'GPS query uses the current city without district-news narrowing');
  reverseAddress='山东省青岛市市南区香港中路8号';response=await discover({coordinates:{latitude:36.07,longitude:120.38}});
- assert.equal(response.body.location,reverseAddress);assert.equal(searchCalls.length,2);assert.match(searchCalls[1].query,/青岛市市南区/);assert(!searchCalls[1].query.includes('成都')&&!searchCalls[1].query.includes('深圳'),'Moving GPS changes the search city');
+ assert.equal(response.body.location,reverseAddress);assert.equal(searchCalls.length,2);assert.match(searchCalls[1].query,/青岛市/);assert(!searchCalls[1].query.includes('市南区')&&!searchCalls[1].query.includes('成都')&&!searchCalls[1].query.includes('深圳'),'Moving GPS changes the search city');
  reverseFailure=true;response=await discover({start:'2026-11-11',end:'2026-11-14',coordinates:{latitude:30.233414,longitude:120.152256}});
  assert.equal(response.status,200);assert.equal(response.body.location,'当前位置');assert.equal(response.body.events.length,2,'Coordinate calendars survive reverse-geocoding failure');assert.equal(searchCalls.length,2,'Failed current-area lookup must not search the property city');
  reverseFailure=false;reverseAddress='';response=await discover({coordinates:{latitude:23.1,longitude:113.3}});

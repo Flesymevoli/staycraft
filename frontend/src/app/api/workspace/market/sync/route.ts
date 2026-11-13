@@ -40,6 +40,16 @@ export async function POST(request:Request){
   if(body.propertyId!==propertyId||body.userId!==user.id)throw new WorkspaceError('market_sync_account_changed',409);
   const batch=prepareCtripBatch(body.start,body.end,body.observations);
   if(!batch)throw new WorkspaceError('invalid_market_batch',400);
+  if(body.checkOnly===true){
+   const {data,error}=await supabase.from(table).select('id,captured_at,window_start,window_end,quote_count,quotes')
+    .eq('property_id',propertyId).eq('source',batch.source).eq('captured_at',batch.captured_at)
+    .eq('window_start',batch.window_start).eq('window_end',batch.window_end).maybeSingle();
+   if(error)throw new WorkspaceError('market_sync_unavailable',503);
+   if(!data)return Response.json({status:'not_saved'},{headers});
+   const {quotes,...existing}=data;
+   if(!isDeepStrictEqual(quotes,batch.quotes))throw new WorkspaceError('market_sync_batch_conflict',409);
+   return Response.json({status:'already_saved',batch:existing},{headers});
+  }
 
   const {data:details,error:profileError}=await supabase.from('property_details').select('profile').eq('property_id',propertyId).maybeSingle();
   if(profileError)throw new WorkspaceError('market_sync_unavailable',503);

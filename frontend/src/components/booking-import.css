@@ -28,3 +28,8 @@
 .booking-import-panel .booking-import-empty{margin:8px 0 2px;font-size:13px}
 .booking-import-scope{font-size:12px}
 .booking-import-panel summary:focus-visible{outline:2px solid var(--blue);outline-offset:3px;border-radius:8px}
+
+.booking-import-result{padding:12px 14px;margin-bottom:8px;border-radius:12px;background:var(--surface-subtle,#f7f8fa);font-size:13px;line-height:1.7}
+.booking-import-result p{margin:4px 0 0}
+.booking-import-row-preview>summary{cursor:pointer;min-height:44px;align-content:center;font-size:13px}
+.demo-import-drop{padding:24px;border:1px dashed #b5a7de;border-radius:16px;background:#faf9fd;overflow-wrap:anywhere}.demo-import-drop.is-dragging{background:#eee9fb;border-color:#6b52c8}.demo-import-drop label{display:grid;gap:16px;cursor:pointer}.demo-import-drop input{max-width:100%;min-height:44px}.demo-import-drop p{margin:12px 0 0;font-size:13px}

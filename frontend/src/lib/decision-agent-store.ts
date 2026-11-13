@@ -2,8 +2,8 @@ import 'server-only';
 import type {SupabaseClient} from '@supabase/supabase-js';
 import type {AgentPeriod,AgentStep,DecisionAgentRun} from './decision-agent-types';
 
-type TaskRow={id:string;status:string;engine:string|null;steps:AgentStep[];result:DecisionAgentRun|null;error:string|null;created_at:string;updated_at?:string;completed_at:string|null;period_start:string;period_end:string};
-const fields='id,status,engine,steps,result,error,created_at,updated_at,completed_at,period_start,period_end';
+type TaskRow={id:string;language?:'zh'|'en';status:string;engine:string|null;steps:AgentStep[];result:DecisionAgentRun|null;error:string|null;created_at:string;updated_at?:string;completed_at:string|null;period_start:string;period_end:string};
+const fields='id,language,status,engine,steps,result,error,created_at,updated_at,completed_at,period_start,period_end';
 const signal=()=>AbortSignal.timeout(5000);
 const stale=(row:Pick<TaskRow,'status'|'created_at'|'updated_at'>)=>row.status==='running'&&Date.now()-Date.parse(row.updated_at||row.created_at)>240000;
 export function agentStore(db:SupabaseClient,propertyId:string){
@@ -19,7 +19,7 @@ export function agentStore(db:SupabaseClient,propertyId:string){
    if(error)return {error:'history_unavailable'};
    if(!data)return {error:'analysis_not_found'};
    const row=data as TaskRow;
-   return {task:{id:row.id,status:stale(row)?'failed':row.status,steps:row.steps,createdAt:row.created_at,completedAt:row.completed_at,error:stale(row)?'analysis_timeout':row.error},run:row.result,historyAvailable:true};
+   return {task:{id:row.id,status:stale(row)?'failed':row.status,steps:row.steps,createdAt:row.created_at,completedAt:row.completed_at,error:stale(row)?'analysis_timeout':row.error},run:row.result?{...row.result,language:row.result.language??row.language}:null,historyAvailable:true};
   },
   async bookingSnapshot(period:AgentPeriod,capturedDay:string,dataMode:DecisionAgentRun['dataMode']){
    const start=Date.parse(capturedDay+'T00:00:00+08:00');

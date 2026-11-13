@@ -18,7 +18,7 @@ function input(extra={}){return {location:'四川省成都市青羊区青华路3
  result=await fetchSearchedEvents(input({fetcher,resolveVenue,now:new Date(now.getTime()+10*60000),center:{latitude:30.67,longitude:104.03}}));equal(searches.length,1,'same district/window reuses page cache');check(result.events[0].distanceKm>0,'distance recalculated for new property center');equal(result.events[0].observedAt,now.toISOString(),'cached page observation is not relabeled as fresh');
  result=await fetchSearchedEvents(input({fetcher,resolveVenue,center:{latitude:31.3,longitude:104.03}}));equal(result.events.length,0,'cached page cannot carry nearby status to a distant center');
  await fetchSearchedEvents(input({fetcher,resolveVenue,now:new Date(now.getTime()+31*60000)}));equal(searches.length,2,'cache expires after thirty minutes');
- const qfetch=async(_url,options)=>{const body=JSON.parse(options.body);check(body.query.includes('青岛市市南区')&&!body.query.includes('成都'),'changed district changes search query');return response([page('青岛海边音乐会','青岛市市南区香港中路8号')])};
+ const qfetch=async(_url,options)=>{const body=JSON.parse(options.body);check(body.query.includes('青岛市')&&!body.query.includes('市南区')&&!body.query.includes('成都')&&body.query.includes('活动预告'),'city-wide announcements avoid district news while changing city');return response([page('青岛海边音乐会','青岛市市南区香港中路8号')])};
  result=await fetchSearchedEvents(input({location:'山东省青岛市市南区香港中路8号',center:qingdao,fetcher:qfetch,resolveVenue:async()=>qingdao}));equal(result.events.length,1);check(result.events[0].title.includes('青岛')&&!result.events.some(event=>event.title.includes('成都')),'old-city results never leak');
  equal(eventSearchArea(' 四川省 成都市青羊区 青华路３７号 '),'四川省成都市青羊区');equal(eventSearchArea('街边民宿'),'');
  equal(eventSearchArea('广西壮族自治区南宁市青秀区民族大道1号'),'广西壮族自治区南宁市青秀区');
@@ -41,7 +41,7 @@ function input(extra={}){return {location:'四川省成都市青羊区青华路3
  result=await duplicate.fetchSearchedEvents(input({fetcher:async()=>response([page('秋日音乐会','成都市青羊区青华路37号',{url:'https://first.example/a'}),page('秋日 音乐会！','成都市青羊区青华路37号',{url:'https://second.example/b'})]),resolveVenue:async()=>{geoCount++;return chengdu}}));equal(result.events.length,1,'cross-source title punctuation duplicates merge by date and geocoded venue');equal(geoCount,1,'shared venue is geocoded once');
 
  const sparse=load();geoCount=0;
- result=await sparse.fetchSearchedEvents(input({fetcher:async()=>response([page('只有摘要','成都市青羊区青华路37号',{content:'',snippet:'活动时间：2026-11-14\n活动地点：成都市青羊区青华路37号'}),page('只有发布日期','成都市青羊区青华路37号',{content:'活动地点：成都市青羊区青华路37号',date:'2026-11-14'})]),resolveVenue:async()=>{geoCount++;return chengdu}}));equal(result.events.length,0,'snippets and publication dates never become event evidence');equal(geoCount,0,'no geocoding for insufficient evidence');
+ result=await sparse.fetchSearchedEvents(input({fetcher:async()=>response([page('只有摘要','成都市青羊区青华路37号',{content:'',snippet:'活动时间：2026-11-14\n活动地点：成都市青羊区青华路37号'}),page('只有发布日期','成都市青羊区青华路37号',{content:'活动地点：成都市青羊区青华路37号',date:'2026-11-14'})]),resolveVenue:async()=>{geoCount++;return chengdu}}));equal(result.events.length,0,'snippets and publication dates never become event evidence');equal(geoCount,0,'no geocoding for insufficient evidence');equal(result.review.pages,1,'snippet-only results do not count as readable full pages');
 
  const retry=load();let attempts=0;
  const flaky=async()=>{attempts++;return attempts===1?new Response(null,{status:503}):response([page('恢复后活动','成都市青羊区青华路37号')])};
@@ -55,5 +55,28 @@ function input(extra={}){return {location:'四川省成都市青羊区青华路3
  const once=async()=>{attempts++;return response([page('定位恢复活动','成都市青羊区青华路37号')])};
  result=await failedMap.fetchSearchedEvents(input({fetcher:once,resolveVenue:async()=>{throw Error('map offline')}}));equal(result.events.length,0);
  result=await failedMap.fetchSearchedEvents(input({fetcher:once,resolveVenue}));equal(result.events.length,1,'failed geocoding is retried against cached page evidence');equal(attempts,1);
+ check(result.review.cached,'replayed evidence labeled cached');equal(result.review.final,1);equal(result.review.rows[0].events[0].reason,'accepted','cached diagnostics recalculate geocoding outcomes');
+ const reviewed=load();let reviewCalls=0;
+ const realDate='时间：2026年11月14日\n地点：成都文化馆';
+ result=await reviewed.fetchSearchedEvents(input({fetcher:async()=>{reviewCalls++;return response([
+  page('本地市集','成都文化馆',{content:realDate}),
+  page('日期待确认的展览','成都文化馆',{content:'这篇来源报道介绍当地即将开展的文化展览活动。主办方正在准备展品和参观说明，具体活动日期尚未公布，请等待后续通知。'}),
+  page('过期演出','成都文化馆',{content:'时间：2026年10月1日\n地点：成都文化馆'}),
+  page('远处市集','远方文化馆'),
+  page('没有正文的活动','x',{snippet:'',content:''}),
+  page('不安全来源','x',{url:'http://unsafe.example/a'}),
+  page('本地市集副本','x',{url:'https://calendar.example/'+encodeURIComponent('本地市集')}),
+ ])},resolveVenue:async address=>address.includes('远方')?qingdao:chengdu}));
+ equal(reviewCalls,1,'category expansion does not fan out requests');
+ equal([result.review.raw,result.review.pages,result.review.parsed,result.review.final],[7,4,3,1],'raw pages and event units tracked separately');
+ equal(result.review.rows.map(row=>row.reason),['accepted','date_pending','accepted','accepted','no_content','invalid_source','duplicate_source']);
+ equal(result.review.rows.flatMap(row=>row.events.map(event=>event.reason)),['accepted','outside_window','outside_radius']);
+ check(result.review.rows[1].candidate,'grounded undated article is a separate candidate');equal(result.events.length,1,'candidate is not a verified event');
+ check(['演出','市集','节庆','展览','周边'].every(word=>result.review.query.includes(word)),'one query includes alternative categories and surrounding area');
+ const tengchong=load();let tengQuery='';
+ await tengchong.fetchSearchedEvents(input({location:'云南省保山市腾冲市和顺镇测试路1号',fetcher:async(_url,options)=>{tengQuery=JSON.parse(options.body).query;return response([])},resolveVenue}));
+ check(tengQuery.includes('腾冲市')&&!tengQuery.includes('测试路'),'county-level destination preserved without private street');
+ const limited=load();result=await limited.fetchSearchedEvents(input({fetcher:async()=>response([page('限额活动','x',{content:blocks})]),resolveVenue:async()=>chengdu}));
+ equal(result.review.rows[0].events.filter(row=>row.reason==='venue_limit').length,3,'every over-limit venue is explained');
  console.log(`PASS ${checks} generic event search-flow checks. Mock search/geocoding only; no network, model or database writes.`);
 })().catch(error=>{console.error(error);process.exitCode=1});

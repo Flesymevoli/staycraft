@@ -639,6 +639,8 @@
 .gemini-workbench-home.gemini-workbench-home .wb-income-overview { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; margin: 0 0 18px; padding: 0; border: 0; background: transparent; }
 .gemini-workbench-home.gemini-workbench-home .wb-income-overview > div { padding: 22px; border: 1px solid var(--line); border-radius: 18px; background: white; min-width: 0; }
 .gemini-workbench-home.gemini-workbench-home .wb-income-overview strong { font-size: 30px; font-weight: 500; letter-spacing: -.02em; white-space: nowrap; }
+.wb-revenue-period-note { margin: -4px 0 18px; color: var(--text-secondary, #666); font-size: 12px; line-height: 1.7; }
+.wb-revenue-period-note a { color: var(--primary, #7059bd); }
 @media (max-width: 1200px) {
   .gemini-workbench-home.gemini-workbench-home .section-header { flex-wrap: wrap; }
 }
@@ -660,3 +662,5 @@
 @media (max-width: 480px) {
   .gemini-workbench-home.gemini-workbench-home .wb-income-overview { grid-template-columns: 1fr; }
 }
+
+.wb-revenue-period-note>summary{cursor:pointer;width:fit-content}.wb-revenue-period-note>p{margin:6px 0 0}

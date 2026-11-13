@@ -78,7 +78,7 @@ function structured(page:EventPage){
 }
 function proseDates(value:string,chunk:string,publishedAt?:string){
  // Clock ranges and weekdays describe the occurrence, not another calendar date.
- const time=value.replace(/[（(]?(?:星期|周)[一二三四五六日天][）)]?/g,'')
+ const time=value.replace(/(\d{1,2})月(\d{1,2})日\s*(至|到|—|–|~|～|-)\s*(\d{1,2})日/g,'$1月$2日$3$1月$4日').replace(/[（(]?(?:星期|周)[一二三四五六日天][）)]?/g,'')
   .replace(/(?:[T \t]*)(?:[01]?\d|2[0-3])[:：][0-5]\d(?::[0-5]\d)?(?:\s*[至到~～—–-]\s*(?:[01]?\d|2[0-3])[:：][0-5]\d(?::[0-5]\d)?)?(?:Z|[+-]\d{2}:\d{2})?/g,'').trim();
  const tokens=[...time.matchAll(/\d{4}[-/.年]\d{1,2}[-/.月]\d{1,2}日?|\d{1,2}月\d{1,2}日/g)].map(match=>match[0]);
  if(tokens.length<1||tokens.length>2)return null;
@@ -128,6 +128,23 @@ function prose(page:EventPage){
   const labelled=(pattern:RegExp)=>lines.flatMap((line,index)=>{const match=line.match(pattern);return match?[match[1]?.trim()||lines[index+1]||'']:[]});
   const times=labelled(/^(?:活动时间|展览时间|展期|演出时间|比赛时间|举办时间|时间|Event dates?|Date)\s*[:：]\s*(.*)$/i);
   const places=labelled(/^(?:活动地点|展览地点|展览地址|演出地点|比赛地点|举办地点|地点|地址|Venue|Location|Address)\s*[:：]\s*(.*)$/i);
+  if(!times.length&&!places.length){
+   // A narrow announcement sentence binds its own date, quoted event name and
+   // venue. Never join facts across sentences or use a news publication date as
+   // an occurrence; proseDates applies the same bounded year inference as labels.
+   for(const sentence of chunk.split(/[。！？\n]+/)){
+    const announcement=sentence.trim().match(/^((?:\d{4}年)?\d{1,2}月\d{1,2}日(?:\s*(?:至|到|—|–|~|～|-)\s*(?:(?:\d{4}年)?\d{1,2}月)?\d{1,2}日)?)[，,]\s*(.+)$/);
+    if(!announcement)continue;
+    const atVenue=announcement[2].match(/^([^。！？]{2,140}?)将在([^，,。！？]{2,100}?)(?:举办|举行|上演|开展)$/);
+    const hosted=announcement[2].match(/^([^，,。！？“”]{2,100}?(?:博物院|博物馆|美术馆|图书馆|书院|剧院|剧场|礼堂|广场|公园|展览馆|艺术中心|文化中心|体育馆|会展中心))(?:内)?(?:将)?(?:开启|开设|举办|举行|推出)[“「《]([^”」》]{2,100})[”」》](?:[，,]|$)/);
+    const names=atVenue?[...atVenue[1].matchAll(/[“「《]([^”」》]{2,100})[”」》]/g)].map(match=>match[1]):hosted?[hosted[2]]:[];
+    const venue=atVenue?.[2]??hosted?.[1];
+    if(names.length!==1||!venue||/[和及与、]|或/.test(venue))continue;
+    const dates=proseDates(announcement[1],chunk,page.publishedAt);if(!dates)continue;
+    const result=make(page,names[0],dates.start,dates.end,venue,'',`时间 ${announcement[1]}${dates.basis}`,'活动正文');
+    if(result)events.push(result);
+   }
+  }
   if(times.length!==1||places.length!==1)continue;
   const dates=proseDates(times[0],chunk,page.publishedAt);if(!dates)continue;
   const result=make(page,title,dates.start,dates.end,places[0],'',`时间 ${times[0]}${dates.basis}`,'活动正文');
@@ -142,4 +159,17 @@ export function extractEventsFromPage(page:EventPage):ExtractedEvent[]{
  const structuredResult=structured(page),seen=new Set<string>();
  // Structured data wins; contradictory article prose must not silently override it.
  return (structuredResult.found?structuredResult.events:prose(page)).filter(({event})=>{if(seen.has(event.id))return false;seen.add(event.id);return true}).slice(0,100);
+}
+
+// A page-level lead retains the publisher's title; it is not a named, dated event.
+// Do not claim which individual field failed when the prose cannot be paired.
+export function inspectEventPage(page:EventPage){
+ const events=extractEventsFromPage(page);
+ if(events.length)return {events,reason:'accepted' as const,candidate:false};
+ const text=clean(page.content);
+ if(!text)return {events,reason:'no_content' as const,candidate:false};
+ if(cancelled.test(text+' '+page.title)||online.test(text+' '+page.title))return {events,reason:'cancelled_or_online' as const,candidate:false};
+ const hasDate=/\d{4}[-/.年]\d{1,2}[-/.月]\d{1,2}|\d{1,2}月\d{1,2}日/.test(text);
+ const candidate=/活动|演出|市集|节庆|展览|音乐会|艺术展|研学|Event|Festival|Exhibition|Concert/i.test(page.title+' '+text.slice(0,1000))&&text.length>=40;
+ return {events,reason:hasDate?'evidence_unpaired' as const:'date_pending' as const,candidate};
 }

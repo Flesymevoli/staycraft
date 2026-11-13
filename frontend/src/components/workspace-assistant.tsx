@@ -36,10 +36,12 @@ export function WorkspaceAssistant({zh,days=7,range,analysis=false,embedded=fals
  const libraryId=useId();
  const t=(en:string,cn:string)=>zh?cn:en;
  const language=zh?"zh":"en";
- const currentTurns=turns.filter(turn=>turn.answer.language===language);
+ const currentTurns=turns;
  const displayedTurns=activeTurn?[...currentTurns,activeTurn]:currentTurns;
  const latestId=displayedTurns.at(-1)?.id;
- const scope=JSON.stringify({days,language,start:range?.start,end:range?.end});
+ // Eligibility depends on operating dates, not the UI language. A locale
+ // change must not repeat event searches or hide already answered questions.
+ const scope=JSON.stringify({days,start:range?.start,end:range?.end});
  const requestKey=(question:string,id?:DecisionQuestionId)=>JSON.stringify([scope,id?"decision:"+id:questionTopic(question)??normalizedQuestion(question)]);
  const locale=zh?1:0;
  const selected=(id:DecisionQuestionId)=>{
@@ -52,7 +54,7 @@ export function WorkspaceAssistant({zh,days=7,range,analysis=false,embedded=fals
   if((!open&&!embedded)||analysis)return;
   const controller=new AbortController();
   void fetch("/api/workspace/assistant",{method:"POST",headers:{"Content-Type":"application/json"},
-   body:JSON.stringify({...JSON.parse(scope),question:"",catalog:true}),signal:controller.signal})
+   body:JSON.stringify({...JSON.parse(scope),language:'zh',question:"",catalog:true}),signal:controller.signal})
    .then(async response=>{
     if(!response.ok)return;
     const body=await response.json();
@@ -203,6 +205,7 @@ export function WorkspaceAssistant({zh,days=7,range,analysis=false,embedded=fals
      <button type="button" className="inventory-text" onClick={()=>void ask(failed.question,undefined,failed.id)}>{t("Retry question","重试这条问题")}</button>
     </div>):answer.unsupported?<p>{t("Try asking about bookings, open rooms, booked value or pending work.","可以询问预订、空房日期、已订金额或待处理事项。")}</p>:<div className="workspace-assistant-answer" data-enter={animateAnswer&&id===latestId||undefined}>
      <small>{t("Data period","数据周期")} {answer.period_start} — {answer.period_end}</small>
+     {answer.language!==language&&<small>{t("Original answer retained","保留原语言回答")}</small>}
      {answer.fallback&&<p>{t("Showing the data-based result.","当前展示依据经营数据整理的结果。")}</p>}
      {answer.items.map(item=><article key={item.id}><h4>{item.title}</h4><p>{item.evidence}</p><p>{item.action}</p>{item.source&&<small>{t("Source","来源")} · {item.source}</small>}<Link href={item.href}>{t("Review details","查看详情")} →</Link></article>)}
     </div>}

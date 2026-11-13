@@ -1,13 +1,14 @@
 import {verifiedProperty,requireSameOrigin,boundedBody,WorkspaceError,workspaceFailure} from '@/lib/workspace-access';
 import {validateInventory} from '@/lib/property-inventory';
-import {isDemoWorkspace,operatorSample} from '@/lib/operator-sample';
-import {buildMarketSample,ownPosition,describeSample} from '@/lib/market/sample';
+import {isDemoWorkspace,operatorSample,desktopTrial} from '@/lib/operator-sample';
+import {buildMarketSample,ownPosition,describeSample,listedRateSummary} from '@/lib/market/sample';
 import {marketDay,hotelKey} from '@/lib/market/quote-identity';
 import {readSavedMarketSnapshot} from '@/lib/market/saved-snapshot';
 import {readListDisplayPrices} from '@/lib/market/list-display-prices';
 import demoListPrices from '@/lib/market/demo-list-prices.json';
 import type {Quote} from '@/lib/market/types';
 import {normalizeMarketLocation} from '@/lib/market/snapshot-scope';
+import {readOrderRates} from '@/lib/read-order-rates';
 export const dynamic='force-dynamic';
 const DAY=86400000;
 const isDay=marketDay;
@@ -18,7 +19,8 @@ export async function POST(request:Request){try{
  const input=JSON.parse(new TextDecoder().decode(await boundedBody(request,500)));
  const today=new Intl.DateTimeFormat('sv-SE',{timeZone:'Asia/Shanghai'}).format(new Date());
  if(!isDay(input.start)||!isDay(input.end))throw new WorkspaceError('invalid_input',400);
- const demoAccount=isDemoWorkspace(user.email);
+ const demoAccount=isDemoWorkspace(user.email)||desktopTrial();
+ const guidedDemo=process.env.STAYCRAFT_DESKTOP_DEMO==='1'&&process.env.STAYCRAFT_DESKTOP_GUIDED_DEMO==='1';
  if((input.start<today&&!demoAccount)||input.end<input.start)throw new WorkspaceError('invalid_input',400);
  const nights=Math.round((Date.parse(input.end)-Date.parse(input.start))/DAY);
  if(nights<0||nights>27)throw new WorkspaceError('invalid_input',400);
@@ -26,13 +28,14 @@ export async function POST(request:Request){try{
  const inventory=inventoryResult.error?null:validateInventory(inventoryResult.data?.inventory,propertyId);
  const active=new Set(inventory?.rooms.filter(room=>room.active).map(room=>room.typeId));
  const rates=inventory?.types.filter(type=>active.has(type.id)).map(type=>type.price).filter((price):price is number=>price!==null&&price>0)||[];
- const ownRates=rates.length?{min:Math.min(...rates),max:Math.max(...rates)}:null;
+ const settingsRates=listedRateSummary(rates);
  const demo=operatorSample();
  let window={start:input.start,end:input.end};
 
  const selectSnapshotWindow=(quotes:Quote[])=>{
   if(input.latestSnapshot!==true)return;
-  const first=quotes.filter(quote=>quote.status==='available'&&quote.priceCny!==null).map(quote=>quote.stayDate).sort()[0];
+  const dates=quotes.filter(quote=>quote.status==='available'&&quote.priceCny!==null).map(quote=>quote.stayDate).sort();
+  const first=desktopTrial()?(dates.find(date=>date>=today)??dates.at(-1)):dates[0];
   if(first)window={start:first,end:new Date(Date.parse(first)+6*DAY).toISOString().slice(0,10)};
  };
  const snapshot=await readSavedMarketSnapshot(supabase,propertyId,user.email);
@@ -40,13 +43,17 @@ export async function POST(request:Request){try{
  const currentLocation=typeof profileResult.data?.profile?.location==='string'?normalizeMarketLocation(profileResult.data.profile.location):'';
  const locationStatus=!snapshot.capturedLocation?'unknown':currentLocation===normalizeMarketLocation(snapshot.capturedLocation)?'matched':'changed';
  if(demoAccount)selectSnapshotWindow(snapshot.quotes);
+ const orderRates=await readOrderRates(supabase,propertyId,window.start);
+ const daily=orderRates.status==='ready'?orderRates.summary:null;
+ const ownRates=daily&&daily.count>0?{min:daily.min!,max:daily.max!,average:daily.average!}:settingsRates;
+ const ownRateSource=daily&&daily.count>0?'orders':orderRates.status==='unavailable'?'settings_order_unavailable':'settings';
  const quotes=snapshot.quotes.filter(quote=>quote.stayDate>=window.start&&quote.stayDate<=window.end&&(demoAccount||quote.stayDate>=today));
  const sample=buildMarketSample({quotes,window});
  const localCollection=snapshot.status==='collected'||'localCollection' in snapshot;
  const dataMode=localCollection||snapshot.status==='imported'&&demoAccount?'collected_ctrip_snapshot':demo?'fictional_demo':'live';
  const provider=localCollection?'ctrip_local_collection':snapshot.status==='fictional'?'demo_manual':'imported_snapshot';
- return Response.json({sample,position:quotes.length?ownPosition(sample,ownRates):null,ownRates,description:describeSample(sample),dataMode,provider,
-  ...(demoAccount?{listDisplayPrices:(demo ? readListDisplayPrices(window.start) : null)
+ return Response.json({sample,position:quotes.length?ownPosition(sample,ownRates):null,ownRates,ownRateSource,ownRateDate:window.start,orderRateCount:daily?.count??0,description:describeSample(sample),dataMode,provider,
+  ...(demoAccount&&!guidedDemo?{listDisplayPrices:(demo ? readListDisplayPrices(window.start) : null)
     ?? demoListPrices[window.start as keyof typeof demoListPrices] ?? null}:{}),
   snapshot:{status:snapshot.status,capturedAt:snapshot.capturedAt,locationStatus,...('batchWindow' in snapshot?{batchWindow:snapshot.batchWindow}:{}),hotels:new Set(quotes.map(hotelKey)).size,nights:new Set(quotes.map(quote=>quote.stayDate)).size}},
   {headers:{'Cache-Control':'no-store'}});

@@ -51,6 +51,7 @@ export function GeminiPropertyWorkspace({scope, zh, readOnly, account}: {
   }, [profileVersion]);
   const today = new Intl.DateTimeFormat("sv-SE", {timeZone: "Asia/Shanghai"}).format(new Date());
   const {inventory} = store.data;
+  const orderRates = store.data.orderRates?.status === 'ready' ? store.data.orderRates.summary : null;
   const activeRooms = inventory.rooms.filter(room => room.active);
   const rates = inventory.types.filter(type => activeRooms.some(room => room.typeId === type.id)).map(type => type.price).filter((rate):rate is number => rate !== null && rate > 0);
   const money = (amount: number) => `¥${amount.toLocaleString(zh ? "zh-CN" : "en-GB", {maximumFractionDigits: 2})}`;
@@ -69,18 +70,20 @@ export function GeminiPropertyWorkspace({scope, zh, readOnly, account}: {
     if (["#room-types", "#property-profile"].includes(window.location.hash) || /^#room-type-[a-f0-9-]{36}$/i.test(window.location.hash)) window.history.replaceState(null, "", window.location.pathname + window.location.search);
   }
   return <div className="gemini-property-workspace">
-    <DesktopPageToolbar><div className="gemini-property-tools"><button type="button" onClick={() => setDrawer("types")}><Settings2 size={15}/>{t("Room types & rates", "房型与挂牌价")}</button><button type="button" onClick={() => setDrawer("account")}><UserRound size={15}/>{t("Account settings", "账户设置")}</button></div></DesktopPageToolbar>
+    <DesktopPageToolbar><div className="gemini-property-tools"><button type="button" onClick={() => setDrawer("types")}><Settings2 size={15}/>{t("Room types & rates", "房型与参考价")}</button><button type="button" onClick={() => setDrawer("account")}><UserRound size={15}/>{t("Account settings", "账户设置")}</button></div></DesktopPageToolbar>
     <div className="property-bento-grid">
       <article className="property-bento-card"><header className="property-card-header"><div><h2>{t("Room Status Board", "楼层房态可视化看板")}</h2><p>{t("Click a room to view stay details.", "点击房间查看入住安排")}</p></div>{store.ready && !store.unavailable && <span className="property-pill violet">{zh ? `启用 ${activeRooms.length} 间` : `${activeRooms.length} active`}</span>}</header>
         {store.unavailable ? <div role="alert"><p>{t("Room settings could not be loaded.", "暂时无法读取客房资料。")}</p><button type="button" onClick={() => void store.reload()}>{t("Retry", "重新读取")}</button></div>
           : !store.ready ? <p role="status">{t("Loading rooms…", "正在读取房态…")}</p>
           : inventory.rooms.length ? <div className="property-room-grid">{inventory.rooms.map(room => {
             const roomType = inventory.types.find(type => type.id === room.typeId);
+            const datedRate = roomType ? orderRates?.byType[roomType.id]?.average : undefined;
+            const displayRate = datedRate ?? roomType?.price;
             const current = status(room.id);
             return <div className={`property-room-tile `} key={room.id}>
               <button type="button" className="property-room-main" disabled={store.writing} onClick={() => setSelectedRoom(room.id)} aria-label={`${room.number} · ${current.label}`}>
                 <span className="property-room-top"><strong>{room.number}</strong><span className={`property-pill ${current.tone}`}>{current.label}</span></span>
-                <small>{room.floor} · {roomType?.name ?? t("Room type unavailable", "房型待设置")} · {roomType?.price != null ? `${money(roomType.price)} / ${t("night", "晚")}` : "—"}</small>
+                <small>{room.floor} · {roomType?.name ?? t("Room type unavailable", "房型待设置")} · {displayRate != null ? `${money(displayRate)} / ${t("night", "晚")}` : "—"}{datedRate != null ? t(" · Today’s bookings", " · 今日订单价") : ''}</small>
               </button>
               <Link className="property-room-details" href={`/app/rooms/${room.id}`}>{t("Room details", "客房详情")} →</Link>
             </div>;
@@ -93,13 +96,13 @@ export function GeminiPropertyWorkspace({scope, zh, readOnly, account}: {
           <div><dt>{t("Property name", "民宿名称")}</dt><dd>{profile?.name || t("Not set", "待填写")}</dd></div>
           <div><dt>{t("Full address", "详细地址")}</dt><dd>{profile?.location || t("Not set", "待填写")}</dd></div>
           <div><dt>{t("Check-in / out", "入住 / 退房")}</dt><dd>{profile?.checkin || "—"} {t("in", "入住")} / {profile?.checkout || "—"} {t("out", "退房")}</dd></div>
-          <div><dt>{t("Listed room rates", "房型挂牌价区间")}</dt><dd>{rateLabel}</dd></div>
+          <div><dt>{orderRates?.average != null ? t("Today’s booking average", "今日订单均价") : t("Configured room rates", "房型设置价区间")}</dt><dd>{orderRates?.average != null ? `${money(orderRates.average)} / ${t("night", "晚")}` : rateLabel}</dd></div>
         </dl>}
         <button type="button" className="property-edit-profile" onClick={() => setDrawer("profile")}>{readOnly ? t("View full profile", "查看完整资料") : profile ? t("Edit property profile", "编辑民宿资料") : t("Set up your property", "完善民宿资料")} →</button>
       </article>
     </div>
     {selectedRoom && <RoomActions scope={scope} roomId={selectedRoom} zh={zh} readOnly={readOnly} reserved={stays.ready ? status(selectedRoom).reserved : null} onClose={() => setSelectedRoom(null)}/>}
-    {drawer && <WorkbenchDrawer title={drawer === "profile" ? t("Property Profile", "民宿基础资料") : drawer === "types" ? t("Room Types & Listed Rates", "房型与挂牌价") : t("Account Settings", "账户设置")} onClose={closeDrawer} canClose={() => !profileDirty || window.confirm(t("Your property edits are not saved. Discard them and close?", "民宿资料尚未保存，放弃修改并关闭吗？"))}>
+    {drawer && <WorkbenchDrawer title={drawer === "profile" ? t("Property Profile", "民宿基础资料") : drawer === "types" ? t("Room Types & Reference Rates", "房型与参考价") : t("Account Settings", "账户设置")} onClose={closeDrawer} canClose={() => !profileDirty || window.confirm(t("Your property edits are not saved. Discard them and close?", "民宿资料尚未保存，放弃修改并关闭吗？"))}>
       {drawer === "profile" ? <PropertyProfileEditor zh={zh} readOnly={readOnly} onDirtyChange={setProfileDirty}/> : drawer === "types" ? <RoomTypesPreview scope={scope} zh={zh}/> : account}
     </WorkbenchDrawer>}
   </div>;

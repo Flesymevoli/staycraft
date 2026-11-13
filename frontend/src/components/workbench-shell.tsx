@@ -1,4 +1,6 @@
 "use client";
+import {ClearImportedData} from "./clear-imported-data";
+import {OperationScope} from "./operation-status";
 import {SegmentedControl} from "./segmented-control";
 import {createContext,useContext,useEffect,useState,useTransition,type ReactNode} from "react";
 import Link from "next/link";
@@ -15,7 +17,7 @@ import {OperatorSampleContext} from "./operator-sample-context";
 import {WorkspaceExplore} from "./workspace-explore";
 import {PromotionWorkspace} from "./promotion-workspace";
 import {WorkbenchDashboard} from "./workbench-dashboard";
-import {DesktopTrialContext,useDesktopBridgeAvailable,useDesktopSurface} from "./desktop-surface";
+import {GuidedDemoContext,DesktopTrialContext,useDesktopBridgeAvailable,useDesktopSurface} from "./desktop-surface";
 import {DesktopCollectionHint} from "./desktop-collection-hint";
 import {DesktopSearch} from "./desktop-search";
 import {DesktopFirstRun} from "./desktop-first-run";
@@ -52,8 +54,8 @@ type WorkspaceSession={
 };
 const WorkspaceSessionContext=createContext<WorkspaceSession|null>(null);
 
-export function WorkbenchShell({localTrial, ...props}:WorkspaceSession & {children:ReactNode;localTrial:boolean}){
- return <DesktopTrialContext value={localTrial}><WorkbenchLayout {...props}/></DesktopTrialContext>;
+export function WorkbenchShell({localTrial,guidedDemo=false, ...props}:WorkspaceSession & {children:ReactNode;localTrial:boolean;guidedDemo?:boolean}){
+ return <GuidedDemoContext value={guidedDemo}><DesktopTrialContext value={localTrial}><OperationScope value={`${props.userId}:${props.connection.status==='linked'?props.connection.propertyId:'unlinked'}`}><WorkbenchLayout {...props}/></OperationScope></DesktopTrialContext></GuidedDemoContext>;
 }
 
 function WorkbenchLayout({children,...session}:WorkspaceSession & {children:ReactNode}){
@@ -107,7 +109,7 @@ export function WorkbenchPage({section,roomId,bookingId,bookingHistory=false,thr
  bookingHistory?:boolean;
  threadId?:string;
 }){
- const desktop=useDesktopSurface();
+ const desktop=useDesktopSurface();const localTrial=useContext(DesktopTrialContext);
  const session=useContext(WorkspaceSessionContext);
  if(!session)throw new Error("Workspace session is required");
  const {userId,email,connection,signOutAction,demo,sample,displayName}=session;
@@ -131,7 +133,7 @@ export function WorkbenchPage({section,roomId,bookingId,bookingHistory=false,thr
     {!(desktop && section === "home" && !detail) && <div className="workbench-page-heading"><div><h1>{heading}</h1><p className="workbench-page-description">{detail?t("Review the details and keep records up to date.","查看详情，保持经营记录准确。"):descriptions[section]}</p></div>{desktop&&<div id="desktop-page-toolbar" className="desktop-page-toolbar"/>}</div>}
     {!roomId&&connection.status==="unavailable"&&<div className="workspace-notice" role="status"><span>{t("Property details unavailable. Please retry.","暂时无法读取民宿资料，请重试。")}</span><button type="button" disabled={refreshing} onClick={()=>startRefresh(()=>router.refresh())}><RefreshCw size={15}/>{refreshing?t("Retrying…","正在重试…"):t("Retry","重试")}</button></div>}
     <div className="workbench-body">
-     {desktop&&!demo&&!sample&&connection.status==="linked"&&<DesktopFirstRun
+     {desktop&&!localTrial&&!demo&&!sample&&connection.status==="linked"&&<DesktopFirstRun
       key={userId+":"+connection.propertyId} scope={userId+":"+connection.propertyId}
       section={section} zh={zh} onRooms={()=>setMineTab("rooms")}/>}
      {roomId&&<RoomPreviewDetail scope={userId} roomId={roomId} zh={zh}/>}
@@ -139,15 +141,15 @@ export function WorkbenchPage({section,roomId,bookingId,bookingHistory=false,thr
      {bookingHistory&&<WorkspaceBookings zh={zh} history/>}{bookingId&&<WorkspaceBookings zh={zh} bookingId={bookingId}/>}{threadId&&<WorkspaceConversation zh={zh} threadId={threadId}/>}
      {(section==="work"||section==="analysis")&&!detail&&<BusinessDataWorkspace key={`${userId}:${section}`} scope={userId} zh={zh} demo={demo} initialTab={section==="work"?"orders":"overview"}/>}
      {section==="explore"&&<WorkspaceExplore key={userId} zh={zh} demo={demo}/>}
-     {section==="promotion"&&<PromotionWorkspace key={userId} zh={zh} demo={demo}/>}
-     {section==="mine"&&desktop&&<GeminiPropertyWorkspace key={`property:${workspaceScope}`} scope={workspaceScope} zh={zh} readOnly={demo&&!sample} account={<section className="workspace-account workbench-info-panel"><h2>{t('Account settings','账户设置')}</h2><dl className="mine-account-details"><div><dt>{t('Account','登录账号')}</dt><dd>{accountIdentity}</dd></div><div><dt>{t('Property','关联民宿')}</dt><dd>{propertyName}</dd></div></dl><label className="mine-language">{t('Interface language','界面语言')}<select value={language} onChange={e=>setLanguage(e.target.value as 'zh'|'en')}><option value="zh">中文</option><option value="en">English</option></select></label>{!demo&&<form action={signOutAction}><button className="workspace-signout" type="submit"><LogOut size={16}/>{t('Sign out','退出登录')}</button></form>}</section>}/>}
+     {section==="promotion"&&<PromotionWorkspace key={workspaceScope} zh={zh} demo={demo}/>}
+     {section==="mine"&&desktop&&<GeminiPropertyWorkspace key={`property:${workspaceScope}`} scope={workspaceScope} zh={zh} readOnly={demo&&!sample} account={<section className="workspace-account workbench-info-panel"><h2>{t('Account settings','账户设置')}</h2><dl className="mine-account-details"><div><dt>{t('Account','登录账号')}</dt><dd>{accountIdentity}</dd></div><div><dt>{t('Property','关联民宿')}</dt><dd>{propertyName}</dd></div></dl><label className="mine-language">{t('Interface language','界面语言')}<select value={language} onChange={e=>setLanguage(e.target.value as 'zh'|'en')}><option value="zh">中文</option><option value="en">English</option></select></label><ClearImportedData zh={zh} readOnly={demo&&!sample}/>{!demo&&<form action={signOutAction}><button className="workspace-signout" type="submit"><LogOut size={16}/>{t('Sign out','退出登录')}</button></form>}</section>}/>}
      {section==="mine"&&!desktop&&<div className="mine-workspace">
       <SegmentedControl className="wb-segmented" label={t('Property settings','民宿设置分类')} value={mineTab} onChange={setMineTab}
        options={[{id:'profile',label:t('Property','民宿资料')},{id:'rooms',label:t('Rooms & rates','房型与价格')},{id:'account',label:t('Account','账户设置')}]}/>
       {demo&&!sample&&mineTab!=='account'&&<p>{t('The shared demo is read-only.','共享演示数据仅供查看。')}</p>}
       {mineTab==='profile'&&<div className="desktop-property-layout">{desktop&&<div className="desktop-property-rooms"><RoomPreviewBoard scope={userId} zh={zh}/></div>}<PropertyProfileEditor zh={zh} readOnly={demo&&!sample}/></div>}
       {mineTab==='rooms'&&<div className="mine-rooms"><RoomTypesPreview scope={userId} zh={zh}/><RoomPreviewBoard scope={userId} zh={zh}/></div>}
-      {mineTab==='account'&&<section className="workspace-account workbench-info-panel"><h2>{t('Account settings','账户设置')}</h2><dl className="mine-account-details"><div><dt>{t('Account','登录账号')}</dt><dd>{accountIdentity}</dd></div><div><dt>{t('Property','关联民宿')}</dt><dd>{propertyName}</dd></div></dl><label className="mine-language">{t('Interface language','界面语言')}<select value={language} onChange={e=>setLanguage(e.target.value as 'zh'|'en')}><option value="zh">中文</option><option value="en">English</option></select></label>{!demo&&<form action={signOutAction}><button className="workspace-signout" type="submit"><LogOut size={16}/>{t('Sign out','退出登录')}</button></form>}</section>}
+      {mineTab==='account'&&<section className="workspace-account workbench-info-panel"><h2>{t('Account settings','账户设置')}</h2><dl className="mine-account-details"><div><dt>{t('Account','登录账号')}</dt><dd>{accountIdentity}</dd></div><div><dt>{t('Property','关联民宿')}</dt><dd>{propertyName}</dd></div></dl><label className="mine-language">{t('Interface language','界面语言')}<select value={language} onChange={e=>setLanguage(e.target.value as 'zh'|'en')}><option value="zh">中文</option><option value="en">English</option></select></label><ClearImportedData zh={zh} readOnly={demo&&!sample}/>{!demo&&<form action={signOutAction}><button className="workspace-signout" type="submit"><LogOut size={16}/>{t('Sign out','退出登录')}</button></form>}</section>}
      </div>}
     </div>
  </>;

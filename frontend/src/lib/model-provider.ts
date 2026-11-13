@@ -1,6 +1,6 @@
 // Invoked only by server-side model operations. No secrets are returned or logged.
 export type ModelProvider='course'|'deepseek_official';
-export type ModelPurpose='analysis'|'report'|'review'|'promotion'|'plan'|'priorities';
+export type ModelPurpose='analysis'|'report'|'review'|'promotion'|'plan'|'priorities'|'translation';
 export type ModelTransport=(body:Record<string,unknown>,options:{signal?:AbortSignal;timeoutMs?:number;purpose:ModelPurpose})=>Promise<{response:Response;provider:ModelProvider;fallback:boolean}>;
 export async function modelChat(body:Record<string,unknown>,options:{fetcher?:typeof fetch;signal?:AbortSignal;preferOfficial?:boolean;timeoutMs?:number;fallbackOnIncomplete?:boolean;transport?:ModelTransport;purpose?:ModelPurpose}={}){
  if(options.transport)return options.transport(body,{signal:options.signal,timeoutMs:options.timeoutMs,purpose:options.purpose??'analysis'});

@@ -52,7 +52,12 @@ await db.query('insert into rooms(property_id,id,type_id,number,active,housekeep
 await db.query('insert into property_inventory values($1,$2)',[p,JSON.stringify({types:[],rooms:[{id:room,number:'101',housekeeping:'dirty'}]})]);
 await db.query("insert into operation_activity(property_id,kind,resource_id,room_number) values($1,'room_cleaned',$2,'101'),($1,'booking_confirmed',$2,'101')",[p,room]);
 const preservedBookings=(await db.query('select count(*) n from direct_bookings')).rows[0].n;
-await db.exec(fs.readFileSync('../supabase/migrations/20261112093409_remove_housekeeping.sql','utf8'));
+// Hosted order differs from a fresh install: auto-import is already applied.
+if(process.argv.includes('--hosted-order')){
+ await db.exec(fs.readFileSync('../supabase/migrations/20261113041422_auto_import_room_types.sql','utf8'));
+ await db.query('update room_types set price=null,capacity=null where id=$1',[type]);
+}
+await db.exec(fs.readFileSync('../supabase/migrations/20261113043808_remove_housekeeping.sql','utf8'));
 assert.deepEqual((await db.query('select id,number from rooms')).rows,[{id:room,number:'101'}]);
 assert.equal((await db.query('select count(*) n from direct_bookings')).rows[0].n,preservedBookings);
 assert.equal((await db.query("select inventory->'rooms'->0 as room from property_inventory")).rows[0].room.housekeeping,undefined);
@@ -61,6 +66,9 @@ const inventory=(await db.query('select private.inventory_document($1) as value'
 assert.equal(inventory.rooms[0].housekeeping,undefined);
 await db.query("select set_config('request.jwt.claim.sub',$1,false)",[owner]);
 await db.query('select private.save_room_inventory($1,$2,null)',[p,JSON.stringify({...inventory,rooms:[{...inventory.rooms[0],active:false}]})]);
+if(process.argv.includes('--hosted-order')){
+ assert.equal(inventory.types[0].price,null);assert.equal(inventory.types[0].capacity,null);
+}
 assert.equal((await db.query('select active from rooms')).rows[0].active,false);
 assert.equal((await db.query("select count(*) n from operation_activity where kind='room_disabled'")).rows[0].n,1);
 await db.exec('set role authenticated');
@@ -77,7 +85,7 @@ for(const [action,expected] of [['checkin','checked_in'],['checkout','completed'
 }
 assert.equal((await db.query('select inventory_revision from properties where id=$1',[p])).rows[0].inventory_revision,revision);
 await db.exec('reset role');
-await db.exec(fs.readFileSync('../supabase/migrations/20261113040439_auto_import_room_types.sql','utf8'));
+await db.exec(fs.readFileSync('../supabase/migrations/20261113041422_auto_import_room_types.sql','utf8'));
 await db.exec('set role authenticated');
 const autoRow={...row,externalId:'AUTO-1',roomType:'导入大床房',roomNumber:'未知201',arrival:'2026-12-01',departure:'2026-12-03',sourceUpdatedAt:'2026-11-13T00:00:00Z'};
 const beforeAuto=(await db.query('select inventory_revision from properties where id=$1',[p])).rows[0].inventory_revision;
@@ -102,13 +110,74 @@ const autoInventory=(await db.query('select private.inventory_document($1) value
 assert.equal((await db.query('select valid_property_inventory($1,$2) valid',[JSON.stringify(autoInventory),p])).rows[0].valid,true);
 const invalidInventory=structuredClone(autoInventory);invalidInventory.types[1].price=0;
 assert.equal((await db.query('select valid_property_inventory($1,$2) valid',[JSON.stringify(invalidInventory),p])).rows[0].valid,false);
+const filledInventory=structuredClone(autoInventory);
+Object.assign(filledInventory.types.find(item=>item.name==='导入大床房'),{price:388,capacity:3,beds:'大床'});
+const saveRevision=(await db.query('select inventory_revision from properties where id=$1',[p])).rows[0].inventory_revision;
+await db.query('select private.save_room_inventory($1,$2,$3)',[p,JSON.stringify(filledInventory),saveRevision]);
+const reloaded=(await db.query('select private.inventory_document($1) value',[p])).rows[0].value;
+assert.deepEqual(reloaded.types.find(item=>item.name==='导入大床房'),filledInventory.types.find(item=>item.name==='导入大床房'));
+await assert.rejects(db.query('select private.save_room_inventory($1,$2,$3)',[p,JSON.stringify(filledInventory),saveRevision]),/inventory_changed/);
 await assert.rejects(call([{...autoRow,externalId:'LONG',roomType:'x'.repeat(61)}]),/invalid_row/);
 const tooManyTypes=Array.from({length:19},(_,i)=>({...rollbackRow,externalId:'LIMIT-'+i,roomType:'上限房型'+i}));
 await assert.rejects(call(tooManyTypes),/room_type_limit/);
 await assert.rejects(call(tooManyTypes,true,ap.revision),/room_type_limit/);
 assert.equal((await db.query('select count(*) n from room_types')).rows[0].n,2);
+// Upgrade the real prior-import state: named source rooms were previously unassigned.
+await db.exec('reset role');
+await db.exec('create unique index rooms_unique_number on rooms(property_id,lower(normalize(trim(number),NFKC)))');
+await db.exec(fs.readFileSync('../supabase/migrations/20261113053402_auto_import_numbered_rooms.sql','utf8'));
+await db.exec('set role authenticated');
+const beforeRepair=(await db.query("select id,total,external_snapshot,imported_at from direct_bookings where external_id='AUTO-1'")).rows[0];
+const inventoryBeforeRepair=(await db.query('select inventory_revision from properties where id=$1',[p])).rows[0].inventory_revision;
+ap=await call([autoRow]);assert.equal(ap.rows[0].action,'assigned');assert.deepEqual(ap.newRooms,[{number:'未知201',roomType:'导入大床房'}]);
+assert.equal((await db.query('select count(*) n from rooms')).rows[0].n,1,'preview must not create rooms');
+assert.equal((await db.query('select inventory_revision from properties where id=$1',[p])).rows[0].inventory_revision,inventoryBeforeRepair);
+await call([autoRow],true,ap.revision);
+const repaired=(await db.query("select id,total,external_snapshot,imported_at,room_id,room_number from direct_bookings where external_id='AUTO-1'")).rows[0];
+assert.deepEqual({id:repaired.id,total:repaired.total,external_snapshot:repaired.external_snapshot,imported_at:repaired.imported_at},beforeRepair,'allocation repair preserves order identity, money and source history');
+assert(repaired.room_id);assert.equal(repaired.room_number,'未知201');
+assert.equal((await db.query("select count(*) n from booking_import_tasks where booking_id=$1 and kind='unassigned' and not withdrawn and completed_at is null",[repaired.id])).rows[0].n,0);
+assert.notEqual((await db.query('select inventory_revision from properties where id=$1',[p])).rows[0].inventory_revision,inventoryBeforeRepair);
+ap=await call([autoRow]);assert.equal(ap.rows[0].action,'duplicate');assert.deepEqual(ap.newRooms,[]);await call([autoRow],true,ap.revision);assert.equal((await db.query('select count(*) n from rooms')).rows[0].n,2,'repeat never inflates room count');
+assert.equal((await db.query("select room_id from direct_bookings where external_id='AUTO-2'")).rows[0].room_id,null,'unnumbered bookings stay unassigned');
+const numbered={...autoRow,externalId:'NUMBERED-1',roomType:'带房号新房型',roomNumber:'Ｒ００１',arrival:'2026-12-10',departure:'2026-12-11'};
+const nextNumbered={...numbered,externalId:'NUMBERED-2',roomNumber:'r001',arrival:'2026-12-11',departure:'2026-12-12'};
+ap=await call([numbered,nextNumbered]);assert.equal(ap.newRooms.length,1);assert.deepEqual(ap.newRoomTypes,['带房号新房型']);await call([numbered,nextNumbered],true,ap.revision);
+assert.equal((await db.query('select count(*) n from rooms')).rows[0].n,3);
+const paired=(await db.query("select room_id,room_number from direct_bookings where external_id like 'NUMBERED-%'")).rows;
+assert.equal(paired[0].room_id,paired[1].room_id);assert.equal(paired[0].room_number,'R001');assert.equal(paired[1].room_number,'R001');
+assert.deepEqual((await db.query('select floor,active from rooms where id=$1',[paired[0].room_id])).rows,[{floor:'待补充',active:true}]);
+await assert.rejects(call([numbered,{...nextNumbered,roomType:'冲突房型'}]),/room_unmatched/);
+await assert.rejects(call([{...numbered,externalId:'COLLISION-1',roomNumber:'NEW-ROOM'},{...numbered,externalId:'COLLISION-2',roomNumber:'new-room'}]),/room_date_conflict/,'new numbered rooms are conflict-checked before commit');
+ap=await call([{...numbered,externalId:'ROLL-ROOM-1',roomNumber:'SAFE-ROOM'}]);
+await assert.rejects(call([{...numbered,externalId:'ROLL-ROOM-1',roomNumber:'SAFE-ROOM'},{...numbered,externalId:'ROLL-ROOM-2',roomNumber:'101'}],true,ap.revision),/room_unmatched/);
+assert.equal((await db.query("select count(*) n from rooms where number='SAFE-ROOM'")).rows[0].n,0,'room insert rolls back with later import error');
+await assert.rejects(call([{...numbered,externalId:'LONG-ROOM',roomNumber:'r'.repeat(25)}]),/invalid_row/);
+const roomLimit=Array.from({length:198},(_,i)=>({...numbered,externalId:'ROOM-LIMIT-'+i,roomNumber:'LIMIT-'+i}));
+await assert.rejects(call(roomLimit),/room_limit/);await assert.rejects(call(roomLimit,true,ap.revision),/room_limit/);
+assert.equal((await db.query('select count(*) n from rooms')).rows[0].n,3,'room limit rejection is atomic');
+hm=(await db.query('select get_booking_metrics_range($1,$2,$3) v',[p,'2026-10-01','2026-10-03'])).rows[0].v;assert.equal(hm.amount_cents,10000);assert.equal(hm.booked_pct,null,'new current inventory does not fabricate historical capacity');
 await db.exec('reset role');await db.query("select set_config('request.jwt.claim.sub',$1,false)",['20000000-0000-4000-8000-000000000002']);await db.exec('set role authenticated');
 await assert.rejects(call([rollbackRow]),/property_not_owned/);
 await db.exec('reset role;set role anon');await assert.rejects(call([rollbackRow]),/permission denied/);
-console.log('PASS isolated PostgreSQL import: auto-create room types on commit only, same-name reuse, nullable defaults, unknown room preservation, repeat, atomic rollback, type limits, tenant/anonymous isolation, historical metrics and prior regressions. No hosted writes.');
+// Destructive behavior is exercised only in this disposable in-memory database.
+await db.exec('reset role');await db.exec(fs.readFileSync('../supabase/migrations/20261113073343_clear_imported_booking_data.sql','utf8'));
+const clear=async(commit=false,revision=null,property=p)=>(await db.query('select clear_imported_booking_data($1,$2,$3) v',[property,commit,revision])).rows[0].v;
+await db.exec('set role anon');await assert.rejects(clear(),/permission denied/);
+await db.exec('reset role');await db.query("select set_config('request.jwt.claim.sub',$1,false)",['20000000-0000-4000-8000-000000000002']);await db.exec('set role authenticated');await assert.rejects(clear(),/property_not_owned/);
+await db.exec('reset role');await db.query("select set_config('request.jwt.claim.sub',$1,false)",[owner]);await db.exec('set role authenticated');
+const keptRooms=(await db.query('select * from rooms order by id')).rows,keptTypes=(await db.query('select * from room_types order by id')).rows,keptManual=(await db.query('select * from direct_bookings where external_id is null order by id')).rows;
+let clearPreview=await clear();assert(clearPreview.orders>0);assert(clearPreview.tasks>0);assert.equal(clearPreview.cleared,false);
+await assert.rejects(clear(null),/invalid_clear_flags/);await assert.rejects(clear(true),/import_changed/);
+const newImport=await call([numbered,nextNumbered]);await call([numbered,nextNumbered],true,newImport.revision);
+await assert.rejects(clear(true,clearPreview.revision),/import_changed/);clearPreview=await clear();
+await db.exec('reset role');await db.exec(`create function private.fail_clear_test() returns trigger language plpgsql as $$begin raise exception 'test_rollback';end$$;create trigger fail_clear_test before delete on booking_import_batches for each statement execute function private.fail_clear_test();set role authenticated`);
+await assert.rejects(clear(true,clearPreview.revision),/test_rollback/);assert.deepEqual(await clear(),clearPreview,'all deletes roll back on failure');
+await db.exec('reset role;drop trigger fail_clear_test on booking_import_batches;set role authenticated');
+const cleared=await clear(true,clearPreview.revision);assert.equal(cleared.cleared,true);assert.equal(cleared.orders,clearPreview.orders);assert.equal(cleared.tasks,clearPreview.tasks);
+assert.equal((await clear()).orders,0);assert.equal((await clear()).tasks,0);assert.equal((await clear()).batches,0);
+assert.deepEqual((await db.query('select * from rooms order by id')).rows,keptRooms);assert.deepEqual((await db.query('select * from room_types order by id')).rows,keptTypes);assert.deepEqual((await db.query('select * from direct_bookings where external_id is null order by id')).rows,keptManual);
+await assert.rejects(clear(true,clearPreview.revision),/import_changed/);
+console.log('PASS clear imported data: preview, auth/owner isolation, revision race, atomic rollback, tasks/history removal, manual bookings and inventory preservation.');
+console.log('PASS isolated PostgreSQL import: auto-create room types on commit only, same-name reuse, nullable defaults, numbered-room deduplication and assignment, prior-import allocation repair, room/date conflicts, atomic rollback, room/type limits, tenant/anonymous isolation, historical metrics and prior regressions. No hosted writes.');
 }finally{await db.close()}})().catch(e=>{console.error(e.message);process.exitCode=1});

@@ -1,4 +1,5 @@
 "use client";
+import {promotionRequest} from "@/lib/promotion-request";
 import {useEffect,useEffectEvent,useRef,useState} from 'react';
 import {promotionTarget,validPromotionPlan,validPromotionDiagnosis,type PromotionPlan,type PromotionFact} from '@/lib/promotion-plan';
 import type {PromotionBrief} from '@/lib/promotion';
@@ -26,13 +27,13 @@ export function PromotionPlanPanel({zh,brief,plan,onPlan,onPeriod,disabled,studi
   const controller=new AbortController();
 
 
-  fetch('/api/workspace/agent?id='+encodeURIComponent(ref.runId),{cache:'no-store',signal:controller.signal}).then(async response=>{if(!response.ok)throw Error();const data=await response.json(),today=data.run?.dataMode==='fictional_demo'?DEMO_PERIOD.start:workspaceDay(false),target=promotionTarget(data.run,ref,today);if(controller.signal.aborted)return;applyLinkedTarget(ref,target);}).catch(()=>{if(!controller.signal.aborted)setLinkFailed(true)}).finally(()=>{if(!controller.signal.aborted)setContextReady(true)});
+  promotionRequest('/api/workspace/agent?id='+encodeURIComponent(ref.runId),{cache:'no-store',signal:controller.signal}).then(data=>{const today=data.run?.dataMode==='fictional_demo'?DEMO_PERIOD.start:workspaceDay(false),target=promotionTarget(data.run,ref,today);if(controller.signal.aborted)return;applyLinkedTarget(ref,target);}).catch(()=>{if(!controller.signal.aborted)setLinkFailed(true)}).finally(()=>{if(!controller.signal.aborted)setContextReady(true)});
   return()=>controller.abort();
  // The diagnosis URL is read once; date edits remain the owner's choice.
  },[readLink]);
  async function generate(signal?:AbortSignal){
   setBusy(true);setError('');
-  try{const response=await fetch('/api/workspace/promotion/plan',{method:'POST',headers:{'Content-Type':'application/json'},signal,body:JSON.stringify({brief:{...brief,language:zh?'zh':'en'},factualOnly:true,...(activeDiagnosis?{diagnosis:activeDiagnosis}:{})})}),data=await response.json();if(signal?.aborted)return;if(!response.ok)throw Error(data.error);if(!validPromotionPlan(data.plan))throw Error('invalid');onPlan(data.plan);setFacts(data.facts||[]);setReason(data.reason||reason)}catch(e){if(signal?.aborted)return;const code=e instanceof Error?e.message:'';setError(code==='promotion_diagnosis_unavailable'?t('这项诊断已过期或可售房量发生变化。请更新工作台诊断，或改为日常推广。','This diagnosis is stale or availability changed. Refresh the workbench or use a general plan.'):code==='promotion_setup_required'?t('请先完善民宿地址与启用房型。','Complete the property location and active room types first.'):t('暂时无法生成方案。当前内容已保留，可以重试。','The plan could not be generated. Your current content is kept; retry.'));}finally{if(!signal?.aborted)setBusy(false)}
+  try{const data=await promotionRequest('/api/workspace/promotion/plan',{method:'POST',headers:{'Content-Type':'application/json'},signal,body:JSON.stringify({brief:{...brief,language:zh?'zh':'en'},factualOnly:true,...(activeDiagnosis?{diagnosis:activeDiagnosis}:{})})});if(signal?.aborted)return;if(!validPromotionPlan(data.plan))throw Error('invalid');onPlan(data.plan);setFacts(data.facts||[]);setReason(data.reason||reason)}catch(e){if(signal?.aborted)return;const code=e instanceof Error?e.message:'';setError(code==='promotion_timeout'?t('读取客群方案超时，请点击重新读取。','Reading the audience plan timed out. Retry below.'):code==='promotion_diagnosis_unavailable'?t('这项诊断已过期或可售房量发生变化。请更新工作台诊断，或改为日常推广。','This diagnosis is stale or availability changed. Refresh the workbench or use a general plan.'):code==='promotion_setup_required'?t('请先完善民宿地址与启用房型。','Complete the property location and active room types first.'):t('暂时无法生成方案。当前内容已保留，可以重试。','The plan could not be generated. Your current content is kept; retry.'));}finally{if(!signal?.aborted)setBusy(false)}
  }
  function general(){onGeneral();setDiagnosis(undefined);setReason('');setLinkFailed(false);setError('');onPlan(null);const url=new URL(window.location.href);url.searchParams.delete('runId');url.searchParams.delete('findingId');url.searchParams.delete('opportunityId');window.history.replaceState(null,'',url)}
 

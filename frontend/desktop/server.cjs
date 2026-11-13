@@ -7,6 +7,7 @@ const {createRequire}=require('node:module');
 async function start(){
  const dir=path.resolve(process.argv[2]);
  process.chdir(dir);
+ if(process.env.STAYCRAFT_DESKTOP_DEMO==='1')require('./demo-backend.cjs').initialize();
  const requireWeb=createRequire(path.join(dir,'server.js'));
  const {config}=JSON.parse(readFileSync(path.join(dir,'.next','required-server-files.json'),'utf8'));
  process.env.__NEXT_PRIVATE_STANDALONE_CONFIG=JSON.stringify(config);
