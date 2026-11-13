@@ -20,4 +20,3 @@ assert.equal(marketAnchors({...scope,location:'另一个地址'}).anchors.length
 const day=buildMarketSample({quotes,window:{start:window.start,end:window.start}});
 const advice=marketInventoryAdvice({sample:day,ownRates:{min:400,max:500,average:450},inventory:{date:window.start,capacity:5,booked:2,available:3},zh:true});assert.match(advice.basis,/周边均价 ¥300/);assert.match(advice.action,/核对/);assert.doesNotMatch(advice.title,/样本不足/);
 console.log('PASS dated list prices: 35 observations, seven daily medians, qualified reference stats/advice/anchors, marketing exclusion and location isolation.');
-

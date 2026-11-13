@@ -1,0 +1,8 @@
+{
+  "name": "qrcheck",
+  "private": true,
+  "dependencies": {
+    "jsqr": "^1.4.0",
+    "pngjs": "^7.0.0"
+  }
+}
