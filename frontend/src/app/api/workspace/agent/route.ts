@@ -73,7 +73,7 @@ export async function POST(request:Request){try{
  function summarizeInventory(raw:unknown):AgentInventory|null{
   const inventory=validateInventory(raw,propertyId);if(!inventory)return null;
   const active=inventory.rooms.filter(room=>room.active);
-  return {activeRooms:active.length,dirtyRooms:active.filter(room=>room.housekeeping==='dirty').length,types:inventory.types.filter(type=>active.some(room=>room.typeId===type.id)).map(type=>({name:type.name,price:type.price,capacity:type.capacity,activeRooms:active.filter(room=>room.typeId===type.id).length}))};
+  return {activeRooms:active.length,types:inventory.types.filter(type=>active.some(room=>room.typeId===type.id)).map(type=>({name:type.name,price:type.price,capacity:type.capacity,activeRooms:active.filter(room=>room.typeId===type.id).length}))};
  }
  const [metrics,inventory,profile,snapshot]=await Promise.all([
   readMetrics(period),inventoryResult(),supabase.from('property_details').select('profile,revision').eq('property_id',propertyId).abortSignal(signal()).maybeSingle(),

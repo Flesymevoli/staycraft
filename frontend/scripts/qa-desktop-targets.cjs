@@ -8,6 +8,7 @@ const {collectionContext,collectionFile,checkContext,parseHotels,readTargets,sav
  const b={userId:'account-b',propertyId:'property-b',location:a.location};
  const moved={...a,location:'乌镇西栅'};
  const hotels='https://hotels.ctrip.com/hotels/123456.html 浏河测试住宿';
+ assert.deepEqual(parseHotels(hotels.replace('.html ','.html?checkin=2026-11-12#rooms ')),parseHotels(hotels));
  const contextKey=collectionContext(a);
  const initial=await readTargets(root,a);assert.equal(initial.hotels,'');assert.equal(initial.savedAt,null);
  await saveTargets(root,a,{hotels,contextKey});

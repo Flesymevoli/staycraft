@@ -11,7 +11,7 @@ function collectionContext(identity){
 function parseHotels(input){
  if(typeof input!=='string'||input.length>4000)throw Error('invalid_hotels');
  const hotels=input.trim().split(/\r?\n/).map(line=>{
-  const match=line.trim().match(/^https:\/\/hotels\.ctrip\.com\/hotels\/(\d{1,12})\.html\s+(.{1,160})$/);
+  const match=line.trim().match(/^https:\/\/hotels\.ctrip\.com\/hotels\/(\d{1,12})\.html(?:[?#]\S*)?\s+(.{1,160})$/);
   if(!match||!match[2].trim()||/[\u0000-\u001f\u007f]/.test(match[2]))throw Error('invalid_hotels');
   return {id:match[1],name:match[2].trim()};
  });

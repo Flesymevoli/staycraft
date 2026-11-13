@@ -5,6 +5,7 @@
 ## 开发入口
 
 - [项目约定](AGENTS.md)
+- [当前任务清单](docs/CURRENT_BASELINE.md)与[接续交接](docs/SESSION_HANDOFF.md)
 - [前端与桌面端运行说明](frontend/README.md)
 - [Gemini 最终设计源码与演示入口](frontend/public/concept/README.md)
 - [数据库迁移与测试说明](supabase/README.md)

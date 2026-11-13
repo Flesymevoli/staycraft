@@ -14,7 +14,6 @@ import {groundedInsights,prioritiseInsights} from "@/lib/business-assistant";
 import {bookingPeriod} from "@/lib/booking-period";
 import {isDemoWorkspace,operatorSample,operatorModelEnabled} from "@/lib/operator-sample";
 import {DEMO_PERIOD,demoMetrics,workspaceDay} from "@/lib/demo-period";
-import {validateInventory} from "@/lib/property-inventory";
 import type {BookingMetrics} from "@/components/booking-metrics";
 import {boundedBody,requireSameOrigin,verifiedProperty,WorkspaceError,workspaceFailure} from "@/lib/workspace-access";
 export const dynamic="force-dynamic";
@@ -78,7 +77,7 @@ function focusedInsights(data:BookingMetrics,topic:"booked_value"|"busiest",zh:b
   .sort((a,b)=>b.booked-a.booked||a.date.localeCompare(b.date)).slice(0,3);
  return [{id:"busiest",title:t("已订客房最多的日期","Dates with the most booked rooms"),
   evidence:days.length?days.map(day=>day.date+t(" 已订 "+day.booked+" 间"," · "+day.booked+" rooms booked")).join(t("；","; ")):t("当前记录中暂无已订客房。","Current records show no booked rooms."),
-  action:days.length?t("按这些日期检查到店安排和清洁排班。","Review arrivals and housekeeping for these dates."):t("检查订单是否已导入。","Check whether booking records have been imported."),href}];
+  action:days.length?t("按这些日期检查到店安排。","Review arrivals for these dates."):t("检查订单是否已导入。","Check whether booking records have been imported."),href}];
 }
 
 export async function POST(request:Request){try{
@@ -111,10 +110,9 @@ export async function POST(request:Request){try{
  if(!topic)throw new WorkspaceError("invalid_request",400);
  let attention;
  if(topic==="attention"){
-  const [inventory,tasks]=await Promise.all([supabase.rpc("get_room_inventory",{p_property:propertyId}),supabase.from("booking_import_tasks").select("id").eq("property_id",propertyId).eq("withdrawn",false).is("completed_at",null).limit(200)]);
-  const rooms=validateInventory(inventory.data?.inventory,propertyId);
-  if(inventory.error||!rooms||tasks.error||!Array.isArray(tasks.data))throw new WorkspaceError("analysis_unavailable",503);
-  attention={dirty:rooms.rooms.filter(room=>room.active&&room.housekeeping==="dirty").length,pendingMessages:0,conversationsRead:0,pendingTasks:tasks.data.length};
+  const tasks=await supabase.from("booking_import_tasks").select("id").eq("property_id",propertyId).eq("withdrawn",false).is("completed_at",null).limit(200);
+  if(tasks.error||!Array.isArray(tasks.data))throw new WorkspaceError("analysis_unavailable",503);
+  attention={pendingMessages:0,conversationsRead:0,pendingTasks:tasks.data.length};
  }
  const zh=body.language==="zh";
  const openDates=topic==="vacancy"&&!data.historical_inventory_unknown

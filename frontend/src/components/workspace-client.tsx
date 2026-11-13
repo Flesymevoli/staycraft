@@ -14,7 +14,6 @@ import {WorkspaceBookings} from "./workspace-bookings";
 import {BookingImport} from "./booking-import";
 import {WorkspaceConversation} from "./cloud-conversations";
 import {WorkspaceAssistant} from "./workspace-assistant";
-import {WorkUrgentTodos} from "./home-todos";
 import {OperationActivity} from "./operation-activity";
 import {WorkBookingInsight} from "./booking-insight";
 import {WorkspaceAnalysis} from "./workspace-analysis";
@@ -59,7 +58,7 @@ export function LegacyWorkspaceClient({ section, userId, roomId, bookingId, book
         <OperationActivity zh={zh} compact/>
       </>}
       {bookingHistory&&<WorkspaceBookings zh={zh} history/>}{bookingId&&<WorkspaceBookings zh={zh} bookingId={bookingId}/>}{threadId&&<WorkspaceConversation zh={zh} threadId={threadId}/>}
-      {section === "work" && !roomId && !bookingId && !threadId && !bookingHistory && <><BookingImport key={userId} zh={zh}/><RoomPreviewBoard scope={userId} zh={zh}/><WorkUrgentTodos scope={userId} zh={zh}/><WorkspaceBookings pendingOnly zh={zh}/><WorkBookingInsight scope={userId} zh={zh}/><div id="operation-activity"><OperationActivity zh={zh}/></div></>}
+      {section === "work" && !roomId && !bookingId && !threadId && !bookingHistory && <><BookingImport key={userId} zh={zh}/><RoomPreviewBoard scope={userId} zh={zh}/><WorkspaceBookings pendingOnly zh={zh}/><WorkBookingInsight scope={userId} zh={zh}/><div id="operation-activity"><OperationActivity zh={zh}/></div></>}
       {section === "analysis" && <WorkspaceAnalysis key={userId} scope={userId} zh={zh}/>}
       {section === "explore" && <WorkspaceExplore key={userId} zh={zh}/>}
       {section === "mine" && <>

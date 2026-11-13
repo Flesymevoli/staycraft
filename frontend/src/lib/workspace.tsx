@@ -8,7 +8,7 @@ import type { WorkspaceSection, WorkspaceConnection } from "@/components/workspa
 import {WorkbenchPage,WorkbenchShell} from "@/components/workbench-shell";
 import { signOut } from "@/app/login/actions";
 import { validateProfile } from "@/lib/property-profile";
-import {isDemoWorkspace,operatorSample} from "./operator-sample";
+import {desktopTrial,isDemoWorkspace,operatorSample} from "./operator-sample";
 
 const workspaceIdentity=cache(async()=>{
   if (!hasSupabaseConfig()) redirect("/login");
@@ -41,7 +41,7 @@ export async function renderWorkspaceShell(children:ReactNode){
     if(profile)connection.propertyName=profile.name;
   } catch { /* Missing schema or a service failure is not an empty successful read. */ }
 
-  return <WorkbenchShell userId={userId} displayName={displayName} email={email} connection={connection} sample={operatorSample()} demo={isDemoWorkspace(email)} signOutAction={signOut}>{children}</WorkbenchShell>;
+  return <WorkbenchShell userId={userId} displayName={displayName} email={email} connection={connection} sample={operatorSample()} demo={isDemoWorkspace(email)} localTrial={desktopTrial()} signOutAction={signOut}>{children}</WorkbenchShell>;
 }
 
 export async function renderWorkspace(section: WorkspaceSection, roomId?: string, detail?: {bookingId?:string;threadId?:string;bookingHistory?:boolean}) {

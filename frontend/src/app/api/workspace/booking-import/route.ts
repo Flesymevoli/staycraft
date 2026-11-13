@@ -27,7 +27,7 @@ export async function POST(request:Request){try{
   const preview=previewBookingCsv(text);
   if(!preview.canCommit)return Response.json({...preview,saved:false},{headers:{'Cache-Control':'no-store'}});
   const {data,error}=await supabase.rpc('process_booking_import',{p_property:propertyId,p_rows:preview.valid.map(v=>v.booking),p_commit:commit,p_revision:revision,p_confirm_unversioned:confirm});
-  if(error){const code=['import_changed','room_type_unmatched','room_unmatched','manual_stay_conflict','stale_source','confirm_unversioned','invalid_row','room_date_conflict'].find(c=>error.message.includes(c));throw new WorkspaceError(code||'import_unavailable',code?409:503)}
+  if(error){const code=['import_changed','room_type_unmatched','room_type_limit','room_unmatched','manual_stay_conflict','stale_source','confirm_unversioned','invalid_row','room_date_conflict'].find(c=>error.message.includes(c));throw new WorkspaceError(code||'import_unavailable',code?409:503)}
   return Response.json({...preview,...data},{headers:{"Cache-Control":"no-store"}});
  }catch(error){
   const code=error instanceof Error?error.message:'';

@@ -16,6 +16,9 @@
 .workbench-drawer-body .mo-collection > summary { display:none; }
 .workbench-drawer-body .desktop-collection { padding:18px; border:1px solid #efedf3; border-radius:16px; background:#faf9fc; }
 .workbench-drawer-body .desktop-collection textarea { width:100%; min-height:120px; margin:12px 0; }
+.desktop-collection-filters { display:grid; gap:12px; min-width:0; }
+.desktop-collection-filters label { display:grid; gap:6px; }
+.desktop-collection-filters :is(select,input) { min-height:40px; padding:7px 10px; border:1px solid #dedbe6; border-radius:8px; background:#fff; color:inherit; }
 .workbench-drawer-body .promotion-actions { display:flex; flex-wrap:wrap; gap:10px; }
 .workbench-drawer-body .wb-finding { padding:18px 0; border-bottom:1px solid #efedf3; }
 .workbench-drawer[data-closing] .workbench-drawer-panel { animation:workbench-drawer-exit 220ms cubic-bezier(.23,1,.32,1) forwards; }

@@ -25,7 +25,7 @@ async function setup(scenario='calendar'){
  const spawn=(node,args,options)=>{
   const script=path.basename(args[0]);calls.push({script,args:args.slice(1),options});
   assert.equal(options.windowsHide,true);assert.equal(options.env.STAYCRAFT_PRICE_PROFILE,path.join(base(account),'browser-profile'));
-  assert(options.cwd.startsWith(path.join(base(account),'runs')+path.sep));
+  assert(options.cwd.startsWith(path.join(base(account),script==='login-price-monitor.mjs'?'login':'runs')+path.sep));
   const child=new EventEmitter();child.kill=()=>{};
   queueMicrotask(()=>{
    if(script==='collect-public-prices.mjs'){
@@ -36,6 +36,9 @@ async function setup(scenario='calendar'){
     const observed=dates.map(stayDate=>({hotelId:'123',hotelName:'隔离测试住宿',sourceUrl:'https://hotels.ctrip.com/hotels/123.html',authScope:session.scope,capturedAt:'2026-11-12T08:00:00Z',stayDate,amount:330,currency:'CNY',kind:'calendar_reference',status:'observed',rooms:1,adults:2,children:0,nights:1}));
     json(path.join(options.cwd,'history.json'),observed);
     json(path.join(options.cwd,'job.json'),{dates,status:scenario==='barrier'?'failed':'succeeded',results:[{hotelId:'123',status:scenario==='barrier'?'unavailable':'succeeded',error:scenario==='barrier'?'verification_required':null}]});
+   }else if(script==='login-price-monitor.mjs'){
+    assert.equal(args[1],'--open-login');
+    json(path.join(options.cwd,'session.json'),{scope:'member:test-sign-in'});
    }else{
     assert.equal(script,'collect-ctrip-list-prices.mjs');
     json(args[2],{status:'complete',dates,days:dates.map(date=>({date,capturedAt:'2026-11-12T08:00:00Z',occupancy:'1间, 1成人, 0儿童',rows:[{name:'展示起价住宿',priceCny:199}]}))});
@@ -47,16 +50,23 @@ async function setup(scenario='calendar'){
  };
  const mocks={electron:{app,BrowserWindow:Window,ipcMain:{handle:(name,fn)=>handlers.set(name,fn)},shell:{openExternal(){throw Error('unexpected_external_navigation')}}},'node:child_process':{spawn}};
  const desktopRequire=require('node:module').createRequire(path.join(root,'desktop/main.cjs'));
- vm.runInNewContext(fs.readFileSync(path.join(root,'desktop/main.cjs'),'utf8'),{require:name=>mocks[name]||desktopRequire(name),__dirname:path.join(root,'desktop'),process:{argv:[],execPath:process.execPath,env:{STAYCRAFT_DESKTOP_TEST_DATA:temp,STAYCRAFT_DESKTOP_TEST_PORT:'3309',STAYCRAFT_DESKTOP_NODE:process.execPath}},URL,console},{filename:'desktop/main.cjs'});
+ vm.runInNewContext(fs.readFileSync(path.join(root,'desktop/main.cjs'),'utf8'),{require:name=>mocks[name]||desktopRequire(name),__dirname:path.join(root,'desktop'),process:{argv:[],execPath:process.execPath,env:{STAYCRAFT_DESKTOP_TEST_DATA:temp,STAYCRAFT_DESKTOP_TEST_PORT:'3309',STAYCRAFT_DESKTOP_NODE:process.execPath}},URL,AbortSignal,console},{filename:'desktop/main.cjs'});
  await ready;
  const invoke=input=>{const frame=instance.webContents.mainFrame;frame.url='http://127.0.0.1:3309/app';return handlers.get('staycraft:collect')({sender:instance.webContents,senderFrame:frame},input)};
  const invokeNamed=(name,input)=>{const frame=instance.webContents.mainFrame;frame.url='http://127.0.0.1:3309/app';return handlers.get('staycraft:'+name)({sender:instance.webContents,senderFrame:frame},input)};
  return {invoke,invokeNamed,calls,posts,switchTo:value=>account=value,base};
 }
 (async()=>{
+ const signIn=await setup();const login=await signIn.invokeNamed('login');
+ assert.equal(login.state,'idle',login.error);assert.equal(signIn.calls[0].script,'login-price-monitor.mjs');
+ assert.equal(JSON.parse(fs.readFileSync(path.join(signIn.base(a),'session.json'),'utf8')).scope,'member:test-sign-in');
  const calendar=await setup();let result=await calendar.invoke(calendarInput);assert.equal(result.state,'saved');assert.equal(result.observed,2);assert.equal(result.missing,0);assert.equal(calendar.calls[0].script,'collect-public-prices.mjs');assert.deepEqual(calendar.posts[0].observations.map(o=>o.kind),['calendar_reference','calendar_reference']);assert(calendar.posts[0].observations.every(o=>!Object.hasOwn(o,'authScope')));assert.equal(calendar.posts[0].userId,a.userId);
  calendar.switchTo(b);result=await calendar.invoke(calendarInput);assert.equal(result.state,'saved');assert.equal(calendar.posts[1].userId,b.userId);assert.notEqual(calendar.calls[0].options.env.STAYCRAFT_PRICE_PROFILE,calendar.calls[1].options.env.STAYCRAFT_PRICE_PROFILE);
  const list=await setup('list');assert.equal((await list.invoke('https://hotels.ctrip.com/hotels/list?city=654')).state,'saved');assert.equal(list.calls[0].script,'collect-ctrip-list-prices.mjs');assert(list.posts[0].observations.every(o=>o.kind==='display_starting_price'&&o.adults===1));
+ const filtered=await setup('list');
+ const filters={hotels:'https://hotels.ctrip.com/hotels/list?cityId=4&checkin=2026-11-14',contextKey:collectionContext(a),star:'3'};
+ assert.equal((await filtered.invoke(filters)).state,'saved');
+ assert.equal(filtered.calls[0].args[2],'3');
  const blocked=await setup('barrier');assert.equal((await blocked.invoke(calendarInput)).error,'verification_required');assert.equal(blocked.posts.length,0);
  const switched=await setup('switch');assert.equal((await switched.invoke(calendarInput)).error,'account_changed');assert.equal(switched.posts.length,0);
  const moved=await setup('move');assert.equal((await moved.invoke({hotels:calendarInput,contextKey:collectionContext(a)})).error,'location_changed');assert.equal(moved.posts.length,0);

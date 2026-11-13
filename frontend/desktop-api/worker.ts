@@ -121,15 +121,15 @@ export async function handleSignalsRequest(request:Request,env:SignalsEnv,depend
    target.origin==='https://mcp.amap.com'&&target.pathname==='/mcp'&&method==='POST'||
    method==='GET'&&isOfficialEventCalendarUrl(target)||
    target.origin==='https://api.open-meteo.com'&&target.pathname==='/v1/forecast'&&method==='GET'));
-  let point;
-  try{point=amapPoint(await amapGeocode(location,signal,{key:env.AMAP_MAPS_API_KEY,fetcher:externalFetch}))}catch{throw new Failure('location_service_unavailable',503)}
+  let point,searchLocation=location;
+  try{point=amapPoint(await amapGeocode(location,signal,{key:env.AMAP_MAPS_API_KEY,fetcher:externalFetch,onArea:area=>{searchLocation=area}}))}catch{throw new Failure('location_service_unavailable',503)}
   if(!point)throw new Failure('property_location_unknown',422);
   const context={version:1,userId:auth.user.id,propertyId:input.propertyId,location,window:{start:input.start,end:input.end},kind:input.kind};
   let result:Record<string,unknown>;
   if(input.kind==='events'){
    const searchKey=env.SEARCH_API_KEY||(env.EVENT_SEARCH_ENABLED==='1'?env.DEEPSEEK_API_KEY:'');
    const searchFetch=checkedFetch(fetcher,signal,(target,method,forwarded)=>target.href==='https://api.deepseek.com/v1/tools/search'&&method==='POST'&&!!searchKey&&forwarded.get('authorization')==='Bearer '+searchKey&&!forwarded.has('cookie'));
-   const events=await fetchEvents({window:context.window,scope:{center:point},location,now,fetcher:externalFetch,signal,searchKey:searchKey??'',searchFetcher:searchFetch,
+   const events=await fetchEvents({window:context.window,scope:{center:point},location:searchLocation,now,fetcher:externalFetch,signal,searchKey:searchKey??'',searchFetcher:searchFetch,
     resolveVenue:async(address,venueSignal)=>amapPoint(await amapGeocode(address,venueSignal,{key:env.AMAP_MAPS_API_KEY,fetcher:externalFetch}))});
    result={...context,events:events.events,source:events.source};
   }else{

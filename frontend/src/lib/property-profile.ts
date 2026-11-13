@@ -19,10 +19,17 @@ export function validateProfile(input: unknown): PropertyProfile | null {
   for (const { key, max } of profileFields) {
     if ((key === "guestNotes" || key === "checkout") && values[key] === undefined) { result[key] = ""; continue; }
     if (typeof values[key] !== "string") return null;
-    result[key] = values[key].trim();
+    let value = values[key].trim();
+    if (key === "breakfast" || key === "checkin" || key === "checkout") {
+      value = value.normalize("NFKC").replace(/\s*:\s*/g, ":");
+      if (key === "breakfast") {
+        value = /^(?:无早餐|不提供早餐|no breakfast)$/i.test(value)
+          ? "" : value.replace(/\s*[-–—]\s*/g, "–");
+      }
+    }
+    result[key] = value;
     if (result[key].length > max || /\u0000/.test(result[key])) return null;
   }
-  result.breakfast = result.breakfast.replace(/[-—]/g, "–");
   const clock = /^(?:[01]\d|2[0-3]):[0-5]\d$/;
   if (!result.name || (result.roomCount && !/^[1-9]\d{0,2}$/.test(result.roomCount))) return null;
   if (result.checkin && !clock.test(result.checkin)) return null;

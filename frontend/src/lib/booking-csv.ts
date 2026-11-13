@@ -27,7 +27,7 @@ export function previewBookingCsv(text:string){
   const fail=(reason:string)=>errors.push({row:n,reason});
   if(values.length!==10){fail('column_count');return}
   const [channel,externalId,roomType,roomNumber,arrival,departure,status,total,currency,updated]=values.map(v=>v.trim());
-  if(!channel||channel.length>80||!externalId||externalId.length>120||!roomType||roomType.length>120||roomNumber.length>40){fail('invalid_identity');return}
+  if(!channel||channel.length>80||!externalId||externalId.length>120||!roomType||roomType.length>60||roomNumber.length>40){fail('invalid_identity');return}
   if(!date(arrival)||!date(departure)||departure<=arrival||Date.parse(departure)-Date.parse(arrival)>30*86400000){fail('invalid_dates');return}
   if(!['confirmed','cancelled','completed'].includes(status)){fail('invalid_status');return}
   if(currency!=='CNY'||!/^\d{1,9}(\.\d{1,2})?$/.test(total)||Number(total)<=0){fail('invalid_amount_or_currency');return}

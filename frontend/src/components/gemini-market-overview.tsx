@@ -119,6 +119,6 @@ export function GeminiMarketOverview(props: Props) {
         })}</div> : <div className="gm-state" role="status"><h3>{t('所选日期暂无采集报价', 'No collected quotes for this date')}</h3><p>{t('可以调整入住日期查看已有快照，或打开采集抽屉添加周边住宿。', 'Choose another date to view saved quotes or add nearby stays in the collector.')}</p><button type="button" onClick={() => setCollecting(true)}>{t('打开采集抽屉', 'Open Collector')}</button></div>}
       </article>
     </>}
-    {collecting && <WorkbenchDrawer title={t('采集携程周边 7 晚日历参考价', 'Collect 7-Night Ctrip Calendar Prices')} onClose={() => setCollecting(false)}><DesktopCollection zh={zh} demo={demo} expanded onSync={props.retry}/></WorkbenchDrawer>}
+    {collecting && <WorkbenchDrawer title={t('采集携程搜索列表报价', 'Collect Ctrip Search Prices')} onClose={() => setCollecting(false)}><DesktopCollection zh={zh} demo={demo} expanded onSync={props.retry}/></WorkbenchDrawer>}
   </section>;
 }

@@ -78,6 +78,7 @@ async function main(){
    return response.json();
   };
   await page.goto(base+'/login');
+  assert.equal(await page.locator('a[href="/native-home"],.auth-demo-link').count(),0,'Login does not link to the old prototype');
   await page.locator('input[name=email]').fill('demo@example.invalid');
   await page.locator('input[name=password]').fill('staycraft-demo');
   await page.locator('.auth-submit').click();await page.waitForURL(base+'/app');
@@ -100,6 +101,10 @@ async function main(){
   await panel.locator('.booking-import-disclosure > summary').click();
   const stamp=new Date().toISOString(),externalId='DESKTOP-JOURNEY-001';
   const csv='channel,external_id,room_type,room_number,arrival,departure,status,total,currency,source_updated_at\n'+`QA,${externalId},花园大床房,,${day(3)},${day(4)},confirmed,325.50,CNY,${stamp}`;
+  await panel.locator('input[type=file]').setInputFiles({name:'empty-template.csv',mimeType:'text/csv',buffer:Buffer.from(csv.split('\n')[0])});
+  await panel.getByRole('button',{name:'校验并预览',exact:true}).click();
+  await panel.getByText('文件里没有订单数据，请填写模板后再导入。',{exact:true}).waitFor();
+  assert.equal(await panel.getByRole('button',{name:'确认导入',exact:true}).count(),0);
   await panel.locator('input[type=file]').setInputFiles({name:'isolated-desktop-orders.csv',mimeType:'text/csv',buffer:Buffer.from(csv)});
   await panel.getByRole('button',{name:'校验并预览',exact:true}).click();
   await panel.getByRole('button',{name:'确认导入',exact:true}).waitFor();
@@ -113,7 +118,7 @@ async function main(){
   await panel.getByText(/暂时无法导入/).waitFor();
   assert((await panel.locator('input[type=file]').inputValue()).length>0,'CSV remains selected after failure');
   await panel.getByRole('button',{name:'确认导入',exact:true}).click();
-  await panel.getByText('已导入，未改动人工清洁状态。',{exact:true}).waitFor();
+  await panel.getByText('订单已导入。',{exact:true}).waitFor();
   await page.unroute('**/api/workspace/booking-import',importRoute);
   const imported=await api('/api/workspace/bookings');
   assert(imported.bookings.some(item=>item.external_id===externalId));

@@ -1,10 +1,9 @@
-import {isHosted} from "@/lib/deployment";
 import { redirect } from "next/navigation";
 import { hasSupabaseConfig } from "@/lib/supabase/config";
 import { createClient } from "@/lib/supabase/server";
+import { desktopTrial } from "@/lib/operator-sample";
 import { LoginForm } from "./login-form";
 import "./auth.css";
-import {operatorSample} from "@/lib/operator-sample";
 
 export const dynamic = "force-dynamic";
 
@@ -24,5 +23,5 @@ export default async function LoginPage({searchParams}:{searchParams:Promise<{co
   }
   if (authenticated) redirect("/app");
 
-  return <div className="auth-shell"><LoginForm configured={hasSupabaseConfig()} confirmationFailed={confirmationFailed} demoAvailable={operatorSample()||Boolean(process.env.DEMO_LOGIN_EMAIL&&process.env.DEMO_LOGIN_PASSWORD)} prototypeAvailable={!isHosted()&&!operatorSample()} /></div>;
+  return <div className="auth-shell"><LoginForm configured={hasSupabaseConfig()} confirmationFailed={confirmationFailed} localTrial={desktopTrial()} /></div>;
 }

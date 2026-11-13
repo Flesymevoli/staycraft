@@ -19,7 +19,7 @@ export function businessAnalysis(data: BookingMetrics, zh: boolean) {
  }else if(!data.available_room_nights){
   title=t("所选期间已订满，重点转向履约准备","This period is fully booked; focus on stay preparation");
   evidence=t("当前启用客房已无可订间夜，继续为这些日期引流也无法增加现有库存的预订。","No active room nights remain available, so attracting more bookings for these dates cannot fill additional existing capacity.");
-  action=t("优先核对到离店与清洁衔接，将推广日期转向仍有空房的其他期间。","Prioritise arrivals, departures and cleaning handovers; direct promotion toward other periods with availability.");
+  action=t("优先核对到离店安排，将推广日期转向仍有空房的其他期间。","Prioritise arrivals and departures; direct promotion toward other periods with availability.");
  }else{
   const lastBooked=days.findLastIndex(day=>day.booked>0);
   const trailing=lastBooked>=0?days.length-lastBooked-1:0;

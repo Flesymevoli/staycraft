@@ -25,7 +25,7 @@ export async function POST(request:Request){try{
  const inventoryResult=await supabase.rpc('get_room_inventory',{p_property:propertyId});
  const inventory=inventoryResult.error?null:validateInventory(inventoryResult.data?.inventory,propertyId);
  const active=new Set(inventory?.rooms.filter(room=>room.active).map(room=>room.typeId));
- const rates=inventory?.types.filter(type=>active.has(type.id)).map(type=>type.price)||[];
+ const rates=inventory?.types.filter(type=>active.has(type.id)).map(type=>type.price).filter((price):price is number=>price!==null&&price>0)||[];
  const ownRates=rates.length?{min:Math.min(...rates),max:Math.max(...rates)}:null;
  const demo=operatorSample();
  let window={start:input.start,end:input.end};

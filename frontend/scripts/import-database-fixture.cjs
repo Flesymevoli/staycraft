@@ -25,6 +25,8 @@ module.exports=function createImportDb(sample,getInventory){
  create policy own_property on properties for select to authenticated using(owner_user_id=auth.uid());
  create policy own_booking on direct_bookings for select to authenticated using(exists(select 1 from properties p where p.id=property_id and p.owner_user_id=auth.uid()));`);
  for(const file of ['20261103000200_booking_import.sql','20261103000300_import_metrics.sql','20261103000400_import_stay_guard.sql'])await db.exec(fs.readFileSync(path.join(__dirname,'../../supabase/migrations',file),'utf8'));
+ await db.exec("alter table room_types add column beds text default '待补充',add column capacity smallint,add column photo_path text default '';");
+ await db.exec(fs.readFileSync(path.join(__dirname,'../../supabase/migrations/20261113040439_auto_import_room_types.sql'),'utf8'));
  await db.query('insert into properties(id,owner_user_id) values($1,$2)',[sample.propertyId,sample.ownerId]);
  await syncInventory();
  for(const b of sample.bookings)await db.query(`insert into direct_bookings(id,property_id,guest_hash,request_id,room_id,type_id,room_number,type_name,arrival,departure,guest_name,phone,expected_arrival,nightly_rate,total,status,refund_result) values($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,'00000000',$12,$13,$14,$15,$16)`,[b.id,sample.propertyId,'0'.repeat(64),b.id,b.room_id,b.type_id,b.room_number,b.type_name,b.arrival,b.departure,b.guest_name,b.expected_arrival,b.nightly_rate,b.total,b.status,b.refund_result]);
@@ -33,7 +35,7 @@ module.exports=function createImportDb(sample,getInventory){
  })();
  async function syncInventory(){
   const inv=getInventory();
-  for(const t of inv.types)await db.query('insert into room_types values($1,$2,$3,$4) on conflict(property_id,id) do update set name=excluded.name,price=excluded.price',[sample.propertyId,t.id,t.name,t.price]);
+  for(const t of inv.types)await db.query('insert into room_types(property_id,id,name,price,beds,capacity,photo_path) values($1,$2,$3,$4,$5,$6,$7) on conflict(property_id,id) do update set name=excluded.name,price=excluded.price,beds=excluded.beds,capacity=excluded.capacity',[sample.propertyId,t.id,t.name,t.price,t.beds,t.capacity,t.photo||'']);
   for(const r of inv.rooms)await db.query('insert into rooms values($1,$2,$3,$4,$5,$6) on conflict(property_id,id) do update set number=excluded.number,active=excluded.active,housekeeping=excluded.housekeeping',[sample.propertyId,r.id,r.typeId,r.number,r.active,r.housekeeping]);
  }
  let chain=Promise.resolve();
@@ -50,6 +52,9 @@ module.exports=function createImportDb(sample,getInventory){
     else{q='select get_booking_metrics($1,$2) result';args=[b.p_property,b.p_days]}
     const result=(await db.query(q,args)).rows[0].result;
     if(rpc==='process_booking_import'&&b.p_commit){
+     const created=(await db.query('select * from room_types where property_id=$1',[sample.propertyId])).rows;
+     const inventory=getInventory();
+     for(const type of created)if(!inventory.types.some(t=>t.id===type.id))inventory.types.push({id:type.id,name:type.name,beds:type.beds,capacity:type.capacity,price:type.price,photo:type.photo_path});
      const imported=(await db.query('select * from direct_bookings where external_id is not null')).rows;
      sample.bookings.splice(0,sample.bookings.length,...sample.bookings.filter(x=>!x.external_id),...imported.map(x=>({...x,arrival:x.arrival instanceof Date?x.arrival.toISOString().slice(0,10):String(x.arrival).slice(0,10),departure:x.departure instanceof Date?x.departure.toISOString().slice(0,10):String(x.departure).slice(0,10)})));
     }

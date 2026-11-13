@@ -2,7 +2,7 @@ export const workspaceSearchLimit = 6;
 export const workspaceSearchMaxLength = 80;
 export type WorkspaceSearchBooking = {id: string; externalId: string | null; guestName: string; roomNumber: string; typeName: string; arrival: string; departure: string};
 export type WorkspaceSearchRoom = {id: string; number: string; floor: string; typeName: string; active: boolean};
-export type WorkspaceSearchRoomType = {id: string; name: string; beds: string; capacity: number; price: number};
+export type WorkspaceSearchRoomType = {id: string; name: string; beds: string; capacity: number|null; price: number|null};
 export type WorkspaceSearchResults = {
   bookings: WorkspaceSearchBooking[];
   rooms: WorkspaceSearchRoom[];

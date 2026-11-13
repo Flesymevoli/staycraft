@@ -36,6 +36,9 @@ function pdfFixture() {
     await page.getByRole('button',{name:'填入所选字段',exact:true}).click();
     assert.equal(await page.getByLabel('民宿名称 *',{exact:true}).inputValue(),'虚构测试小屋');
     assert.equal(await page.getByRole('button',{name:'确认保存',exact:true}).isEnabled(),false);
+    await page.getByLabel('早餐时间',{exact:true}).fill('无早餐');
+    await page.getByLabel('入住时间',{exact:true}).fill('１２： ００');
+    await page.getByLabel('退房时间',{exact:true}).fill('12: 00');
     await page.getByLabel('我已核对以上资料，确认内容准确。',{exact:true}).check();
     await page.getByRole('button',{name:'确认保存',exact:true}).click();
     await page.getByText('已保存确认后的资料。',{exact:true}).waitFor();
@@ -47,6 +50,9 @@ function pdfFixture() {
     await page.getByRole('button',{name:'编辑资料',exact:true}).click();await page.getByLabel('民宿名称 *',{exact:true}).waitFor();
     await page.waitForFunction(()=>document.querySelector('input[required]')?.value==='虚构测试小屋');
     const initial=await(await context.request.get(base+'/api/workspace/profile')).json();
+    assert.equal(initial.profile.breakfast,'');
+    assert.equal(initial.profile.checkin,'12:00');
+    assert.equal(initial.profile.checkout,'12:00');
     const bad=await context.request.put(base+'/api/workspace/profile',{headers:{origin:base},data:{profile:{...initial.profile,checkin:'25:00'},revision:initial.revision,confirmed:true}});assert.equal(bad.status(),400);
     assert.equal((await context.request.put(base+'/api/workspace/profile',{headers:{origin:'https://elsewhere.invalid'},data:{profile:initial.profile,revision:initial.revision,confirmed:true}})).status(),403);
     assert.equal((await context.request.put(base+'/api/workspace/profile',{headers:{origin:base},data:{profile:initial.profile,revision:initial.revision,confirmed:false}})).status(),400);

@@ -13,7 +13,7 @@ export function amapCoordinates(latitude:number,longitude:number){
  const rad=latitude/180*pi,magic=1-.00669342162296594323*Math.sin(rad)**2,sqrt=Math.sqrt(magic);
  return `${(longitude+lon/(6378245/sqrt*Math.cos(rad)*pi)*180).toFixed(6)},${(latitude+lat/((6378245*(1-.00669342162296594323))/(magic*sqrt)*pi)*180).toFixed(6)}`;
 }
-export type AmapOptions={key?:string;fetcher?:typeof fetch};
+export type AmapOptions={key?:string;fetcher?:typeof fetch;onArea?:(area:string)=>void};
 export async function amapTool(name:string,args:Record<string,unknown>,signal?:AbortSignal,fetcher:typeof fetch=fetch,options?:AmapOptions){
  const key=options&&Object.hasOwn(options,'key')?options.key:process.env.AMAP_MAPS_API_KEY;if(!key)throw Error('amap_not_configured');
  const url=new URL('https://mcp.amap.com/mcp');url.searchParams.set('key',key);
@@ -42,8 +42,10 @@ export function placeResults(data:{pois?:Record<string,unknown>[]}){
 }
 export async function amapGeocode(location:string,signal?:AbortSignal,options?:AmapOptions):Promise<string>{
  const clean=location.replace(/（[^）]*虚构[^）]*）/g,'').replace(/周边$/,'').trim();
- const geo=await amapTool('maps_geo',{address:clean},signal,options?.fetcher??fetch,options),point=(geo.results||geo.geocodes)?.[0]?.location;
+ const geo=await amapTool('maps_geo',{address:clean},signal,options?.fetcher??fetch,options),entry=(geo.results||geo.geocodes)?.[0],point=entry?.location;
  if(!amapPoint(point))throw Error('amap_location_unknown');
+ const area=[entry?.province,entry?.city,entry?.district].filter((value,index,all)=>typeof value==='string'&&value.trim()&&all.indexOf(value)===index).join('');
+ if(area)options?.onArea?.(area);
  return point;
 }
 export function amapPoint(value:unknown){

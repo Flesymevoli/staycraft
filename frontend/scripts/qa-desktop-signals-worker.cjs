@@ -57,11 +57,11 @@ function harness(options={}){
    check(url.pathname==='/mcp'&&method==='POST','fixed geocoding endpoint');
    check(url.searchParams.get('key')===env.AMAP_MAPS_API_KEY,'explicit private binding used');
    const body=JSON.parse(init.body);check(body.params.name==='maps_geo','only geocoding capability');
-   if(options.searchArea)check([options.location,options.venue||options.searchArea+'文化路12号'].includes(body.params.arguments.address),'geocoder receives property or extracted event venue only');
+   if(options.searchArea)check([options.location?.replace(/周边$/,''),options.venue||options.searchArea+'文化路12号'].includes(body.params.arguments.address),'geocoder receives property or extracted event venue only');
    if(options.mapRedirect)return new Response(null,{status:302,headers:{Location:'https://untrusted.example'}});
    if(options.mapOversize)return new Response('x'.repeat(262145));
    if(options.mapInvalid)return json({error:{message:'upstream private-map-fixture '+TOKEN}},500,{'set-cookie':'stolen=yes'});
-   return json({jsonrpc:'2.0',id:1,result:{content:[{type:'text',text:JSON.stringify({geocodes:[{location:options.badPoint?'not-a-coordinate':options.point??'121.133778,31.457266'}]})}]}},200,{'set-cookie':'provider=private'});
+   return json({jsonrpc:'2.0',id:1,result:{content:[{type:'text',text:JSON.stringify({geocodes:[{location:options.badPoint?'not-a-coordinate':options.point??'121.133778,31.457266',...options.geocodeArea}]})}]}},200,{'set-cookie':'provider=private'});
   }
   if(['https://www.namoc.cn','https://www.zjam.org.cn'].includes(url.origin)){
    check(method==='GET','official calendars only use GET');check(init.credentials==='omit','calendar request explicitly omits credentials');
@@ -124,6 +124,10 @@ async function main(){
  }
  // A city with no bespoke calendar still works through the shared search/extraction path.
  const generic=(district,extra={})=>({location:`广东省广州市${district}测试路88号私人民宿`,searchArea:`广东省广州市${district}`,point:'113.2800,23.1200',...extra});
+ const shortAddress={location:'无锡惠山古镇周边',searchArea:'江苏省无锡市梁溪区',point:'120.27,31.58',geocodeArea:{province:'江苏省',city:'无锡市',district:'梁溪区'},env:{SEARCH_API_KEY:'short-address-fixture'}};
+ result=await invoke({...eventInput,location:shortAddress.location},shortAddress);
+ check(result.response.status===200&&result.result.events.length===1,'address without 市 uses geocoded administrative area');
+ check(result.result.location===shortAddress.location,'original property scope remains unchanged');
  let genericOptions=generic('越秀区');
  result=await invoke({...eventInput,location:genericOptions.location},genericOptions);
  check(result.response.status===200&&result.result.events.length===0&&result.result.source.note.includes('尚未就绪'),'unconfigured search is explicit, not a claim of no local activities');

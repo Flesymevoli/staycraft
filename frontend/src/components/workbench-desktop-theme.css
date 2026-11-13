@@ -715,3 +715,7 @@
 [data-desktop-theme="soft"] [data-rule-report] > summary { padding:12px 0; color:var(--ink); font-size:16px; font-weight:500; cursor:pointer; }
 
 [data-desktop-theme="soft"] .diagnosis-layout-side:empty { display:none; }
+[data-desktop-theme="soft"] .desktop-guide-heading { flex-wrap:wrap; gap:8px 16px; }
+[data-desktop-theme="soft"] .desktop-guide-progress { display:flex; flex-wrap:wrap; align-items:center; gap:8px; }
+[data-desktop-theme="soft"] .desktop-guide-progress progress { width:112px; height:8px; accent-color:var(--blue); }
+[data-desktop-theme="soft"] .desktop-guide-progress span { white-space:nowrap; font-variant-numeric:tabular-nums; }

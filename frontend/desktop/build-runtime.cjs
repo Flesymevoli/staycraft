@@ -33,7 +33,7 @@ function run(file,args,options){
 async function copyCollector(resources){
  const collector=path.join(resources,'collector');
  await mkdir(path.join(collector,'scripts'),{recursive:true});
- for(const name of ['collect-public-prices.mjs','collect-ctrip-list-prices.mjs','login-price-monitor.mjs','price-monitor-store.mjs','price-monitor-dates.mjs'])
+ for(const name of ['collect-public-prices.mjs','collect-ctrip-list-prices.mjs','login-price-monitor.mjs','price-monitor-browser.mjs','price-monitor-store.mjs','price-monitor-dates.mjs'])
   await cp(path.join(root,'scripts',name),path.join(collector,'scripts',name));
  await mkdir(path.join(collector,'src','lib'),{recursive:true});
  await cp(path.join(root,'src','lib','competitor-observations.ts'),path.join(collector,'src','lib','competitor-observations.ts'));

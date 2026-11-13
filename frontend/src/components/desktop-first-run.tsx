@@ -32,8 +32,6 @@ export function DesktopFirstRun({scope,section,zh,onRooms}:{scope:string;section
  const [attempt,setAttempt]=useState(0);
  const t=(cn:string,en:string)=>zh?cn:en;
  useEffect(()=>{
-  const bridge=window.staycraftDesktop;
-  if(!bridge)return;
   let saved=initial;
   try{
    const value=JSON.parse(localStorage.getItem(key)||"null");
@@ -62,7 +60,7 @@ export function DesktopFirstRun({scope,section,zh,onRooms}:{scope:string;section
    const stock=inventory.status==="fulfilled"?inventory.value.inventory:null;
    setReady(previous=>({
     profile:profile.status==="fulfilled"?Boolean(profile.value.profile?.name?.trim()&&profile.value.profile.location?.trim()):previous.profile,
-    rooms:inventory.status==="fulfilled"?Boolean(stock?.rooms.some(room=>room.active&&stock.types.some(type=>type.id===room.typeId&&type.price>0))):previous.rooms,
+    rooms:inventory.status==="fulfilled"?Boolean(stock?.rooms.some(room=>room.active&&stock.types.some(type=>type.id===room.typeId&&type.price!==null&&type.price>0))):previous.rooms,
     orders:orders.status==="fulfilled"?Boolean(orders.value.batches?.length):previous.orders,
     market:market.status==="fulfilled"?market.value:previous.market,
     promotion:promotion.status==="fulfilled"?Boolean(promotion.value.state?.drafts?.some(draft=>draft.kind!=="action")):previous.promotion,
@@ -92,11 +90,12 @@ export function DesktopFirstRun({scope,section,zh,onRooms}:{scope:string;section
  const steps=[
   {done:ready.profile&&ready.rooms,title:t("完善民宿资料","Set up your property"),description:t("填写名称和地址，再添加启用客房，为房型设置每晚价格。客房数由你添加的客房计算。","Save the property name and address, then add active rooms with nightly rates. Room count comes from the rooms you add."),href:ready.profile?"/app/mine#room-types":"/app/mine#property-profile",page:"mine",link:ready.profile?t("设置房型与价格","Set rooms and rates"):t("编辑民宿资料","Edit property details")},
   {done:ready.orders,title:t("导入订单","Import bookings"),description:t("在订单页下载 CSV 模板，上传文件，核对预览后确认导入。","Download the CSV template on the bookings page, upload your file, review the preview and confirm the import."),href:"/app/work",page:"work",link:t("打开订单导入","Open booking import")},
-  {done:ready.market,title:t("连接市场数据源","Connect market data"),description:t("打开采集抽屉并登录携程，添加周边住宿的详情页链接和完整名称，采集未来 7 晚日历参考价。对标住宿会按当前民宿地址保存在这台电脑。","Open the collector and sign in to Ctrip. Add nearby hotel detail links and full names, then collect seven nights of calendar references. Your selection is saved on this computer for the current property address."),href:"/app/explore#desktop-collection",page:"explore",link:t("打开市场采集","Open market collection")},
+  {done:ready.market,title:t("连接市场数据源","Connect market data"),description:t("打开采集抽屉，选择城市、入住日期和星级，采集民宿列表起价。首次使用需登录携程。","Open the collector and choose a city, check-in date and star rating. Sign in to Ctrip on your first use."),href:"/app/explore#desktop-collection",page:"explore",link:t("打开市场采集","Open market collection")},
   {done:progress.reviewed,title:t("查看经营诊断","Review your diagnosis"),description:t("在工作台查看经营指标、市场证据和行动建议。读完后标记本步完成。","Review your operating metrics, market evidence and suggested actions on the workbench, then mark this step as reviewed."),href:"/app",page:"home",link:t("打开工作台","Open workbench")},
   {done:ready.promotion,title:t("生成并保存推广文案","Create and save promotion copy"),description:t("从工作台的经营机会进入推广，或直接打开推广页。生成方案后编辑文案，再点击保存。","Open Promotion from a workbench opportunity or from the navigation. Generate a plan, edit your copy and save it."),href:"/app/promotion",page:"promotion",link:t("打开推广","Open Promotion")},
  ];
  const current=steps.findIndex((step,index)=>!step.done&&!progress.skipped.includes(index));
+ const completed=steps.filter(step=>step.done===true).length;
  const step=steps[current];
  const pending=step?.done===null;
  const promotionHelp=section==="promotion"&&!progress.promotionHelpClosed&&ready.promotion===false;
@@ -104,8 +103,11 @@ export function DesktopFirstRun({scope,section,zh,onRooms}:{scope:string;section
   {!progress.finished&&(progress.paused?<div className="desktop-guide-resume">
    <button type="button" onClick={()=>save({...progress,paused:false})}>{t("继续首次使用引导","Resume setup guide")}</button>
   </div>:<section className="native-card" aria-label={t("首次使用引导","Setup guide")}>
-   <div className="native-section-head"><h2>{t("首次使用引导","Setup guide")}</h2>
-    {step&&<span>{t(`第 ${current+1} 步，共 ${steps.length} 步`,`Step ${current+1} of ${steps.length}`)}</span>}
+   <div className="native-section-head desktop-guide-heading"><h2>{t("首次使用引导","Setup guide")}</h2>
+    <div className="desktop-guide-progress">
+     <progress value={completed} max={steps.length} aria-label={t("首次使用引导完成进度","Setup completion progress")}/>
+     <span>{t(`已完成 ${completed}/${steps.length} 步`,`${completed}/${steps.length} steps completed`)}</span>
+    </div>
    </div>
    {pending?<p role="status">{checked?t("暂时无法核对这一步的完成状态，请重试。","This step's completion status could not be checked. Please retry."):t("正在核对已有资料和设置…","Checking your existing details and setup…")}</p>:step?<><h3>{step.title}</h3><p>{step.description}</p></>:<p>{t("引导已走完，可以开始日常经营。","You've reached the end of setup.")}</p>}
    <div className="promotion-actions">

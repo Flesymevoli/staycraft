@@ -22,6 +22,7 @@
     "desktop:dev": "node desktop/dev.cjs",
     "desktop:hosted": "electron desktop/main.cjs --hosted",
     "desktop:sample": "node desktop/dev.cjs --sample",
+    "desktop:try": "node desktop/dev.cjs --try",
     "desktop:runtime:build": "node desktop/build-runtime.cjs",
     "desktop:standalone": "electron desktop/main.cjs --standalone",
     "qa:desktop-runtime": "node scripts/qa-desktop-runtime.cjs",

@@ -23,8 +23,8 @@ let window,active,child,runtime,quitting=false;
 
 function sameOrigin(value){try{return new URL(value).origin===origin}catch{return false}}
 async function scope(){
- const response=await window.webContents.session.fetch(endpoint,{credentials:'include',redirect:'error'});
- if(!response.ok)throw Error(response.status===403?'demo_only':'sign_in');
+ const response=await window.webContents.session.fetch(endpoint,{credentials:'include',redirect:'error',signal:AbortSignal.timeout(15000)});
+ if(!response.ok)throw Error(response.status===403?'demo_only':response.status===401?'sign_in':'desktop_unavailable');
  const identity=await response.json();
  if(!uuid.test(identity.userId)||!uuid.test(identity.propertyId))throw Error('sign_in');
  return identity;
@@ -49,7 +49,7 @@ function runScript(script,args,root,profile){
   const browserEnv=browsers?{PLAYWRIGHT_BROWSERS_PATH:browsers}:{};
   const file=path.join(runtime?.collector||(app.isPackaged?path.join(process.resourcesPath,'collector'):project),'scripts',script);
   const options={cwd:root,env:{...env,...browserEnv,STAYCRAFT_PRICE_ROOT:root,STAYCRAFT_PRICE_PROFILE:profile},windowsHide:true,stdio:'ignore'};
-  child=standalone?utilityProcess.fork(file,Array.isArray(args)?args:[args],options)
+  child=standalone?utilityProcess.fork(path.join(__dirname,'collector-runner.cjs'),[file,...(Array.isArray(args)?args:[args])],options)
    :spawn(node,[file,...(Array.isArray(args)?args:[args])],{...options,env:{...options.env,...(hosted?{ELECTRON_RUN_AS_NODE:'1'}:{})}});
   child.once('error',reject);
   child.once('exit',code=>{child=undefined;resolve(code)});
@@ -62,7 +62,7 @@ async function sync(file,pending){
  if(pending.body.collectionLocation!==undefined&&normalizedLocation(current.location)!==normalizedLocation(pending.body.collectionLocation))throw Error('location_changed');
  const response=await window.webContents.session.fetch(endpoint,{
   method:'POST',credentials:'include',redirect:'error',headers:{Origin:origin,'Content-Type':'application/json'},
-  body:JSON.stringify(pending.body)
+  body:JSON.stringify(pending.body),signal:AbortSignal.timeout(20000)
  }).catch(()=>null);
  if(!response?.ok){
   const problem=await response?.json().catch(()=>null);
@@ -89,6 +89,8 @@ async function collect(input,identity,base,file){
  if(!sample&&old?.startedAt&&Date.now()-Date.parse(old.startedAt)<300000)throw Error('cooldown');
  let hotels=[];
  let listUrl;
+ const star=selection?.star;
+ if(star!==undefined&&(typeof star!=='string'||!/^[2-5]$/.test(star)))throw Error('invalid_hotels');
  if(!sample&&typeof input==='string'&&/^https:\/\/hotels\.ctrip\.com\/hotels\/list(?:\?|$)/.test(input.trim())){
   try{
    if(typeof input!=='string'||input.length>4000)throw Error();
@@ -118,14 +120,15 @@ async function collect(input,identity,base,file){
   await saveJson(path.join(run,'homestays.json'),hotels);
   const session=await readJson(path.join(base,'session.json'));
   if(session?.scope)await saveJson(path.join(run,'session.json'),{scope:session.scope});
-  await runScript('collect-public-prices.mjs',['--collect-public-prices',hotels.map(hotel=>hotel.id).join(',')],run,profile);
-  job=await readJson(path.join(run,'job.json'))||{error:'no_quotes'};
+  const code=await runScript('collect-public-prices.mjs',['--collect-public-prices',hotels.map(hotel=>hotel.id).join(',')],run,profile);
+  job=await readJson(path.join(run,'job.json'))||{error:code===0?'no_quotes':'browser_unavailable'};
   observations=await readJson(path.join(run,'history.json'))||[];
  }else{
   const reportFile=path.join(run,'list-prices.json');
-  await runScript('collect-ctrip-list-prices.mjs',[listUrl.href,reportFile],run,profile);
+  const args=[listUrl.href,reportFile,...(star===undefined?[]:[star])];
+  const code=await runScript('collect-ctrip-list-prices.mjs',args,run,profile);
   const report=await readJson(reportFile);
-  job={dates:report?.dates,error:report?.status==='complete'?undefined:report?.error||'no_quotes'};
+  job={dates:report?.dates,error:report?.status==='complete'?undefined:report?.error||(code===0?'no_quotes':'browser_unavailable')};
   observations=job.error?[]:report.days.flatMap(day=>{
    const occupancy=/^1间, ([1-9]|10)成人, 0儿童$/.exec(day.occupancy);
    if(!occupancy)return [];
@@ -164,7 +167,7 @@ function handle(name,handler){
    await mkdir(path.dirname(file),{recursive:true});
    return await handler(identity,base,file,arg);
   }catch(error){
-   const known=['sign_in','demo_only','invalid_hotels','account_changed','sync_conflict','sync_failed','busy','login_failed','cooldown','property_location_required','collection_context_changed','location_changed'];
+   const known=['sign_in','demo_only','invalid_hotels','account_changed','sync_conflict','sync_failed','busy','login_failed','browser_unavailable','cooldown','property_location_required','collection_context_changed','location_changed'];
    return {state:'failed',error:known.includes(error.message)?error.message:'desktop_unavailable'};
   }
  });
@@ -215,7 +218,10 @@ app.whenReady().then(async()=>{
   await mkdir(login,{recursive:true});
   const code=await runScript('login-price-monitor.mjs','--open-login',login,path.join(base,'browser-profile'));
   const session=await readJson(path.join(login,'session.json'));
-  if(code!==0||!session)throw Error('login_failed');
+  if(code!==0||!session){
+   const state=await readJson(path.join(login,'login-state.json'));
+   throw Error(state?.error==='browser_unavailable'?'browser_unavailable':'login_failed');
+  }
   await saveJson(path.join(base,'session.json'),session);
   return summary(await readJson(file));
  }));

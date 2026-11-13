@@ -25,7 +25,7 @@ export async function POST(request:Request){try{
  const inventoryResult=await supabase.rpc('get_room_inventory',{p_property:propertyId});
  const inventory=inventoryResult.error?null:validateInventory(inventoryResult.data?.inventory,propertyId);
  const active=new Set(inventory?.rooms.filter(r=>r.active).map(r=>r.typeId));
- const rates=inventory?.types.filter(t=>active.has(t.id)).map(t=>t.price)||[];
+ const rates=inventory?.types.filter(t=>active.has(t.id)).map(t=>t.price).filter((price):price is number=>price!==null&&price>0)||[];
  const ownRates=rates.length?{min:Math.min(...rates),max:Math.max(...rates)}:null;
  return Response.json({hotels,ownRates,location,locationPrecision:input.coordinates?'address':'property',start:input.start,end:input.end,nights,adults:2,provider:'RollingGo',checkedAt:new Date().toISOString()},{headers:{'Cache-Control':'no-store'}});
  }catch(e){return workspaceFailure(e)}}

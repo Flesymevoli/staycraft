@@ -2,9 +2,7 @@ const paths: Record<string, string> = { facts: "/v1/local/facts", "reply-decisio
 const methods: Record<string, string[]> = { facts: ["GET", "PUT"], "reply-decision": ["POST"], conversations: ["GET"], conversation: ["GET"], "conversation-draft": ["POST"], "conversation-reply": ["POST"], "analysis-summary": ["GET"], "promotion-generate": ["POST"], "promotion-draft": ["GET", "PUT"] };
 
 paths["room-board"] = "/v1/local/room-board";
-paths["room-clean"] = "/v1/local/room-clean";
 methods["room-board"] = ["GET"];
-methods["room-clean"] = ["POST"];
 paths["operation-metrics"] = "/v1/local/operation-metrics";
 methods["operation-metrics"] = ["GET"];
 paths.schedule = "/v1/local/schedule";

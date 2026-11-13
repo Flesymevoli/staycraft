@@ -27,7 +27,7 @@ export function ruleSuggestions(facts:AdviceFacts,zh:boolean):OperatingSuggestio
   out.push({
    title:t('No open capacity in this period','本期已订满'),
    problem:t(`${o.booked} of ${o.capacity} room nights are booked.`,`${o.booked}/${o.capacity} 间夜已订满。`),
-   action:t('Check arrival and cleaning handovers and avoid overselling.','核对到店与清洁安排，避免超卖。'),
+   action:t('Check arrival arrangements and avoid overselling.','核对到店安排，避免超卖。'),
    reason:t('There is no open capacity to promote in this period.','本期没有可推广的空余间夜。'),
    check:t('Booking status and arrival times.','订单状态与到店时间。')
   });
@@ -44,7 +44,7 @@ export function ruleSuggestions(facts:AdviceFacts,zh:boolean):OperatingSuggestio
   out.push({
    title:t('Keep remaining rooms for fulfilment','余房优先保障履约'),
    problem:t(`${o.bookedPct}% booked with ${o.available} room nights open.`,`已订 ${o.bookedPct}%，剩余 ${o.available} 间夜。`),
-   action:t('Prioritise arrival handovers and cleaning, and avoid broad discounting for the remaining rooms.','优先安排到店与清洁，剩余房量不做整体降价。'),
+   action:t('Prioritise arrival arrangements, and avoid broad discounting for the remaining rooms.','优先安排到店，剩余房量不做整体降价。'),
    reason:t('Most of this period is already booked.','本期大部分房量已订出。'),
    check:t('Pending tasks, arrival times and room readiness.','待办任务、到店时间与房态。')
   });

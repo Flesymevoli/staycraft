@@ -15,7 +15,7 @@ import {OperatorSampleContext} from "./operator-sample-context";
 import {WorkspaceExplore} from "./workspace-explore";
 import {PromotionWorkspace} from "./promotion-workspace";
 import {WorkbenchDashboard} from "./workbench-dashboard";
-import {useDesktopSurface} from "./desktop-surface";
+import {DesktopTrialContext,useDesktopBridgeAvailable,useDesktopSurface} from "./desktop-surface";
 import {DesktopCollectionHint} from "./desktop-collection-hint";
 import {DesktopSearch} from "./desktop-search";
 import {DesktopFirstRun} from "./desktop-first-run";
@@ -52,10 +52,15 @@ type WorkspaceSession={
 };
 const WorkspaceSessionContext=createContext<WorkspaceSession|null>(null);
 
-export function WorkbenchShell({children,...session}:WorkspaceSession & {children:ReactNode}){
+export function WorkbenchShell({localTrial, ...props}:WorkspaceSession & {children:ReactNode;localTrial:boolean}){
+ return <DesktopTrialContext value={localTrial}><WorkbenchLayout {...props}/></DesktopTrialContext>;
+}
+
+function WorkbenchLayout({children,...session}:WorkspaceSession & {children:ReactNode}){
  const {email,connection,sample,demo}=session;
  const accountIdentity=displayLoginIdentity(email);
  const desktop = useDesktopSurface();
+ const bridgeAvailable=useDesktopBridgeAvailable();
  const router=useRouter();
  const [collectionOpen,setCollectionOpen]=useState(false);
  const {language,setLanguage}=useOperatorLanguage(),zh=language==="zh",t=(en:string,cn:string)=>zh?cn:en;
@@ -79,7 +84,7 @@ export function WorkbenchShell({children,...session}:WorkspaceSession & {childre
   <aside className="workbench-sidebar" aria-label={t("Workspace navigation","工作台导航")}>
    <Link href="/app" className="workbench-brand" aria-label="StayCraft"><Image src="/brand/StayCraft-sidebar-HD.png" width={3105} height={717} alt="StayCraft" priority unoptimized/></Link>
    <nav className="workbench-primary-nav" data-workbench-nav aria-label={t("Main navigation","主导航")}>{desktop?<><span className="desktop-nav-label">{t("Operations","核心经营")}</span>{sections.slice(0,4).map(item=>navLink(item))}<span className="desktop-nav-label">{t("Settings","配置与资产")}</span>{navLink(sections[4])}</>:sections.map(item=>navLink(item))}</nav>
-   {desktop&&<DesktopCollectionHint key={`${session.userId}:${connection.status==="linked"?connection.propertyId:"unassigned"}`} zh={zh} onOpen={()=>setCollectionOpen(true)}/>}
+   {bridgeAvailable&&<DesktopCollectionHint key={`${session.userId}:${connection.status==="linked"?connection.propertyId:"unassigned"}`} zh={zh} onOpen={()=>setCollectionOpen(true)}/>}
    <div className="workbench-sidebar-bottom"><Link href="/app/mine" className="workbench-user"><span><UserRound size={18}/></span><div><strong>{propertyName}</strong><small>{accountIdentity}</small></div></Link></div>
   </aside>
   <main id="workspace-main" className={`native-page workspace-page workbench-page workspace-${pageSection}`}>
@@ -120,13 +125,13 @@ export function WorkbenchPage({section,roomId,bookingId,bookingHistory=false,thr
  const current=sections.find(item=>item.id===(section==="work"?"analysis":section))??sections[0];
  const propertyName=connection.status==="linked"?connection.propertyName:t("Your homestay","我的民宿");
  const heading=bookingHistory?t("Booking history","订单记录"):bookingId?t("Booking details","订单详情"):threadId?t("Guest conversation","客人会话"):roomId?roomId==="new"?t("Add a room","添加客房"):t("Room details","客房详情"):desktop&&!bookingHistory&&!bookingId&&!threadId&&!roomId?({home:t(`Hello, ${displayName||"host"}`,`你好，${displayName||"店主"}`),analysis:t("Business Data & Bookings","经营数据与订单核对"),work:t("Bookings & Import","订单与导入"),explore:t("Nearby Market Research","周边市场报价调研"),promotion:t("Promotion Split Studio","推广方案双栏工作台"),mine:t("My Property & Room Board","我的民宿与房态棋盘")}[section]):section==="mine"?t("My property","我的"):t(current.en,current.zh);
- const descriptions={home:t("Know what matters. Decide what to do next.","看清经营重点，做出下一步判断。"),work:t("Keep bookings, room status and incoming data in one place.","统一管理订单、房态与导入数据。"),analysis:t("Verify occupancy, room nights, allocated booking value & historical stay revenue.","按住宿日期核对占用率、间夜进度、分摊金额与历史住宿收入。"),explore:t("Compare same-date nearby hotel quotes, interquartile band & 7-day median.","比较同一入住日的周边酒店参考价、中间 50% 价带与七日中位数浮动。"),mine:t("Manage property profile, room type base rates & live housekeeping status.","维护民宿基础资料、房型挂牌价与清洁、入住状态。"),promotion:t("Pick local activities, weather and audiences; generate, edit and save your copy.","左栏挑选周边活动、天气与推荐客群线索，右栏生成、编辑并保存推广草稿。")};
+ const descriptions={home:t("Know what matters. Decide what to do next.","看清经营重点，做出下一步判断。"),work:t("Keep bookings, room status and incoming data in one place.","统一管理订单、房态与导入数据。"),analysis:t("Verify occupancy, room nights, allocated booking value & historical stay revenue.","按住宿日期核对占用率、间夜进度、分摊金额与历史住宿收入。"),explore:t("Compare same-date nearby hotel quotes, interquartile band & 7-day median.","比较同一入住日的周边酒店参考价、中间 50% 价带与七日中位数浮动。"),mine:t("Manage property details, room types and base rates.","维护民宿基础资料、客房和房型挂牌价。"),promotion:t("Pick local activities, weather and audiences; generate, edit and save your copy.","左栏挑选周边活动、天气与推荐客群线索，右栏生成、编辑并保存推广草稿。")};
  const detail=Boolean(roomId||bookingId||threadId||bookingHistory);
  return <>
     {!(desktop && section === "home" && !detail) && <div className="workbench-page-heading"><div><h1>{heading}</h1><p className="workbench-page-description">{detail?t("Review the details and keep records up to date.","查看详情，保持经营记录准确。"):descriptions[section]}</p></div>{desktop&&<div id="desktop-page-toolbar" className="desktop-page-toolbar"/>}</div>}
     {!roomId&&connection.status==="unavailable"&&<div className="workspace-notice" role="status"><span>{t("Property details unavailable. Please retry.","暂时无法读取民宿资料，请重试。")}</span><button type="button" disabled={refreshing} onClick={()=>startRefresh(()=>router.refresh())}><RefreshCw size={15}/>{refreshing?t("Retrying…","正在重试…"):t("Retry","重试")}</button></div>}
     <div className="workbench-body">
-     {!demo&&!sample&&connection.status==="linked"&&<DesktopFirstRun
+     {desktop&&!demo&&!sample&&connection.status==="linked"&&<DesktopFirstRun
       key={userId+":"+connection.propertyId} scope={userId+":"+connection.propertyId}
       section={section} zh={zh} onRooms={()=>setMineTab("rooms")}/>}
      {roomId&&<RoomPreviewDetail scope={userId} roomId={roomId} zh={zh}/>}
