@@ -4,7 +4,35 @@
 
 > An AI workspace helping homestay owners analyze their business and make better decisions.
 
-[体验 StayCraft](https://staycraft.online)
+[Online Demo · 网页演示](https://staycraft.online/try) · [Windows Desktop · 桌面版下载](https://github.com/Flesymevoli/staycraft/releases/tag/v0.1.0)
+
+## How to Try StayCraft · 如何体验 StayCraft
+
+### Option 1: Online Demo · 方式一：网页演示
+
+**[Try in your browser / 在浏览器中体验](https://staycraft.online/try)**
+
+**EN:** Open the link to explore StayCraft's interface and user journey directly in your browser. This is an interactive front-end demo using sample data, not the connected desktop application.
+
+**中文：** 点击链接即可体验 StayCraft 的界面与主要操作流程。此版本使用演示数据，属于交互式前端展示，不等同于连接实际服务的桌面应用。
+
+### Option 2: Windows Desktop App · 方式二：Windows 桌面应用
+
+**[Download Windows v0.1.0 / 下载 Windows 版本](https://github.com/Flesymevoli/staycraft/releases/tag/v0.1.0)**
+
+1. **EN:** Download `StayCraft-0.1.0-win-x64.zip` from the release assets. **中文：** 在 Release 页面下载 `StayCraft-0.1.0-win-x64.zip`。
+2. **EN:** Extract the entire ZIP file, keeping all files in the same folder. **中文：** 完整解压 ZIP，保留文件夹内所有文件。
+3. **EN:** Run `StayCraft.exe` on a 64-bit Windows computer. **中文：** 在 64 位 Windows 电脑上运行 `StayCraft.exe`。
+
+**EN:** The desktop version supports the connected application workflow. Features that use external data or AI may require internet access and appropriate service configuration.
+
+**中文：** 桌面版用于体验连接实际业务服务的应用流程。部分外部数据和 AI 功能需要网络连接及相应服务配置。
+
+### Three Core Features · 三大核心功能
+
+- **Data Analysis · 数据分析：** Interactive dashboards and AI-powered insights / 经营数据可视化与 AI 分析。
+- **Market Insights · 市场洞察：** Nearby price comparisons and pricing suggestions / 周边价格比较与调价建议。
+- **Marketing Support · 推广支持：** Local events, weather insights, and AI-assisted promotional content / 结合当地活动、天气等线索生成推广内容。
 
 ## 项目简介
 
@@ -66,9 +94,6 @@ npm run sample:imports
 ```
 
 打开 **http://127.0.0.1:3114/login**。
-
-演示账号：`demo@example.invalid`  
-演示密码：`staycraft-demo`
 
 这个演示使用虚构数据和独立的本地内存环境，重启后会恢复；它不是正式业务数据，也不会默认执行真实 AI 模型调用。
 
