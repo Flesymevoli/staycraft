@@ -4,7 +4,7 @@ const {spawn}=require('node:child_process'),{chromium}=require('./qa-browser.cjs
  server.stdout.on('data',c=>output+=c);server.stderr.on('data',c=>output+=c);
  await new Promise((resolve,reject)=>{const timer=setInterval(()=>{if(output.includes('Ready in')){clearInterval(timer);resolve()}},100);setTimeout(()=>{clearInterval(timer);reject(Error(output))},20000).unref()});
  browser=await chromium.launch();const ctx=await browser.newContext({viewport:{width:390,height:844}}),page=await ctx.newPage(),base='http://127.0.0.1:3175',errors=[];page.on('pageerror',e=>errors.push(e.message));
- await page.goto(base+'/login');await page.locator('input[name=email]').fill('demo@example.invalid');await page.locator('input[name=password]').fill('staycraft-demo');await page.locator('button[type=submit]').click();await page.waitForURL(base+'/app');
+ await page.goto(base+'/login');await page.locator('input[name=email]').fill('demo@example.invalid');await page.locator('input[name=password]').fill('isolated-test-login');await page.locator('button[type=submit]').click();await page.waitForURL(base+'/app');
  const bookings=await(await ctx.request.get(base+'/api/workspace/bookings')).json();assert(bookings.bookings.length>100);
  const profile=await(await ctx.request.get(base+'/api/workspace/profile')).json();assert(profile.profile.location.includes('沙溪古镇'));
  const metrics=await ctx.request.get(base+'/api/workspace/metrics?days=7');assert.equal(metrics.status(),200,await metrics.text());assert((await metrics.json()).amount_cents>0);

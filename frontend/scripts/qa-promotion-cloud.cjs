@@ -10,7 +10,7 @@ const base='http://127.0.0.1:3114';
  try{
   await new Promise((resolve,reject)=>{const interval=setInterval(()=>{if(output.includes('Ready in')){clearInterval(interval);resolve()}},100);server.once('exit',()=>{clearInterval(interval);reject(Error('Local server exited'))});setTimeout(()=>{clearInterval(interval);reject(Error('Local server startup timeout'))},20000).unref()});
   browser=await chromium.launch();context=await browser.newContext({viewport:{width:390,height:844}});const page=await context.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));page.on('dialog',d=>d.accept());
-  await page.goto(base+'/login');await page.locator('#email').fill('demo@example.invalid');await page.locator('#password').fill('staycraft-demo');await page.locator('button[type=submit]').click();await page.waitForURL(base+'/app',{timeout:60000});
+  await page.goto(base+'/login');await page.locator('#email').fill('demo@example.invalid');await page.locator('#password').fill('isolated-test-login');await page.locator('button[type=submit]').click();await page.waitForURL(base+'/app',{timeout:60000});
   const inventory=await(await context.request.get(base+'/api/workspace/inventory')).json();assert.equal(inventory.inventory.rooms.length,6);const profile=await(await context.request.get(base+'/api/workspace/profile')).json();assert.match(profile.profile.name,/虚构|演示/,'Only the fictional demo property is allowed');
   original=await(await context.request.get(base+'/api/workspace/promotion')).json();assert(original.state);assert.equal(original.state.sources.length,0,'Do not alter an existing user workspace');assert.equal(original.state.drafts.length,0);
   await page.goto(base+'/app/explore?start=2026-10-30&end=2026-11-02');const create=page.getByRole('button',{name:'生成推广草稿',exact:true});await create.waitFor({timeout:60000});assert.equal(await page.getByLabel('开始日期',{exact:true}).inputValue(),'2026-10-30');
@@ -24,7 +24,7 @@ const base='http://127.0.0.1:3114';
   await page.goto(base+'/app/work');await page.locator('.inventory-room').first().waitFor({timeout:60000});assert.equal(await page.locator('.inventory-room').count(),6);await page.screenshot({path:'qa-work-cloud-current.png'});
   await page.goto(base+'/app/mine');await page.getByRole('button',{name:'退出登录',exact:true}).click();await page.waitForURL(base+'/login',{timeout:60000});assert.equal((await context.request.get(base+'/api/workspace/promotion')).status(),401);
   // Reauthenticate through the real login form to verify normal session recovery.
-  await page.locator('#email').fill('demo@example.invalid');await page.locator('#password').fill('staycraft-demo');await page.locator('button[type=submit]').click();await page.waitForURL(base+'/app',{timeout:60000});
+  await page.locator('#email').fill('demo@example.invalid');await page.locator('#password').fill('isolated-test-login');await page.locator('button[type=submit]').click();await page.waitForURL(base+'/app',{timeout:60000});
   assert.deepEqual(errors,[]);
   fs.writeFileSync('qa-promotion-cloud-report.json',JSON.stringify({date:'2026-10-30',realAuth:true,realDatabase:true,localProductionUI:true,modelCalls:0,saveReload:true,sourceShared:true,staleRevisionRejected:true,logout401:true,relogin:true},null,2));
  }finally{

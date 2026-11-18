@@ -28,7 +28,7 @@ async function openDemo(){
   const resources=app.isPackaged?process.resourcesPath:await developmentResources(project);
   demoRuntime=await startRuntime({resources,fork:utilityProcess.fork,demo:true,timeoutMs:60000,onFailure:()=>{demoWindow?.destroy();demoRuntime=undefined}});
   const demoOrigin=demoRuntime.origin;
-  demoWindow=new BrowserWindow({width:1320,height:900,minWidth:390,minHeight:640,title:'StayCraft · 本地演示',autoHideMenuBar:true,icon:applicationIcon,webPreferences:{preload:path.join(__dirname,'demo-preload.cjs'),contextIsolation:true,nodeIntegration:false,sandbox:true,partition:'staycraft-demo-'+randomUUID()}});
+  demoWindow=new BrowserWindow({width:1320,height:900,minWidth:390,minHeight:640,title:'StayCraft · 本地演示',autoHideMenuBar:true,icon:applicationIcon,webPreferences:{preload:path.join(__dirname,'demo-preload.cjs'),contextIsolation:true,nodeIntegration:false,sandbox:true,partition:'staycraft-trial-'+randomUUID()}});
   const local=url=>{try{return new URL(url).origin===demoOrigin}catch{return false}};
   demoWindow.webContents.session.webRequest.onBeforeRequest((details,callback)=>callback({cancel:!local(details.url)&&!details.url.startsWith('data:')&& !details.url.startsWith('blob:')}));
   demoWindow.webContents.on('will-navigate',event=>{if(!local(event.url))event.preventDefault()});

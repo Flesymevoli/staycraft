@@ -51,7 +51,7 @@ async function waitServer(deadlineMs = 60000) {
     // 1. login through the real form
     await page.goto(base + '/login');
     await page.locator('input[name=email]').fill('demo@example.invalid');
-    await page.locator('input[name=password]').fill('staycraft-demo');
+    await page.locator('input[name=password]').fill('isolated-test-login');
     await page.locator('.auth-submit').click();
     await page.waitForURL(base + '/app', { timeout: 30000 });
     check('login reaches the workbench', true);

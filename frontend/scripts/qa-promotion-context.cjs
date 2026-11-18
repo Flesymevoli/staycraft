@@ -17,7 +17,7 @@ const saved={id:'33333333-3333-4333-8333-333333333333',brief:{language:'zh',chan
   await context.addInitScript(()=>{window.staycraftDesktop={status:async()=>({state:'idle',sample:true})}});
   const page=await context.newPage();page.setDefaultTimeout(20000);
   const errors=[];page.on('pageerror',error=>errors.push(error.message));
-  await page.goto(base+'/login');await page.locator('input[name=email]').fill('demo@example.invalid');await page.locator('input[name=password]').fill('staycraft-demo');await page.locator('.auth-submit').click();await page.waitForURL('**/app');
+  await page.goto(base+'/login');await page.locator('input[name=email]').fill('demo@example.invalid');await page.locator('input[name=password]').fill('isolated-test-login');await page.locator('.auth-submit').click();await page.waitForURL('**/app');
   let release,blocked,requested,store,currentLocation='测试位置',discoveryGate,eventNote='';
   await page.route('**/api/workspace/agent?id=*',async route=>{
    requested();await blocked;
