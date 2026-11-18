@@ -6,6 +6,7 @@ import {OperationStatus,useOperation} from "./operation-status";
 import {startOperation,updateOperation,readOperation,operationActive} from "@/lib/operation-state";
 import type {ReactNode} from "react";
 import {DemoCollection} from "./demo-journey";
+import {collectionCity} from '@/lib/collection-city';
 import {DesktopTrialContext,GuidedDemoContext} from "./desktop-surface";
 
 type CollectionResult={
@@ -88,7 +89,10 @@ export function DesktopCollection({zh,onSync,demo=false,fallback,expanded=false}
      setResult(value||{state:'failed',error:'desktop_unavailable'});return;
     }
     if(value){
-     if(value.contextKey!==lastContext.current){setHotels(value.hotels||'');}
+     if(value.contextKey!==lastContext.current){
+      setHotels(value.hotels||'');
+      setCityName(collectionCity(value.location));
+     }
      lastContext.current=value.contextKey;setTargets(value);
     }
     const current=status.status==='fulfilled'?status.value:{state:'failed' as const,error:'desktop_unavailable'};setResult(current);recordNative(current);if(current.state==='saved'&&readOperation(operationScope,'collection')?.phase==='refreshing')void reloadStatistics(current);

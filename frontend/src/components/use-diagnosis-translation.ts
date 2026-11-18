@@ -4,6 +4,7 @@ import type {DecisionAgentRun} from '@/lib/decision-agent-types';
 import {applyTranslation,diagnosisLanguage,diagnosisTexts,type DiagnosisTranslation} from '@/lib/diagnosis-translation';
 import {useOperation} from './operation-status';
 import {startOperation,updateOperation,readOperation} from '@/lib/operation-state';
+import {translateDisplayText} from '@/lib/local-translation';
 import {promotionRequest} from '@/lib/promotion-request';
 
 const translations=new Map<string,Promise<DiagnosisTranslation>>();
@@ -22,6 +23,13 @@ export function useDiagnosisTranslation(source:DecisionAgentRun|null,scope:strin
    const previous=readOperation(scope,'translation');
    const id=startOperation(scope,'translation',{phase:'running',stage:'正在翻译已保存报告',stageEn:'Translating saved report',detail:'原文保留，不重新诊断或搜索。',detailEn:'Original text remains. No new diagnosis or search.',reference:JSON.stringify([source.id,language])});
    pending=(async()=>{
+    if (language==='en') {
+     const texts=await Promise.all(diagnosisTexts(source).map(translateDisplayText));
+     const result={texts};
+     applyTranslation(source,result);
+     updateOperation(scope,'translation',id,{phase:'complete',stage:'翻译已完成',stageEn:'Translation complete',detail:'已在本机翻译当前报告。',detailEn:'Translated the existing report on this device.'});
+     return result;
+    }
     let body;
     if(previous&&revision===0&&previous.reference===JSON.stringify([source.id,language])){
      body=await promotionRequest('/api/workspace/agent/translation?'+new URLSearchParams({runId:source.id,language}),{cache:'no-store'});
@@ -29,7 +37,12 @@ export function useDiagnosisTranslation(source:DecisionAgentRun|null,scope:strin
     }else body=await promotionRequest('/api/workspace/agent/translation',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({runId:source.id,language,retry:revision>0})},85000);
     if(body.runId!==source.id||body.language!==language)throw Error('translation_invalid');const result={texts:body.texts};applyTranslation(source,result);
     updateOperation(scope,'translation',id,{phase:'complete',stage:'翻译已完成',stageEn:'Translation complete',detail:'使用同一份报告，译文已缓存。',detailEn:'The same report is shown; translation is cached.'});return result;
-   })().catch(error=>{updateOperation(scope,'translation',id,{phase:['promotion_timeout','translation_unconfirmed','Failed to fetch'].includes(error.message)?'uncertain':'failed',stage:'翻译结果待核对',stageEn:'Check translation result',detail:'原报告完整保留，先核对缓存结果，避免重复付费调用。',detailEn:'Original report is preserved. Check the cached result before another paid call.'});throw error});
+   })().catch(error=>{
+    if(language==='en'){
+     updateOperation(scope,'translation',id,{phase:'failed',stage:'翻译未完成',stageEn:'Translation incomplete',detail:'原文已保留，可以重试本机翻译。',detailEn:'Original text is available. Retry translation on this device.'});
+     throw error;
+    }
+    updateOperation(scope,'translation',id,{phase:['promotion_timeout','translation_unconfirmed','Failed to fetch'].includes(error.message)?'uncertain':'failed',stage:'翻译结果待核对',stageEn:'Check translation result',detail:'原报告完整保留，先核对缓存结果，避免重复付费调用。',detailEn:'Original report is preserved. Check the cached result before another paid call.'});throw error});
    if(translations.size>=100)translations.delete(translations.keys().next().value!);
    translations.set(key,pending);
    // Keep failed attempts too: remounting must not silently pay for another try.
@@ -43,6 +56,7 @@ export function useDiagnosisTranslation(source:DecisionAgentRun|null,scope:strin
   operation:operation.state,
   retry:async()=>{
    if(!source)return;
+   if(language==='en'){translations.delete(key);setState({key:''});setRevision(value=>value+1);return;}
    try{const receipt=await promotionRequest('/api/workspace/agent/translation?'+new URLSearchParams({runId:source.id,language}),{cache:'no-store'});
     if(receipt.state==='complete'){const translation={texts:receipt.texts};applyTranslation(source,translation);translations.set(key,Promise.resolve(translation));setState({key,translation});if(operation.state)updateOperation(scope,'translation',operation.state.id,{phase:'complete',stage:'已恢复缓存译文',stageEn:'Cached translation restored',detail:'没有再次调用翻译模型。',detailEn:'No additional model call.'});return;}
     if(receipt.state==='running'){if(operation.state)updateOperation(scope,'translation',operation.state.id,{phase:'uncertain',stage:'翻译仍在处理中',stageEn:'Translation is still running',detail:'原文保留，稍后再核对即可，无需重复调用。',detailEn:'Original text is kept. Check again later without another call.'});return;}

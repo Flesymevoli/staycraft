@@ -53,4 +53,15 @@ const hangzhou: CityEvent[] = [
  },
 ];
 
-export const cityEvents = {taicang,hangzhou};
+const wuxiMuseum = {latitude:31.549849,longitude:120.306084}; // https://ditu.amap.com/place/B01FE0IQL3
+const wuxi: CityEvent[] = [
+ ['wx-dinosaurs','巨兽觉醒——广西恐龙科普大展','2026-06-27','2026-11-22','西区负一层展厅'],
+ ['wx-autumn-crabs','食趣——江南秋蟹风物展','2026-10-01','2027-01-17','1号展厅'],
+ ['wx-coins','泉流四海——无锡博物院藏历代金属货币展','2026-10-01','2027-01-03','西区二层临展厅'],
+].map(([id,title,start,end,hall])=>({
+ point:wuxiMuseum,
+ event:sourcedEvent({id,title,start,end,venue:'无锡博物院'+hall,category:'exhibition',
+  sourceUrl:'https://www.wxmuseum.cn/News/Details/d112c247-6139-44e2-ae0d-cc1186c0630e',
+  note:'展期与展厅来自无锡博物院公告。'},'2026-11-18T00:40:00Z'),
+}));
+export const cityEvents = {taicang,hangzhou,wuxi};

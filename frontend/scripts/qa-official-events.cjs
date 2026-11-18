@@ -13,6 +13,12 @@ const response=text=>new Response(text,{headers:{'Content-Type':'text/html; char
 const input=(center=beijing,extra={})=>({window,now,scope:{center},...extra});
 const cases=[];
 (async()=>{
+ const wuxi={latitude:31.579,longitude:120.269};
+ const nearby=await fetchEvents({...input(wuxi),window:{start:'2026-11-13',end:'2026-11-19'},searchKey:''});
+ assert.deepEqual(nearby.events.map(event=>event.id).sort(),['wx-autumn-crabs','wx-coins','wx-dinosaurs']);
+ assert(nearby.events.every(event=>event.verified&&event.distanceKm<=15));
+ const afterClose=await fetchEvents({...input(wuxi),window:{start:'2027-01-18',end:'2027-01-20'},searchKey:''});
+ assert.equal(afterClose.events.length,0);
  let events=parseOfficialCalendar(html(row('2026-11-13','2026-11-20',href,'完整 &quot;标题&quot;')), 'namoc',now.toISOString());
  assert.equal(events[0].title,'完整 "标题"');assert.equal(events[0].start,'2026-11-13');assert.match(events[0].venue,/北京市.*1号厅/);assert.equal(events[0].observedAt,now.toISOString());
  events=parseOfficialCalendar(zjam(zrow()),'zjam',now.toISOString());assert.equal(events[0].id,'hz-zjam-2918');assert.equal(events[0].start,'2026-11-01');assert.equal(events[0].source.authority,'public');

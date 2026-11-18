@@ -123,8 +123,10 @@ export async function fetchEvents(input:LiveInput):Promise<EventsResult>{
  const discovered=await untilAbort(fetchSearchedEvents({location:input.location,center,window:input.window,now,key,fetcher:input.searchFetcher??input.fetcher??fetch,signal,resolveVenue:input.resolveVenue}),signal).catch(()=>null);
  const fallback=await fallbackPromise;
  if(!discovered)return {...fallback,source:{...fallback.source,confidence:'low',note:`${fallback.source.note}本次通用活动搜索暂未成功，保留已有记录；可稍后重新读取。`}};
- const urls=new Set(discovered.events.map(event=>event.sourceUrl));
- const combined=[...discovered.events,...fallback.events.filter(event=>!urls.has(event.sourceUrl))];
+ // A single museum bulletin can list several independently dated exhibitions.
+ const occurrence=(event:LocalEvent)=>JSON.stringify([event.sourceUrl,event.title,event.start,event.end]);
+ const discoveredOccurrences=new Set(discovered.events.map(occurrence));
+ const combined=[...discovered.events,...fallback.events.filter(event=>!discoveredOccurrences.has(occurrence(event)))];
  const result=collectEvents({events:combined,window:input.window,now,observedAt:now.toISOString()});
  return {...result,review:discovered.review,source:{...result.source,authority:'public',note:`${result.source.note}${discovered.note}`}};
 }

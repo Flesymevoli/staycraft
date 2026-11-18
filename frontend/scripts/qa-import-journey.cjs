@@ -97,9 +97,7 @@ await page.setViewportSize({width:1366,height:900});
  });
 await page.goto(base+'/app/promotion');
  await page.getByRole('heading',{name:'已核实活动 · 1 项',exact:true}).waitFor();
- const pending=page.getByRole('region',{name:'待确认线索',exact:true});
- await pending.getByText('日期待确认',{exact:true}).waitFor();
- assert.equal(await pending.getByRole('button').count(),0,'unconfirmed evidence cannot enter the copy studio');
+ assert.equal(await page.getByText('隔离样本：日期未公布的市集报道',{exact:true}).isVisible(),false);
  await page.getByText('搜索核验详情',{exact:true}).click();
  await page.getByText('原始结果 2 条 → 可读页面 2 篇 → 解析活动 1 项 → 筛选保留 1 项',{exact:true}).waitFor();
  const opportunities=page.getByRole('region',{name:'经营机会',exact:true});
@@ -126,12 +124,12 @@ assert.match(await editor.inputValue(),/隔离验收草稿/);
 await page.screenshot({path:require('node:os').tmpdir()+'/staycraft-promotion-regression.png',fullPage:true});
 await context.addInitScript(()=>{window.staycraftDesktop={
  status:async()=>({state:'idle'}),
- readTargets:async()=>({state:'idle',contextKey:'isolated-qa',location:'隔离地址',hotels:''}),
+ readTargets:async()=>({state:'idle',contextKey:'isolated-qa',location:'无锡惠山古镇周边',hotels:''}),
  collectAndSync:async()=>({state:'failed',error:'no_quotes'}),
 };});
 await page.goto(base+'/app/explore');
 await page.getByRole('button',{name:'打开采集抽屉',exact:true}).first().click();
-await page.getByLabel('城市',{exact:true}).fill('无锡');
+await page.waitForFunction(()=>document.querySelector('input[aria-label="城市"]')?.value==='无锡');
 await page.getByRole('button',{name:'采集并同步',exact:true}).click();
 await page.locator('p[role="alert"]').filter({hasText:'当前城市、日期和星级下没有可读取的报价。请核对筛选条件和携程登录状态后重试。'}).waitFor();
 await page.screenshot({path:require('node:os').tmpdir()+'/staycraft-collection-empty.png',fullPage:true});

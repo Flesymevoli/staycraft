@@ -126,7 +126,8 @@ async function main(){
  const generic=(district,extra={})=>({location:`广东省广州市${district}测试路88号私人民宿`,searchArea:'广东省广州市',venue:`广东省广州市${district}文化路12号`,point:'113.2800,23.1200',...extra});
  const shortAddress={location:'无锡惠山古镇周边',searchArea:'江苏省无锡市',point:'120.27,31.58',geocodeArea:{province:'江苏省',city:'无锡市',district:'梁溪区'},env:{SEARCH_API_KEY:'short-address-fixture'}};
  result=await invoke({...eventInput,location:shortAddress.location},shortAddress);
- check(result.response.status===200&&result.result.events.length===1,'address without 市 uses geocoded administrative area');
+ check(result.response.status===200&&result.result.events.filter(event=>event.id.startsWith('web-event-')).length===1,'address without 市 uses geocoded administrative area');
+ check(result.result.events.filter(event=>event.id.startsWith('wx-')).length===3,'Wuxi desktop response also includes three dated museum exhibitions');
  check(result.result.review?.raw===1&&result.result.review?.parsed===1&&result.result.review?.final===1,'worker includes bounded search funnel');
  check(result.result.review.rows[0].events[0].reason==='accepted','worker preserves per-event review outcome');
  check(result.result.location===shortAddress.location,'original property scope remains unchanged');

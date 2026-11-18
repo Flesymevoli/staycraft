@@ -1,4 +1,5 @@
 "use client";
+import {LocalizedInput} from "./workspace-english-display";
 import {useEffect,useRef,useState} from "react";
 import Image from "next/image";
 import Link from "next/link";
@@ -57,7 +58,7 @@ export function RoomPreviewBoard({scope,zh}:{scope:string;zh:boolean}){
 
 function TypeFields({type,onChange,zh}:{type:RoomType;onChange:(type:RoomType)=>void;zh:boolean}){
   const t=(en:string,cn:string)=>zh?cn:en;
-  return <div className="inventory-input-grid"><label>{t("Room type name","房型名称")}<input required maxLength={60} value={type.name} onChange={e=>onChange({...type,name:e.target.value})}/></label><label>{t("Fallback nightly rate (CNY)","备用每晚价格（元）")}<input type="number" min="0.01" max="99999" step="0.01" value={type.price||""} placeholder={t("Set a price","填写价格")} onChange={e=>onChange({...type,price:e.target.value?Number(e.target.value):null})}/></label><label>{t("Beds","床型")}<input required maxLength={80} value={type.beds} onChange={e=>onChange({...type,beds:e.target.value})}/></label><label>{t("Max guests","最多入住人数")}<input type="number" min={1} max={12} value={type.capacity??""} onChange={e=>onChange({...type,capacity:e.target.value?Number(e.target.value):null})}/></label></div>;
+  return <div className="inventory-input-grid"><label>{t("Room type name","房型名称")}<LocalizedInput zh={zh} required maxLength={60} value={type.name} onChange={e=>onChange({...type,name:e.target.value})}/></label><label>{t("Fallback nightly rate (CNY)","备用每晚价格（元）")}<input type="number" min="0.01" max="99999" step="0.01" value={type.price||""} placeholder={t("Set a price","填写价格")} onChange={e=>onChange({...type,price:e.target.value?Number(e.target.value):null})}/></label><label>{t("Beds","床型")}<LocalizedInput zh={zh} required maxLength={80} value={type.beds} onChange={e=>onChange({...type,beds:e.target.value})}/></label><label>{t("Max guests","最多入住人数")}<input type="number" min={1} max={12} value={type.capacity??""} onChange={e=>onChange({...type,capacity:e.target.value?Number(e.target.value):null})}/></label></div>;
 }
 
 export function RoomTypesPreview({scope,zh}:{scope:string;zh:boolean}){

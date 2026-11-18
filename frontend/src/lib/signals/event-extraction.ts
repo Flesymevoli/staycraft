@@ -118,10 +118,12 @@ function prose(page:EventPage){
   .replace(/<(?:br\b[^>]*|\/p|\/div|\/li)>/gi,'\n').replace(/<[^>]*>/g,'').replace(/\r/g,'');
  // Markdown and standalone numbered sections keep each activity's dates and
  // venue together. Other unstructured multi-event prose stays unpaired.
- const chunks=text.split(/(?=^(?:#{1,6}[ \t]+|[（(][一二三四五六七八九十百\d]{1,3}[）)][ \t]*))/m);
+ const headingPrefix=String.raw`(?:#{1,6}[ \t]+|[（(][一二三四五六七八九十百\d]{1,3}[）)][ \t]*|\d{1,2}[.、．](?!\d)[ \t]*)`;
+ const chunks=text.split(new RegExp('(?=^[ \\t]*'+headingPrefix+')','m'));
+ const sectionHeading=new RegExp('^[ \\t]*'+headingPrefix+'(.+)$','m');
  const events:ExtractedEvent[]=[];
  for(const chunk of chunks){
-  const heading=chunk.match(/^(?:#{1,6}[ \t]+|[（(][一二三四五六七八九十百\d]{1,3}[）)][ \t]*)(.+)$/m)?.[1];
+  const heading=chunk.match(sectionHeading)?.[1];
   const title=clean(heading??(chunks.length===1?page.title:''));
   if(!title||cancelled.test(chunk)||online.test(chunk))continue;
   const lines=chunk.split('\n').map(line=>line.replace(/\*\*|__|^\s*[-*]\s+/g,'').trim()).filter(Boolean);

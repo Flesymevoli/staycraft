@@ -38,6 +38,7 @@ const saved={id:'33333333-3333-4333-8333-333333333333',brief:{language:'zh',chan
   });
   await page.route('**/api/workspace/nearby?*',route=>route.fulfill({json:{weather:{status:'unavailable'},centerLabel:currentLocation}}));
   async function enter(){
+   await page.evaluate(()=>Object.keys(localStorage).filter(key=>key.startsWith('staycraft-local-promotion:')).forEach(key=>localStorage.removeItem(key)));
    store={sources:[source],drafts:[saved]};
    blocked=new Promise(resolve=>{release=resolve});
    const started=new Promise(resolve=>{requested=resolve});
@@ -71,6 +72,11 @@ const saved={id:'33333333-3333-4333-8333-333333333333',brief:{language:'zh',chan
   assert.match(await page.locator('.promotion-audience-result').innerText(),new RegExp(source.title));
   assert.match(await page.locator('.promotion-plan-origin').innerText(),/URL推荐入住期/);
 
+  eventNote='没有日期匹配的活动';
+  await page.getByRole('button',{name:'重新读取线索',exact:true}).click();
+  await page.locator('.gemini-promo-editor-heading').getByText(/本店资料与所选入住期/).waitFor();
+  assert(store.sources.some(item=>item.id===source.id),'refresh preserves saved source history');
+  eventNote='';
   // Queue an old-address discovery, then switch address before it completes.
   let releaseOld,startedOld;
   const oldRequested=new Promise(resolve=>{startedOld=resolve});
