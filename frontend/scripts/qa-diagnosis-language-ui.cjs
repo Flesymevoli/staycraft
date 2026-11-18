@@ -20,7 +20,7 @@ let browser;
  await page.route('**/translation/local.js',route=>route.fulfill({contentType:'application/javascript',body:'export function createTranslator(){return {translate:async({text})=>({target:{text:await window.qaTranslate(text)}})}}'}));
  await page.route('**/api/workspace/agent/translation**',route=>{translations++;return route.abort()});
  await page.route('**/api/workspace/revenue/overview',route=>route.fulfill({json:{period:{start:'2026-11-06',end:'2026-11-12'},completed:{amountCny:0,roomNights:0,averageRateCny:null},breakdowns:{roomTypes:[],channels:[],dates:[]},comparison:{available:true,amountChangePct:-100,previousPeriod:{start:'2026-10-30',end:'2026-11-05'},previousCompleted:{roomNights:5,amountCny:3080}}}}));
- await page.goto(base+'/login');await page.locator('input[name=email]').fill('demo@example.invalid');await page.locator('input[name=password]').fill('staycraft-demo');await page.locator('.auth-submit').click();await page.waitForURL(base+'/app');
+ await page.goto(base+'/login');await page.locator('input[name=email]').fill('demo@example.invalid');await page.locator('input[name=password]').fill('isolated-test-login');await page.locator('.auth-submit').click();await page.waitForURL(base+'/app');
  await page.getByRole('button',{name:'完整诊断报告',exact:true}).waitFor();await page.getByText('已有 30 间夜预订',{exact:true}).waitFor();assert.equal(analyses,1);
  const catalogsBefore=catalogs;
  const zeroNote=page.locator('.wb-revenue-period-note');assert.equal(await zeroNote.getAttribute('open'),null);await zeroNote.locator('summary').click();await zeroNote.getByText(/上一周期.*5 间夜.*3,080/).waitFor();await zeroNote.locator('summary').click();

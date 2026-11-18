@@ -3,11 +3,11 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { hasSupabaseConfig, supabaseConfig } from "@/lib/supabase/config";
-import {operatorSample} from '@/lib/operator-sample';
+import {desktopTrial,operatorSample} from '@/lib/operator-sample';
 import {loginEmail, normalizeUsername, usernameEmail} from '@/lib/login-identity';
 
 export async function signInDemo():Promise<LoginState>{
- const sample=operatorSample(),email=sample?'demo@example.invalid':process.env.DEMO_LOGIN_EMAIL,password=sample?'staycraft-demo':process.env.DEMO_LOGIN_PASSWORD;
+ const sample=operatorSample()||desktopTrial(),email=sample?'demo@example.invalid':process.env.DEMO_LOGIN_EMAIL,password=sample?process.env.STAYCRAFT_LOCAL_LOGIN_SECRET:process.env.DEMO_LOGIN_PASSWORD;
  if(!email||!password||!hasSupabaseConfig())return {error:'unavailable'};
  try{
   const supabase=await createClient();
@@ -55,6 +55,7 @@ export async function signIn(
   _previous: LoginState,
   formData: FormData,
 ): Promise<LoginState> {
+  if (desktopTrial()) return signInDemo();
   const email = loginEmail(String(formData.get("email") ?? formData.get("username") ?? ""));
   const password = String(formData.get("password") ?? "");
   if (!email || !password) return { error: "missing" };

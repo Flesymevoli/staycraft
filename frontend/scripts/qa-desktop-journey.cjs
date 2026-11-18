@@ -80,7 +80,7 @@ async function main(){
   await page.goto(base+'/login');
   assert.equal(await page.locator('a[href="/native-home"],.auth-demo-link').count(),0,'Login does not link to the old prototype');
   await page.locator('input[name=email]').fill('demo@example.invalid');
-  await page.locator('input[name=password]').fill('staycraft-demo');
+  await page.locator('input[name=password]').fill('isolated-test-login');
   await page.locator('.auth-submit').click();await page.waitForURL(base+'/app');
   await page.locator('.gemini-workbench-home').waitFor();await checkPage();
   step('isolated login renders the actual Gemini desktop workbench');

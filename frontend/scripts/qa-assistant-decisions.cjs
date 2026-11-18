@@ -60,7 +60,7 @@ const origin = 'http://127.0.0.1:3190';
   page.on('pageerror', error => errors.push(error.message));
   await page.goto(origin+'/login');
   await page.locator('input[name=email]').fill('demo@example.invalid');
-  await page.locator('input[name=password]').fill('staycraft-demo');
+  await page.locator('input[name=password]').fill('isolated-test-login');
   await page.locator('.auth-submit').click();
   await page.waitForURL('**/app');
   await page.evaluate(() => localStorage.setItem('staycraft-operator-language','zh'));

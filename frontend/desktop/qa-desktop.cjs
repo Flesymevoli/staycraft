@@ -24,7 +24,7 @@ server.stdout.on('data',data=>process.stdout.write(data));server.stderr.on('data
   async function login(email){
    await p.goto(base+'/login');
    await p.locator('input[name=email]').fill(email);
-   await p.locator('input[name=password]').fill('staycraft-demo');
+   await p.locator('input[name=password]').fill('isolated-test-login');
    await p.locator('.auth-submit').click();
    await p.waitForURL('**/app');
    const themedShell=p.locator('.workbench-shell[data-desktop-theme="soft"]');

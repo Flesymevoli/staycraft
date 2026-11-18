@@ -21,7 +21,7 @@ async function stop(child){if(child.exitCode!==null)return;await new Promise(res
  await page.clock.install({time:new Date(date+'T04:00:00Z')});await page.goto(base+'/app');await page.waitForURL('**/login');
  await page.locator('#email').fill('demo@example.invalid');await page.locator('#password').fill('incorrect');await page.getByRole('button',{name:'登录',exact:true}).click();await page.getByRole('alert').waitFor();
  await page.reload();
- await page.locator('#email').fill('demo@example.invalid');await page.locator('#password').fill('staycraft-demo');await page.getByRole('button',{name:'登录',exact:true}).click();try{await page.waitForURL('**/app')}catch(error){console.error(await page.locator('body').innerText());throw error;}
+ await page.locator('#email').fill('demo@example.invalid');await page.locator('#password').fill('isolated-test-login');await page.getByRole('button',{name:'登录',exact:true}).click();try{await page.waitForURL('**/app')}catch(error){console.error(await page.locator('body').innerText());throw error;}
  await page.getByLabel('虚构演示环境').waitFor();
  await page.locator('.room-preview-calendar input[type=date]').fill(date);
  await page.locator('.home-todos').getByRole('heading',{name:'当日待办',exact:true}).waitFor();assert.equal(await page.locator('.home-todos').getByText(/虚构|林小夏|陈小舟|许知遥/).count(),0);await page.getByRole('button',{name:/展开其余/}).click();await page.locator('.home-todos').getByText('计划离店',{exact:true}).waitFor();assert.equal(await page.locator('.home-todo-row').count(),5);await page.getByRole('button',{name:'收起',exact:true}).click();assert.equal(await page.locator('.home-todo-row').count(),3);

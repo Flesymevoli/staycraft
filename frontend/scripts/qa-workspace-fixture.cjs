@@ -1,5 +1,10 @@
 // Loaded only by the isolated QA server; no production imports and no cloud writes.
 if (process.env.STAYCRAFT_QA_AUTH_FIXTURES === '1') {
+  // The packaged trial and its server action share a fresh, process-local credential.
+  const loginPassword=process.env.STAYCRAFT_DESKTOP_DEMO==='1'
+    ? require('node:crypto').randomUUID()
+    : (process.env.STAYCRAFT_QA_LOGIN_PASSWORD || require('./qa-local-access.cjs').password);
+  process.env.STAYCRAFT_LOCAL_LOGIN_SECRET=loginPassword;
   const sampleMode=process.env.STAYCRAFT_OPERATOR_SAMPLE==='1';
   const journeyMode=process.env.STAYCRAFT_QA_DESKTOP_JOURNEY==='1';
   if(journeyMode&&(process.env.STAYCRAFT_QA_IMPORT_DB!=='1'||process.env.STAYCRAFT_QA_FORMAL_STAYS!=='1'||!process.argv.includes('127.0.0.1')||process.env.STAYCRAFT_HOSTED==='1'||process.env.VERCEL==='1'))throw Error('Desktop journey requires isolated loopback fixtures');
@@ -56,7 +61,7 @@ if (process.env.STAYCRAFT_QA_AUTH_FIXTURES === '1') {
     if(sample&&url.pathname==='/auth/v1/token'){
       const body=JSON.parse(init.body||'{}');
       const account=body.email==='demo@example.invalid'?sample.ownerId:desktopSample&&body.email==='desktop-b@example.invalid'?ids[0]:null;
-      if(!account||body.password!=='staycraft-demo')return json({message:'Invalid demo credentials',code:'invalid_credentials'},400);
+      if(!account||body.password!==loginPassword)return json({message:'Invalid demo credentials',code:'invalid_credentials'},400);
       const token=[...tokens].find(([,value])=>value.id===account)[0];
       return json({access_token:token,refresh_token:'sample-only',token_type:'bearer',expires_in:3600,expires_at:4102444800,user:{id:account,email:body.email,aud:'authenticated',role:'authenticated',app_metadata:{},user_metadata:{},identities:[],created_at:'2026-01-01T00:00:00Z'}});
     }

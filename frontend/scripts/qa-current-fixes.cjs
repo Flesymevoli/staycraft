@@ -12,7 +12,7 @@ const base='http://127.0.0.1:3291';
   const page=await context.newPage();page.setDefaultTimeout(15000);const errors=[];page.on('pageerror',e=>errors.push(e.message));
   await page.route('**/api/workspace/discovery**',r=>r.fulfill({json:{events:[]}}));
   await page.route('**/api/workspace/agent',r=>r.fulfill({json:{runs:[]}}));
-  await page.goto(base+'/login');await page.locator('input[name=email]').fill('demo@example.invalid');await page.locator('input[name=password]').fill('staycraft-demo');await page.locator('.auth-submit').click();await page.waitForURL(base+'/app');await page.goto(base+'/app/mine');
+  await page.goto(base+'/login');await page.locator('input[name=email]').fill('demo@example.invalid');await page.locator('input[name=password]').fill('isolated-test-login');await page.locator('.auth-submit').click();await page.waitForURL(base+'/app');await page.goto(base+'/app/mine');
   const api=async(url,method='GET',body)=>page.evaluate(async({url,method,body})=>{const r=await fetch(url,{method,headers:body?{'Content-Type':'application/json'}:undefined,body:body?JSON.stringify(body):undefined});return {status:r.status,body:await r.json()}},{url,method,body});
   const beforeInventory=await api('/api/workspace/inventory');
   const csv='channel,external_id,room_type,room_number,arrival,departure,status,total,currency,source_updated_at\n';

@@ -19,7 +19,7 @@ try{
  page.on('pageerror',error=>errors.push(error.message));
 const enc=v=>Buffer.from(JSON.stringify(v)).toString('base64url');
 async function asUser(id){const token=`${enc({alg:'HS256',typ:'JWT'})}.${enc({sub:id,exp:4102444800,iat:1700000000,aud:'authenticated',role:'authenticated'})}.qa-signature`;await context.clearCookies();await context.addCookies([{name:'sb-staycraft-qa-auth-token',url:base,value:'base64-'+enc({access_token:token,refresh_token:'qa',expires_at:4102444800,expires_in:3600,token_type:'bearer',user:{id}})}])}
-await page.goto(base+'/login');await page.locator('input[name=email]').fill('demo@example.invalid');await page.locator('input[name=password]').fill('staycraft-demo');await page.locator('.auth-submit').click();await page.waitForURL(base+'/app');await page.goto(base+'/app/work');
+await page.goto(base+'/login');await page.locator('input[name=email]').fill('demo@example.invalid');await page.locator('input[name=password]').fill('isolated-test-login');await page.locator('.auth-submit').click();await page.waitForURL(base+'/app');await page.goto(base+'/app/work');
 const block=page.locator('section').filter({has:page.getByRole('heading',{name:'订单数据导入',exact:true})}).first();await block.getByText('暂无到期的导入任务。',{exact:true}).waitFor();
 assert.equal(await block.locator('.booking-import-disclosure').evaluate(el=>el.open),false);
 for(const width of [320,390,474]){await page.setViewportSize({width,height:714});assert((await block.boundingBox()).height<310,`compact import too tall at ${width}`);assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));}

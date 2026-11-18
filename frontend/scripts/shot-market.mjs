@@ -10,7 +10,7 @@ try {
   await page.goto(base + '/login', {waitUntil: 'domcontentloaded', timeout: 30000});
   await page.locator('.auth-submit').waitFor({timeout: 15000});
   await page.locator('input[type=email], input[name=email], input#email').first().fill('demo@example.invalid');
-  await page.locator('input[type=password], input[name=password], input#password').first().fill('staycraft-demo');
+  await page.locator('input[type=password], input[name=password], input#password').first().fill('isolated-test-login');
   await page.locator('.auth-submit').click();
   await page.waitForURL(base + '/app', {timeout: 30000});
   await page.goto(base + routePath, {waitUntil: 'domcontentloaded', timeout: 30000});

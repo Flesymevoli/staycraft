@@ -9,7 +9,7 @@ function plan(anchor,types){assert.equal(types.length,3,'Expected the existing t
 module.exports={plan};
 if(require.main===module)(async()=>{
 const jar=new Map(),client=createServerClient(process.env.NEXT_PUBLIC_SUPABASE_URL,process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,{cookies:{getAll:()=>[...jar].map(([name,value])=>({name,value})),setAll:items=>items.forEach(({name,value})=>jar.set(name,value))}});
-const auth=await client.auth.signInWithPassword({email:'demo@example.invalid',password:'staycraft-demo'});assert.ok(!auth.error,'Demo sign-in failed');assert.equal(auth.data.user.email,'demo@example.invalid');
+const auth=await client.auth.signInWithPassword({email:'demo@example.invalid',password:process.env.DEMO_LOGIN_PASSWORD});assert.ok(!auth.error,'Demo sign-in failed');assert.equal(auth.data.user.email,'demo@example.invalid');
 try{
 const owned=await client.from('properties').select('id').eq('owner_user_id',auth.data.user.id).single();assert.ok(!owned.error,'Demo property unavailable');const property=owned.data.id,base='https://staycraft.online';
 const headers={Origin:base,'Content-Type':'application/json',cookie:[...jar].map(([name,value])=>name+'='+value).join('; ')};
