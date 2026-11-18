@@ -22,6 +22,7 @@ for(const overrides of [
  ])equal(extract(metadata({...item,...overrides})).length,0,JSON.stringify(overrides));
 const oneDay={...item};delete oneDay.endDate;equal(extract(metadata(oneDay))[0].event.end,item.startDate,'no end means a dated single occurrence');
 const valid='活动时间：2026年11月14日至2026年12月1日\n活动地点：杭州市南山路138号';
+equal(extract('1.甲展\n时间：2026年10月1日-2027年1月3日\n地点：无锡博物院二层\n2.乙展\n时间：2026年6月27日-11月22日\n地点：无锡博物院负一层\n3.丙展\n地点：无锡博物院').map(({event})=>[event.title,event.end,event.venue]),[['甲展','2027-01-03','无锡博物院二层'],['乙展','2026-11-22','无锡博物院负一层']],'numbered listings keep dates and venues within their own entry');
 equal(extract(valid).length,1,'explicit Chinese range');
 equal(extract('时间：2026年11月14日—11月20日\n地点：成都市青羊区青华路37号')[0].event.end,'2026-11-20','shared year in one explicit range');
 equal(extract('时间：2026年12月14日—1月20日\n地点：成都市青羊区青华路37号').length,0,'shared year never invents a cross-year rollover');

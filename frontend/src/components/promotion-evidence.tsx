@@ -1,17 +1,10 @@
-import {ExternalLink} from 'lucide-react';
 import {REVIEW_REASONS,type EventSearchReview} from '@/lib/signals/event-review';
 import {officialHolidayReferences} from '@/lib/official-holidays';
 
 export function PromotionEvidence({review,zh}:{review?:EventSearchReview;zh:boolean}){
  const t=(cn:string,en:string)=>zh?cn:en;
  if(!review)return null;
- const candidates=review.rows.filter(row=>row.candidate);
  return <div className="gemini-promo-evidence">
-  {candidates.length>0&&<section aria-label={t('待确认线索','Unconfirmed leads')}>
-   <h3>{t(`待确认线索 · ${candidates.length} 条`,`Unconfirmed leads · ${candidates.length}`)}</h3>
-   <p>{t('以下为来源报道，尚未确认与所选日期、民宿距离匹配，不计入已核实活动。','These source articles have not been matched to your dates and property distance, and are excluded from verified activities.')}</p>
-   {candidates.map((row,index)=><article className="gemini-promo-clue" key={index}><div className="gemini-promo-clue-text"><strong>{row.title}</strong><small>{t(row.reason==='date_pending'?'日期待确认':'日期与场地待核对',row.reason==='date_pending'?'Date unconfirmed':'Date and venue need review')}</small><a href={row.url} target="_blank" rel="noopener noreferrer">{t('查看报道并核对','Review the source article')}<ExternalLink size={12}/></a></div></article>)}
-  </section>}
   <details className="gemini-promo-review"><summary>{t('搜索核验详情','Search verification details')}</summary>
    <p>{t(`原始结果 ${review.raw} 条 → 可读页面 ${review.pages} 篇 → 解析活动 ${review.parsed} 项 → 筛选保留 ${review.final} 项`,`Raw ${review.raw} → Readable pages ${review.pages} → Parsed events ${review.parsed} → Retained ${review.final}`)}</p>
    <p>{t('一篇报道可能包含多项活动；此漏斗仅统计本次搜索，独立日历来源另计。','One article may contain multiple events. This funnel excludes separate calendar sources.')}</p>

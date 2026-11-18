@@ -1,0 +1,9 @@
+Bergamot Translator 0.4.9, distributed under the Mozilla Public License 2.0.
+Source: https://github.com/browsermt/bergamot-translator
+Package: https://registry.npmjs.org/@browsermt/bergamot-translator/-/bergamot-translator-0.4.9.tgz
+
+Simplified Chinese to English model, Mozilla Translations release 2.1, MPL 2.0.
+Source: https://github.com/mozilla/translations
+Model distribution: https://firefox.settings.services.mozilla.com/v1/buckets/main/collections/translations-models/records?fromLang=zh-Hans&toLang=en
+Model, vocabulary and lexical shortlist checksums are in registry.json.
+The model is split into three consecutive parts for transport. Concatenating the parts restores the original.
