@@ -61,7 +61,7 @@ async function build(){
  const base=path.join(root,'.desktop-runtime');await mkdir(base,{recursive:true});
  const workspace=await mkdtemp(path.join(base,'build-'));
  const source=path.join(workspace,'source');await mkdir(source);
- for(const name of ['src','public','package.json','package-lock.json','next.config.ts','tsconfig.json','postcss.config.mjs'])
+ for(const name of ['src','public','desktop-release.json','package.json','package-lock.json','next.config.ts','tsconfig.json','postcss.config.mjs'])
   await cp(path.join(root,name),path.join(source,name),{recursive:true,dereference:true});
  // Reuse installed dependencies only while building. NFT copies actual files into resources.
  await symlink(path.join(root,'node_modules'),path.join(source,'node_modules'),'junction');
